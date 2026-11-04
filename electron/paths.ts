@@ -1,4 +1,3 @@
-import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { translate } from '@shared/i18n'
@@ -14,16 +13,12 @@ export const VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(APP_ROOT, 'public')
   : RENDERER_DIST
 
-export const ICON_PATH = path.join(
-  VITE_PUBLIC,
-  os.platform() === 'win32' ? 'icon.ico' : 'icon.png',
-)
+export const ICON_PATH = path.join(VITE_PUBLIC, 'icon.png')
 export const PRELOAD_PATH = path.join(__dirname, 'preload.mjs')
 
 export const APP_TITLE = 'Tocaê Reprodutor'
-export const DESKTOP_FILE_NAME = process.env['FLATPAK_ID']
-  ? `${process.env['FLATPAK_ID']}.desktop`
-  : 'tocae-reprodutor.desktop'
+/** Mesmo valor de `desktopName` no package.json e do .desktop instalado pelo .deb. */
+export const DESKTOP_FILE_NAME = 'io.github.joaomjbraga.tocae-reprodutor.desktop'
 
 /** Títulos das janelas auxiliares, que dependem do idioma em uso. */
 export function aboutTitle(locale: Locale): string {

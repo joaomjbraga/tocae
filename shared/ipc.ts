@@ -33,13 +33,6 @@ export interface LocaleInfo {
 
 export type WindowTarget = 'about' | 'shortcuts'
 
-/**
- * Estado do ciclo de atualização, do main para o renderer.
- *
- * `downloading` e `ready` existem porque o download é automático: quem chama
- * `checkForUpdates()` recebe uma promessa resolvida no availability check, não
- * no fim do download.
- */
 export interface TocaeApi {
   onCommand(callback: (command: AppCommand) => void): () => void
   readPlaylist(): Promise<PlaylistItem[]>

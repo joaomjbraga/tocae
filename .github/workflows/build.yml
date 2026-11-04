@@ -1,0 +1,58 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    name: Build .deb and .rpm
+    runs-on: ubuntu-latest
+
+    steps:
+      # O histórico completo permite verificar e criar a tag da versão.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # O rpmbuild é exigido pelo electron-builder para gerar o .rpm.
+      - name: Install rpm tools
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - run: npm ci
+
+      # O script já roda a verificação de tipos e o bundle antes do pacote.
+      - run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tocae-reprodutor-linux
+          path: |
+            release/*/*.deb
+            release/*/*.rpm
+          if-no-files-found: error
+
+      # Cria a tag somente depois que o build passou, e apenas em pushes na main.
+      # Se a versão do package.json já tiver tag, não faz nada.
+      - name: Create version tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          tag="v${version}"
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "Tag ${tag} already exists, skipping."
+            exit 0
+          fi
+          git tag "${tag}"
+          git push origin "${tag}"

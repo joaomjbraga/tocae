@@ -1,15 +1,20 @@
 {
   "name": "tocae-reprodutor",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Reprodutor de vídeo minimalista",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "João M J Braga <joaomarcos.jbraga@gmail.com>",
+  "homepage": "https://github.com/joaomjbraga/tocae-reprodutor",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joaomjbraga/tocae-reprodutor.git"
+  },
   "desktopName": "io.github.joaomjbraga.tocae-reprodutor.desktop",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && electron-builder --linux --dir",
+    "build": "tsc && vite build && electron-builder --linux deb rpm --publish never",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

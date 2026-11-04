@@ -5,7 +5,7 @@ import type { Locale, MessageKey, TranslationParams } from '@shared/i18n'
 import type { LocaleSource, TocaeApi } from '@shared/ipc'
 import { detectSystemLocale } from './detect'
 
-export type I18nContextValue = {
+type I18nContextValue = {
   /** Idioma em uso. */
   locale: Locale
   /** Idioma detectado do sistema operacional. */

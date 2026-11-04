@@ -28,25 +28,26 @@ The texts live in `shared/i18n/messages/`, with the Portuguese catalogue as the 
 ```sh
 npm install
 npm run dev      # Vite dev server
-npm run build    # typecheck + bundle + package
+npm run build    # typecheck + bundle + .deb and .rpm packages
 ```
 
-## Flatpak
+## Linux packages
 
-The Flatpak manifest lives at `io.github.joaomjbraga.tocae-reprodutor.yaml`.
+The project is packaged for Linux only, as `.deb` (Debian/Ubuntu) and `.rpm` (Fedora/RHEL). `npm run build` writes the packages to `release/<version>/`; the architecture matches the machine that ran the build.
 
 ```sh
-flatpak run --command=flathub-build org.flatpak.Builder --install \
-  io.github.joaomjbraga.tocae-reprodutor.yaml
+# Debian/Ubuntu
+sudo apt install ./release/0.0.3/tocae-reprodutor_0.0.3_amd64.deb
+
+# Fedora/RHEL
+sudo dnf install ./release/0.0.3/tocae-reprodutor-0.0.3.x86_64.rpm
 ```
 
-After changing the npm dependencies, regenerate the dependency manifest (it must run **without** `node_modules` present, otherwise the packages are treated as local sources):
+Building the `.rpm` requires `rpmbuild` (the `rpm` package on Debian/Ubuntu). The packages register the application in the menu, install the icons at the usual sizes and declare the Electron runtime dependencies. The metadata (category, maintainer, description and executable name) lives in `electron-builder.json5`.
 
-```sh
-flatpak-node-generator npm -o generated-sources.json package-lock.json
-```
+## Versioning
 
-The app requests `--filesystem=host:ro`: it reads the videos from their real path through the `media://` protocol and never writes outside its own data directory.
+The build workflow automatically creates the `v<version>` tag when the version in `package.json` changes on a push to `main`. If the tag already exists, nothing happens. The tag is only created after the package build succeeds.
 
 ## Author
 

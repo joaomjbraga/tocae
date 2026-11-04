@@ -2,6 +2,9 @@
 {
   "$schema": "https://json.schemastore.org/electron-builder.json",
   "appId": "io.github.joaomjbraga.tocae-reprodutor",
+  // O projeto não usa auto-update: sem isso o electron-builder inferiria um
+  // provedor GitHub a partir do repositório e incluiria app-update.yml no pacote.
+  "publish": null,
   "asar": true,
   "productName": "Tocaê Reprodutor",
   "directories": {
@@ -13,6 +16,32 @@
     "dist-electron"
   ],
   "linux": {
-    "icon": "build/icons"
+    "target": ["deb", "rpm"],
+    "icon": "build/icons",
+    "category": "AudioVideo;Player;",
+    "executableName": "tocae-reprodutor",
+    // O nome do .desktop instalado precisa ser o mesmo que o app registra em
+    // app.setDesktopName() para o ambiente associar a janela ao lançador.
+    "syncDesktopName": true,
+    "maintainer": "João M J Braga <joaomarcos.jbraga@gmail.com>",
+    "vendor": "João M J Braga",
+    "synopsis": "Reprodutor de vídeo minimalista",
+    "description": "Reprodutor de vídeo minimalista construído com Electron, React e TypeScript. Abre um vídeo e reproduz sem complicação.",
+    "desktop": {
+      "entry": {
+        "Name[pt_BR]": "Tocaê Reprodutor",
+        "Comment[pt_BR]": "Reprodutor de vídeo minimalista",
+        "Comment[en]": "Minimalist video player",
+        "Keywords": "video;player;playlist;media;vídeo;reprodutor;",
+        "StartupNotify": "true"
+      }
+    }
+  },
+  "deb": {
+    "packageCategory": "video",
+    "priority": "optional"
+  },
+  "rpm": {
+    "packageCategory": "video"
   }
 }

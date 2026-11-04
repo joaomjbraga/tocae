@@ -28,25 +28,26 @@ Os textos ficam em `shared/i18n/messages/`, com o catálogo em português como f
 ```sh
 npm install
 npm run dev      # servidor de desenvolvimento do Vite
-npm run build    # verificação de tipos + bundle + pacote
+npm run build    # verificação de tipos + bundle + pacotes .deb e .rpm
 ```
 
-## Flatpak
+## Pacotes Linux
 
-O manifest do Flatpak fica em `io.github.joaomjbraga.tocae-reprodutor.yaml`.
+O projeto é empacotado apenas para Linux, nos formatos `.deb` (Debian/Ubuntu) e `.rpm` (Fedora/RHEL). O `npm run build` gera os pacotes em `release/<versão>/`; a arquitetura acompanha a máquina que fez o build.
 
 ```sh
-flatpak run --command=flathub-build org.flatpak.Builder --install \
-  io.github.joaomjbraga.tocae-reprodutor.yaml
+# Debian/Ubuntu
+sudo apt install ./release/0.0.3/tocae-reprodutor_0.0.3_amd64.deb
+
+# Fedora/RHEL
+sudo dnf install ./release/0.0.3/tocae-reprodutor-0.0.3.x86_64.rpm
 ```
 
-Depois de alterar as dependências do npm, regenere o manifesto de dependências (o comando precisa rodar **sem** o `node_modules` presente, senão os pacotes são tratados como fontes locais):
+Para gerar o `.rpm` é preciso ter o `rpmbuild` instalado (pacote `rpm` no Debian/Ubuntu). Os pacotes registram o aplicativo no menu, instalam os ícones nos tamanhos usuais e declaram as dependências de runtime do Electron. Os metadados (categoria, mantenedor, descrição e nome do executável) ficam em `electron-builder.json5`.
 
-```sh
-flatpak-node-generator npm -o generated-sources.json package-lock.json
-```
+## Versionamento
 
-O app pede `--filesystem=host:ro`: lê os vídeos pelo caminho real através do protocolo `media://` e nunca escreve fora do próprio diretório de dados.
+O workflow de build cria automaticamente a tag `v<versão>` quando a versão em `package.json` muda em um push para a `main`. Se a tag já existir, nada é feito. A tag só é criada depois que o build dos pacotes termina com sucesso.
 
 ## Autor
 

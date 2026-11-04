@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, Menu } from 'electron'
 import { registerMediaSchemes, registerMediaProtocol } from './media/protocol'
 import { registerDialogIpc } from './dialogs'
 import { registerPlaylistIpc } from './playlist'
@@ -13,21 +13,10 @@ const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
   app.quit()
 } else {
-  if (process.platform === 'linux') {
-    app.setDesktopName(DESKTOP_FILE_NAME)
-  }
+  app.setDesktopName(DESKTOP_FILE_NAME)
 
   app.on('second-instance', focusMainWindow)
-
-  app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit()
-  })
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createMainWindow()
-    }
-  })
+  app.on('window-all-closed', () => app.quit())
 
   app.whenReady().then(async () => {
     Menu.setApplicationMenu(null)

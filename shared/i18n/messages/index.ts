@@ -13,7 +13,7 @@ const MESSAGES: Record<Locale, Messages> = {
   en: enMessages,
 }
 
-export function getMessages(locale: Locale): Messages {
+function getMessages(locale: Locale): Messages {
   return MESSAGES[locale] ?? MESSAGES['pt-BR']
 }
 
