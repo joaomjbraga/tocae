@@ -2,7 +2,7 @@
 
 # Tocaê Reprodutor
 
-**Português (Brasil)** · [English](README.en.md)
+**Português (Brasil)**
 
 Reprodutor multimídia minimalista construído com Electron, React e TypeScript. Reproduz vídeos e músicas e exibe imagens.
 
@@ -11,10 +11,12 @@ Reprodutor multimídia minimalista construído com Electron, React e TypeScript.
 ## Recursos
 
 - Reproduza vídeos e músicas e navegue por imagens em uma única lista
+- Avance automaticamente ao fim ou repita a mídia atual, com opções nas configurações
 - Reordene a lista arrastando os itens ou pelo teclado
 - Pule entre mídias com atalhos de uma tecla
 - Use a janela principal sem moldura, com controles próprios e cantos arredondados
-- Assista a vídeos verticais sem cortar a imagem; amplie e mova a área ampliada
+- Assista a vídeos verticais sem cortar a imagem; amplie e mova vídeos e imagens
+- Ouça músicas com um visualizador animado que reage ao estado da reprodução
 - Navegue pela timeline com prévia do quadro ou avance e volte em intervalos de 1 segundo
 - Continue a reprodução de vídeos e músicas de onde parou, inclusive depois de fechar o aplicativo
 - Defina o Tocaê como reprodutor padrão de mídias no Linux
@@ -32,7 +34,7 @@ Formatos aceitos: vídeos MP4, WebM, MKV, AVI, MOV e OGV; músicas MP3, M4A, AAC
 - `shared/`: tipos, contratos IPC e traduções compartilhados com o Electron
 - `electron/`: processo principal, preload e integração com o sistema
 
-O player preserva a proporção original de vídeos e imagens, inclusive em retrato. O zoom pode ser movido com o mouse ou toque e é limitado às bordas visíveis do vídeo. Músicas usam os mesmos controles de reprodução e linha do tempo. A interface usa controles compactos e translúcidos, com adaptação para janelas estreitas.
+O player preserva a proporção original de vídeos e imagens, inclusive em retrato. O zoom pode ser movido com o mouse ou toque e é limitado às bordas visíveis da mídia. Músicas usam os mesmos controles de reprodução e linha do tempo, com um disco animado e um visualizador de barras enquanto tocam. A interface usa controles compactos e translúcidos, com adaptação para janelas estreitas.
 
 ## Idiomas
 

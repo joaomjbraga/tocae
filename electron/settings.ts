@@ -16,7 +16,8 @@ export async function readSettings(): Promise<Settings> {
   let raw: string
   try {
     raw = await readFile(storeFilePath(), 'utf8')
-  } catch {
+  } catch (error) {
+    if (!isMissingFile(error)) console.warn('Could not read app settings', error)
     return { ...DEFAULT_SETTINGS }
   }
 
@@ -25,9 +26,14 @@ export async function readSettings(): Promise<Settings> {
     const stored = parsed as Partial<Settings> | null
     if (!stored || typeof stored !== 'object') return { ...DEFAULT_SETTINGS }
     return { locale: isLocale(stored.locale) ? stored.locale : null }
-  } catch {
+  } catch (error) {
+    console.warn('Could not parse app settings; using defaults', error)
     return { ...DEFAULT_SETTINGS }
   }
+}
+
+function isMissingFile(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT'
 }
 
 /** Grava as preferências de forma atômica (arquivo temporário + rename). */

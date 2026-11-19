@@ -41,8 +41,11 @@ export const MEDIA_EXTENSIONS = [
 export type MediaType = 'video' | 'audio' | 'image'
 
 function extensionFor(source: string): string {
-  const withoutQuery = source.split(/[?#]/)[0]
-  return withoutQuery.slice(withoutQuery.lastIndexOf('.') + 1).toLowerCase()
+  const isUrl = /^[a-z][a-z\d+.-]*:\/\//i.test(source)
+  const path = isUrl ? source.split(/[?#]/, 1)[0] : source
+  const fileName = path.slice(Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1)
+  const extensionStart = fileName.lastIndexOf('.')
+  return extensionStart < 0 ? '' : fileName.slice(extensionStart + 1).toLowerCase()
 }
 
 export function mediaTypeForPath(source: string): MediaType | null {
@@ -55,8 +58,4 @@ export function mediaTypeForPath(source: string): MediaType | null {
 
 export function isMediaPath(source: string): boolean {
   return mediaTypeForPath(source) !== null
-}
-
-export function isVideoPath(source: string): boolean {
-  return (VIDEO_EXTENSIONS as readonly string[]).includes(extensionFor(source))
 }

@@ -72,7 +72,8 @@ export function usePlaylist() {
       .then(({ items, currentIndex }) => {
         if (active) setState((prev) => ({ ...prev, items, currentIndex, loaded: true }))
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        console.error('Could not load the saved playlist', error)
         if (active) setState((prev) => ({ ...prev, loaded: true }))
       })
 
@@ -85,7 +86,9 @@ export function usePlaylist() {
     if (!state.loaded) return
     const api = window.tocae
     if (!api) return
-    void api.writePlaylist(state.items, state.currentIndex)
+    void api
+      .writePlaylist(state.items, state.currentIndex)
+      .catch((error: unknown) => console.error('Could not save the playlist', error))
   }, [state.items, state.currentIndex, state.loaded])
 
   const addEntries = useCallback((entries: PlaylistItem[], activatePath?: string) => {

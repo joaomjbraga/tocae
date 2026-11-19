@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   ChangeEvent,
   CSSProperties,
@@ -10,6 +10,7 @@ import type {
 import {
   FastForward,
   FolderOpen,
+  ListEnd,
   Music2,
   Loader2,
   Maximize,
@@ -17,6 +18,7 @@ import {
   Pause,
   Play,
   Rewind,
+  Repeat1,
   RotateCcw,
   SkipBack,
   SkipForward,
@@ -30,7 +32,7 @@ import { formatTime } from '../../lib/format'
 import type { MediaType } from '@shared/media'
 import { useI18n } from '../../i18n'
 import { getPlaybackPosition, savePlaybackPosition } from './playbackProgress'
-import { useVideoViewport } from './useVideoViewport'
+import { useMediaViewport } from './useMediaViewport'
 import styles from './VideoPlayer.module.css'
 
 /** Tempo parado até os controles do player se esconderem. */
@@ -46,6 +48,10 @@ type VideoPlayerProps = {
   source: string | null
   mediaType: MediaType | null
   title: string
+  autoNext: boolean
+  onAutoNextChange: (enabled: boolean) => void
+  loopCurrent: boolean
+  onLoopCurrentChange: (enabled: boolean) => void
   message: string | null
   hasNext: boolean
   hasPrevious: boolean
@@ -61,6 +67,10 @@ function VideoPlayer({
   source,
   mediaType,
   title,
+  autoNext,
+  onAutoNextChange,
+  loopCurrent,
+  onLoopCurrentChange,
   message,
   hasNext,
   hasPrevious,
@@ -73,7 +83,13 @@ function VideoPlayer({
 }: VideoPlayerProps) {
   const { t } = useI18n()
   const areaRef = useRef<HTMLElement>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const viewportMediaRef = useRef<HTMLVideoElement | HTMLImageElement>(null)
+  const setViewportMediaElement = useCallback(
+    (element: HTMLVideoElement | HTMLImageElement | null) => {
+      viewportMediaRef.current = element
+    },
+    [],
+  )
   const audioRef = useRef<HTMLAudioElement>(null)
   const previewVideoRef = useRef<HTMLVideoElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -83,7 +99,7 @@ function VideoPlayer({
   const previewTimeRef = useRef<number | null>(null)
   const previewSeekTimerRef = useRef<number | null>(null)
   const lastPreviewSeekRef = useRef(0)
-  const viewport = useVideoViewport(areaRef, videoRef, source)
+  const viewport = useMediaViewport(areaRef, viewportMediaRef, source)
   const viewportRef = useRef(viewport)
   viewportRef.current = viewport
   const [playing, setPlaying] = useState(false)
@@ -200,14 +216,14 @@ function VideoPlayer({
         case '+':
         case '=':
           if (event.ctrlKey || event.metaKey || event.altKey) break
-          if (mediaType !== 'video') break
+          if (mediaType !== 'video' && mediaType !== 'image') break
           event.preventDefault()
           viewportRef.current.zoomIn()
           break
         case '-':
         case '_':
           if (event.ctrlKey || event.metaKey || event.altKey) break
-          if (mediaType !== 'video') break
+          if (mediaType !== 'video' && mediaType !== 'image') break
           event.preventDefault()
           viewportRef.current.zoomOut()
           break
@@ -241,7 +257,8 @@ function VideoPlayer({
   }
 
   function getMediaElement(): HTMLMediaElement | null {
-    return audioRef.current ?? videoRef.current
+    const video = viewportMediaRef.current
+    return audioRef.current ?? (video instanceof HTMLVideoElement ? video : null)
   }
 
   function handleEnded() {
@@ -376,7 +393,7 @@ function VideoPlayer({
     const media = event.currentTarget
     setDuration(media.duration)
     if (media instanceof HTMLVideoElement) {
-      viewport.setVideoOrientation(media.videoWidth, media.videoHeight)
+      viewport.setMediaDimensions(media.videoWidth, media.videoHeight)
     }
 
     const resumePosition = source ? getPlaybackPosition(source) : 0
@@ -457,7 +474,7 @@ function VideoPlayer({
         styles.videoArea,
         mediaMode,
         dragging ? styles.dragging : '',
-        playing ? styles.playing : styles.paused,
+        playing ? styles.playing : '',
         idle ? styles.idle : '',
         viewport.isPortrait ? styles.portrait : '',
       ]
@@ -475,7 +492,7 @@ function VideoPlayer({
           {mediaType === 'video' && (
             <video
               key={source}
-              ref={videoRef}
+              ref={setViewportMediaElement}
               className={[
                 styles.video,
                 viewport.isZoomable ? styles.zoomable : '',
@@ -483,15 +500,16 @@ function VideoPlayer({
               ]
                 .filter(Boolean)
                 .join(' ')}
-              style={viewport.videoStyle}
+              style={viewport.mediaStyle}
               src={source ?? undefined}
               autoPlay
+              loop={loopCurrent}
               controls={false}
               muted={muted}
               {...mediaEventProps}
               onClick={(event) => {
-                if (viewport.draggedVideoRef.current) {
-                  viewport.draggedVideoRef.current = false
+                if (viewport.draggedMediaRef.current) {
+                  viewport.draggedMediaRef.current = false
                   event.preventDefault()
                   return
                 }
@@ -512,12 +530,28 @@ function VideoPlayer({
                 className={styles.audioElement}
                 src={source ?? undefined}
                 autoPlay
+                loop={loopCurrent}
                 controls={false}
                 muted={muted}
                 {...mediaEventProps}
               />
-              <div className={styles.audioArtwork} aria-hidden="true">
-                <Music2 size={72} strokeWidth={1.2} />
+              <div className={styles.audioStage}>
+                <div className={styles.audioArtwork} aria-hidden="true">
+                  <div className={styles.audioDisc}>
+                    <div className={styles.audioDiscCenter}>
+                      <Music2 size={34} strokeWidth={1.4} />
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.audioVisualizer} aria-hidden="true">
+                  {Array.from({ length: 9 }, (_, index) => (
+                    <span className={styles.audioBar} key={index} />
+                  ))}
+                </div>
+                <div className={styles.audioInfo}>
+                  <span>{playing ? t('player.audioNowPlaying') : t('player.audioPaused')}</span>
+                  <strong title={title}>{title}</strong>
+                </div>
               </div>
             </>
           )}
@@ -525,11 +559,29 @@ function VideoPlayer({
             <>
               <img
                 key={source}
-                className={styles.image}
+                ref={setViewportMediaElement}
+                className={[
+                  styles.image,
+                  viewport.isZoomable ? styles.zoomable : '',
+                  viewport.isPanning ? styles.panning : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                style={viewport.mediaStyle}
                 src={source ?? undefined}
                 alt={title}
                 draggable={false}
+                onLoad={(event) =>
+                  viewport.setMediaDimensions(
+                    event.currentTarget.naturalWidth,
+                    event.currentTarget.naturalHeight,
+                  )
+                }
                 onError={handleImageError}
+                onPointerDown={viewport.handlePointerDown}
+                onPointerMove={viewport.handlePointerMove}
+                onPointerUp={viewport.handlePointerUp}
+                onPointerCancel={viewport.handlePointerCancel}
               />
               <button
                 type="button"
@@ -542,7 +594,7 @@ function VideoPlayer({
               </button>
             </>
           )}
-          {mediaType === 'video' && (
+          {(mediaType === 'video' || mediaType === 'image') && (
             <div className={styles.zoomControls} role="group" aria-label={t('player.zoomControls')}>
               <button
                 type="button"
@@ -574,6 +626,40 @@ function VideoPlayer({
                 title={t('player.resetZoom')}
               >
                 <RotateCcw size={15} />
+              </button>
+            </div>
+          )}
+          {hasPlaybackControls && (
+            <div
+              className={styles.playbackToggles}
+              role="group"
+              aria-label={t('playbackSettings.title')}
+            >
+              <button
+                type="button"
+                className={`${styles.playbackToggle} ${autoNext ? styles.playbackToggleActive : ''}`}
+                onClick={() => onAutoNextChange(!autoNext)}
+                aria-label={t('playbackSettings.autoNextTitle')}
+                aria-pressed={autoNext}
+                title={t('playbackSettings.autoNextTitle')}
+              >
+                <ListEnd size={18} />
+                <span className={styles.playbackToggleLabel}>
+                  {t('playbackSettings.autoNextLabel')}
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.playbackToggle} ${loopCurrent ? styles.playbackToggleActive : ''}`}
+                onClick={() => onLoopCurrentChange(!loopCurrent)}
+                aria-label={t('playbackSettings.repeatTitle')}
+                aria-pressed={loopCurrent}
+                title={t('playbackSettings.repeatTitle')}
+              >
+                <Repeat1 size={18} />
+                <span className={styles.playbackToggleLabel}>
+                  {t('playbackSettings.repeatLabel')}
+                </span>
               </button>
             </div>
           )}

@@ -6,6 +6,7 @@ import AppBar from '../../components/AppBar'
 import Toast from '../../components/Toast'
 import PlaylistPanel from '../playlist/PlaylistPanel'
 import VideoPlayer from './VideoPlayer'
+import { readPlaybackPreferences, savePlaybackPreferences } from './playbackPreferences'
 import SettingsPage from '../settings/SettingsPage'
 import { usePlaylist } from '../playlist/usePlaylist'
 import type { PlaylistSnapshot } from '../playlist/usePlaylist'
@@ -42,6 +43,7 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
   const [toast, setToast] = useState<ToastState | null>(null)
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const [playerControlsVisible, setPlayerControlsVisible] = useState(true)
+  const [playbackPreferences, setPlaybackPreferences] = useState(readPlaybackPreferences)
   const announcedIdRef = useRef<string | null>(null)
 
   const announce = useCallback(
@@ -60,6 +62,36 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
     if (toast) playlist.restore(toast.snapshot)
     setToast(null)
   }, [playlist, toast])
+
+  const handlePlaylistItemPlay = useCallback(
+    (index: number) => {
+      playlist.playIndex(index)
+      playlist.togglePanel()
+    },
+    [playlist.playIndex, playlist.togglePanel],
+  )
+
+  const handleAutoNextChange = useCallback(
+    (autoNext: boolean) => {
+      const next = { ...playbackPreferences, autoNext }
+      setPlaybackPreferences(next)
+      savePlaybackPreferences(next)
+    },
+    [playbackPreferences],
+  )
+
+  const handleRepeatCurrentChange = useCallback(
+    (repeatCurrent: boolean) => {
+      const next = { ...playbackPreferences, repeatCurrent }
+      setPlaybackPreferences(next)
+      savePlaybackPreferences(next)
+    },
+    [playbackPreferences],
+  )
+
+  const handlePlaybackEnded = useCallback(() => {
+    if (playbackPreferences.autoNext) playlist.next()
+  }, [playbackPreferences.autoNext, playlist.next])
 
   useEffect(() => {
     if (!api) return
@@ -252,12 +284,16 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
                   source={playlist.source}
                   mediaType={mediaType}
                   title={playlist.current?.name ?? ''}
+                  autoNext={playbackPreferences.autoNext}
+                  onAutoNextChange={handleAutoNextChange}
+                  loopCurrent={playbackPreferences.repeatCurrent}
+                  onLoopCurrentChange={handleRepeatCurrentChange}
                   message={errorMessage}
                   hasNext={playlist.hasNext}
                   hasPrevious={playlist.hasPrevious}
                   onNext={playlist.next}
                   onPrevious={playlist.previous}
-                  onEnded={playlist.next}
+                  onEnded={handlePlaybackEnded}
                   onFailed={playlist.failCurrent}
                   onFilesSelected={playlist.addFiles}
                   onControlsVisibilityChange={setPlayerControlsVisible}
@@ -279,7 +315,7 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
                   closing={!playlist.panelVisible}
                   loading={!playlist.loaded}
                   pulseIds={playlist.pulseIds}
-                  onPlay={playlist.playIndex}
+                  onPlay={handlePlaylistItemPlay}
                   onMove={playlist.move}
                   onRemove={playlist.remove}
                   onClear={handleClear}
@@ -295,6 +331,10 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
             <SettingsPage
               accentColor={accentColor}
               onAccentColorChange={onAccentColorChange}
+              autoNext={playbackPreferences.autoNext}
+              repeatCurrent={playbackPreferences.repeatCurrent}
+              onAutoNextChange={handleAutoNextChange}
+              onRepeatCurrentChange={handleRepeatCurrentChange}
               onBack={() => setActivePage('player')}
             />
           )}

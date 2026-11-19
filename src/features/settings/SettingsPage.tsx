@@ -8,19 +8,24 @@ import {
   Monitor,
   Palette,
   Play,
+  Repeat,
   Settings,
 } from 'lucide-react'
 import { LOCALE_NAMES, SUPPORTED_LOCALES } from '@shared/i18n'
 import { useI18n } from '../../i18n'
+import type { PlaybackPreferences } from '../player/playbackPreferences'
 import AboutSection from './AboutSection'
 import AppearanceSection from './AppearanceSection'
 import DefaultPlayerSection from './DefaultPlayerSection'
+import PlaybackSection from './PlaybackSection'
 import ShortcutsSection from './ShortcutsSection'
 import styles from './SettingsPage.module.css'
 
-type SettingsPageProps = {
+type SettingsPageProps = PlaybackPreferences & {
   accentColor: string
   onAccentColorChange: (color: string) => void
+  onAutoNextChange: (enabled: boolean) => void
+  onRepeatCurrentChange: (enabled: boolean) => void
   onBack: () => void
 }
 
@@ -50,6 +55,12 @@ const CATEGORIES = [
     description: 'settings.defaultPlayerDescription',
   },
   {
+    id: 'playback',
+    icon: Repeat,
+    title: 'settings.playbackTitle',
+    description: 'settings.playbackDescription',
+  },
+  {
     id: 'about',
     icon: Info,
     title: 'about.title',
@@ -59,7 +70,15 @@ const CATEGORIES = [
 
 type SettingsCategory = (typeof CATEGORIES)[number]['id']
 
-function SettingsPage({ accentColor, onAccentColorChange, onBack }: SettingsPageProps) {
+function SettingsPage({
+  accentColor,
+  onAccentColorChange,
+  autoNext,
+  repeatCurrent,
+  onAutoNextChange,
+  onRepeatCurrentChange,
+  onBack,
+}: SettingsPageProps) {
   const { locale, systemLocale, source, setLocale, t } = useI18n()
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('language')
 
@@ -114,7 +133,7 @@ function SettingsPage({ accentColor, onAccentColorChange, onBack }: SettingsPage
           tabIndex={0}
         >
           {activeCategory === 'language' && (
-            <section className={styles.languageDetail} aria-labelledby="language-title">
+            <section aria-labelledby="language-title">
               <header className={styles.detailHeader}>
                 <Languages size={18} className={styles.detailIcon} aria-hidden="true" />
                 <div>
@@ -181,6 +200,14 @@ function SettingsPage({ accentColor, onAccentColorChange, onBack }: SettingsPage
           )}
           {activeCategory === 'shortcuts' && <ShortcutsSection />}
           {activeCategory === 'default-player' && <DefaultPlayerSection />}
+          {activeCategory === 'playback' && (
+            <PlaybackSection
+              autoNext={autoNext}
+              repeatCurrent={repeatCurrent}
+              onAutoNextChange={onAutoNextChange}
+              onRepeatCurrentChange={onRepeatCurrentChange}
+            />
+          )}
           {activeCategory === 'about' && <AboutSection />}
         </div>
       </div>

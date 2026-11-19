@@ -43,18 +43,149 @@
   display: none;
 }
 
+.audioStage {
+  width: min(440px, calc(100% - 48px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 2.4vh, 24px);
+}
+
 .audioArtwork {
-  width: min(320px, 42vh, 72vw);
+  position: relative;
+  width: min(300px, 38vh, 60vw);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
   border: 1px solid var(--border-control);
   border-radius: 24px;
-  background:
-    radial-gradient(circle at 50% 40%, var(--accent-tint), transparent 62%),
-    var(--bg-glass-strong);
+  overflow: hidden;
+  background: linear-gradient(145deg, var(--bg-glass-strong), var(--bg-fullscreen));
   box-shadow: var(--shadow-material);
+}
+
+.audioArtwork::before {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 38%, var(--accent-tint), transparent 64%);
+  content: '';
+}
+
+.audioDisc {
+  position: relative;
+  z-index: 1;
+  width: 82%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--bg-glass-strong) 0 14%, transparent 15%),
+    repeating-radial-gradient(circle, rgba(255, 255, 255, 0.15) 0 1px, rgba(255, 255, 255, 0.035) 2px 6px);
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.34),
+    inset 0 0 28px rgba(0, 0, 0, 0.28);
+  animation: audio-disc-spin 22s linear infinite;
+  animation-play-state: paused;
+}
+
+.videoArea.audioMode.playing .audioDisc {
+  animation-play-state: running;
+}
+
+.audioDiscCenter {
+  width: 36%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-control);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--bg-active), var(--bg-glass-strong));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   color: var(--accent);
+}
+
+.audioVisualizer {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.audioBar {
+  width: 3px;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(to top, var(--accent), var(--text-primary));
+  opacity: 0.55;
+  transform: scaleY(0.32);
+  animation: audio-level 850ms ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+
+.videoArea.audioMode.playing .audioBar {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+.audioBar:nth-child(3n + 1) {
+  height: 18px;
+  animation-delay: -520ms;
+}
+
+.audioBar:nth-child(3n + 2) {
+  height: 24px;
+  animation-delay: -180ms;
+}
+
+.audioBar:nth-child(3n) {
+  height: 14px;
+  animation-delay: -720ms;
+}
+
+.audioInfo {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.audioInfo span {
+  color: var(--accent);
+  font-size: var(--text-2xs);
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.audioInfo strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: clamp(var(--text-sm), 2vw, var(--text-lg));
+  font-weight: 650;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes audio-disc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes audio-level {
+  from {
+    transform: scaleY(0.28);
+  }
+  to {
+    transform: scaleY(1);
+  }
 }
 
 .image {
@@ -65,6 +196,9 @@
   display: block;
   object-fit: contain;
   user-select: none;
+  transform: translate3d(var(--pan-x), var(--pan-y), 0) scale(var(--zoom));
+  transform-origin: center;
+  transition: transform var(--duration-fast) var(--ease-standard);
 }
 
 .videoArea.imageMode {
@@ -76,8 +210,7 @@
 }
 
 .videoArea.imageMode .playPause,
-.videoArea.imageMode .controlsBar,
-.videoArea.imageMode .zoomControls {
+.videoArea.imageMode .controlsBar {
   display: none;
 }
 
@@ -92,12 +225,14 @@
   backdrop-filter: blur(20px);
 }
 
-.video.zoomable {
+.video.zoomable,
+.image.zoomable {
   cursor: grab;
   touch-action: none;
 }
 
-.video.panning {
+.video.panning,
+.image.panning {
   cursor: grabbing;
   transition: none;
 }
@@ -123,6 +258,92 @@
 
 .videoArea:fullscreen .zoomControls {
   top: var(--space-3);
+}
+
+.playbackToggles {
+  position: absolute;
+  top: 64px;
+  right: var(--space-3);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: rgba(10, 12, 14, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition:
+    opacity var(--duration-exit) var(--ease-exit),
+    transform var(--duration-exit) var(--ease-exit);
+}
+
+.videoArea:hover .playbackToggles,
+.videoArea:not(.playing) .playbackToggles {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.videoArea.playing.idle .playbackToggles {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+}
+
+.videoArea:fullscreen .playbackToggles {
+  top: var(--space-3);
+}
+
+.playbackToggle {
+  min-width: 76px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast),
+    border-color var(--duration-fast),
+    color var(--duration-fast),
+    transform var(--duration-fast);
+}
+
+.playbackToggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.playbackToggleLabel {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.045em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.playbackToggle:active {
+  transform: scale(0.94);
+}
+
+.playbackToggleActive {
+  border-color: var(--accent-strong);
+  background: var(--accent);
+  color: var(--bg-app);
+}
+
+.playbackToggleActive:hover {
+  border-color: color-mix(in srgb, var(--accent) 78%, white);
+  background: color-mix(in srgb, var(--accent) 86%, white);
 }
 
 .zoomValue {
@@ -538,5 +759,20 @@
 
   .volumeSlider {
     display: none;
+  }
+
+  .audioInfo strong {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audioDisc,
+  .audioBar {
+    animation: none;
+    transform: none;
   }
 }

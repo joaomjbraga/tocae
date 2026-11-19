@@ -49,7 +49,7 @@ function I18nProvider({ children }: { children: ReactNode }) {
         setSystemLocale(info.system)
         setSource(info.source)
       })
-      .catch(() => {})
+      .catch((error: unknown) => console.error('Could not read the saved locale', error))
 
     return () => {
       active = false
@@ -73,7 +73,11 @@ function I18nProvider({ children }: { children: ReactNode }) {
       // esperar o disco.
       setLocaleState(next ?? systemLocale)
       setSource(next === null ? 'system' : 'user')
-      void api?.setLocale(next)
+      if (api) {
+        void api
+          .setLocale(next)
+          .catch((error: unknown) => console.error('Could not save the locale preference', error))
+      }
     },
     [api, systemLocale],
   )

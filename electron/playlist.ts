@@ -45,7 +45,8 @@ export async function readPlaylist(): Promise<PersistedPlaylist> {
   let raw: string
   try {
     raw = await readFile(storeFilePath(), 'utf8')
-  } catch {
+  } catch (error) {
+    if (!isMissingFile(error)) console.warn('Could not read the saved playlist', error)
     return { items: [], currentIndex: -1 }
   }
 
@@ -55,7 +56,8 @@ export async function readPlaylist(): Promise<PersistedPlaylist> {
     if (!stored || !Array.isArray(stored.items)) return { items: [], currentIndex: -1 }
     const items = withoutDuplicates(stored.items.filter(isPlaylistItem))
     return { items, currentIndex: normalizedIndex(stored.currentIndex, items.length) }
-  } catch {
+  } catch (error) {
+    console.warn('Could not parse the saved playlist; using an empty list', error)
     return { items: [], currentIndex: -1 }
   }
 }
@@ -88,4 +90,8 @@ export function registerPlaylistIpc(): void {
       typeof currentIndex === 'number' && Number.isInteger(currentIndex) ? currentIndex : -1,
     )
   })
+}
+
+function isMissingFile(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT'
 }
