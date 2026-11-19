@@ -13,8 +13,12 @@ function App() {
 
   return (
     <div className={styles.app} data-window-shell>
-      <WindowTitleBar titleKey={isAbout ? 'window.about' : undefined} closeOnly={isAbout} />
-      <main className={styles.content}>
+      <WindowTitleBar
+        titleKey={isAbout ? 'window.about' : undefined}
+        closeOnly={isAbout}
+        compact={!isAbout}
+      />
+      <main className={`${styles.content} ${isAbout ? '' : styles.playerContent}`}>
         {isAbout ? <About /> : <PlayerScreen />}
       </main>
     </div>

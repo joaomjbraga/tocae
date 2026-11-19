@@ -20,7 +20,7 @@ const MENU_ITEM_SELECTOR = '[role="menuitemradio"]'
  * Segue o padrão de menu da ARIA: o gatilho abre com `aria-expanded`, as
  * opções são `menuitemradio` e as setas movem o foco entre elas.
  */
-function LanguageSwitcher() {
+function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const { locale, systemLocale, source, setLocale, t } = useI18n()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -90,11 +90,11 @@ function LanguageSwitcher() {
   }
 
   return (
-    <div className={styles.root} ref={rootRef}>
+    <div className={`${styles.root} ${compact ? styles.compactRoot : ''}`} ref={rootRef}>
       <button
         ref={triggerRef}
         type="button"
-        className={`${styles.trigger} ${open ? styles.open : ''}`}
+        className={`${styles.trigger} ${compact ? styles.compact : ''} ${open ? styles.open : ''}`}
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}

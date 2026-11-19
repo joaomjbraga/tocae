@@ -7,9 +7,10 @@ import styles from './WindowTitleBar.module.css'
 type WindowTitleBarProps = {
   titleKey?: MessageKey
   closeOnly?: boolean
+  compact?: boolean
 }
 
-function WindowTitleBar({ titleKey, closeOnly = false }: WindowTitleBarProps) {
+function WindowTitleBar({ titleKey, closeOnly = false, compact = false }: WindowTitleBarProps) {
   const { t } = useI18n()
   const api = window.tocae
   const [isMaximized, setIsMaximized] = useState(false)
@@ -53,7 +54,7 @@ function WindowTitleBar({ titleKey, closeOnly = false }: WindowTitleBarProps) {
   }
 
   return (
-    <div className={styles.titleBar}>
+    <div className={`${styles.titleBar} ${compact ? styles.compact : ''}`}>
       <div className={styles.brand}>
         <span>{titleKey ? t(titleKey) : 'Tocaê Reprodutor'}</span>
       </div>

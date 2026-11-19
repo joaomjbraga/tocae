@@ -1,31 +1,25 @@
-import { FolderOpen, Info, Keyboard, ListVideo, Trash2 } from 'lucide-react'
+import { FolderOpen, Info, Keyboard, Trash2 } from 'lucide-react'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '../i18n'
 import styles from './AppBar.module.css'
 
 type AppBarProps = {
   hasItems: boolean
-  panelVisible: boolean
   onOpenVideos: () => void
-  onTogglePanel: () => void
   onClear: () => void
   onOpenShortcuts: () => void
   onOpenAbout: () => void
 }
 
-function AppBar({
-  hasItems,
-  panelVisible,
-  onOpenVideos,
-  onTogglePanel,
-  onClear,
-  onOpenShortcuts,
-  onOpenAbout,
-}: AppBarProps) {
+function AppBar({ hasItems, onOpenVideos, onClear, onOpenShortcuts, onOpenAbout }: AppBarProps) {
   const { t } = useI18n()
 
   return (
-    <header className={styles.appBar}>
+    <aside className={styles.appBar} aria-label={t('appbar.navigation')}>
+      <span className={styles.brandMark} aria-hidden="true">
+        T
+      </span>
+
       <button
         type="button"
         className={styles.button}
@@ -40,18 +34,7 @@ function AppBar({
 
       <button
         type="button"
-        className={`${styles.button} ${panelVisible ? styles.active : ''}`}
-        onClick={onTogglePanel}
-        title={t('appbar.togglePlaylistTitle')}
-        aria-label={t('appbar.togglePlaylist')}
-        aria-pressed={panelVisible}
-      >
-        <ListVideo size={16} />
-      </button>
-
-      <button
-        type="button"
-        className={styles.button}
+        className={`${styles.button} ${styles.clearButton}`}
         onClick={onClear}
         disabled={!hasItems}
         title={t('appbar.clearPlaylist')}
@@ -62,7 +45,7 @@ function AppBar({
 
       <span className={styles.spacer} />
 
-      <LanguageSwitcher />
+      <LanguageSwitcher compact />
 
       <button
         type="button"
@@ -83,7 +66,7 @@ function AppBar({
       >
         <Info size={16} />
       </button>
-    </header>
+    </aside>
   )
 }
 

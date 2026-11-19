@@ -1,18 +1,38 @@
 .appBar {
+  width: 48px;
+  flex: 0 0 48px;
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  flex-shrink: 0;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 12px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  border-radius: 12px;
+  background: rgba(11, 10, 16, 0.88);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
 }
 
-.button {
+.brandMark {
   width: 32px;
   height: 32px;
   display: grid;
   place-items: center;
-  flex-shrink: 0;
+  margin-bottom: 20px;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: 10px;
   background: transparent;
   color: var(--text-toolbar);
   cursor: pointer;
@@ -24,18 +44,12 @@
 }
 
 .button:active:not(:disabled) {
-  transform: scale(0.92);
+  transform: scale(0.93);
 }
 
 .button:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
-}
-
-.button.active {
-  border-color: var(--accent-strong);
-  background: var(--accent-tint);
-  color: var(--accent);
 }
 
 .button:disabled {
@@ -48,13 +62,18 @@
   color: var(--text-disabled);
 }
 
+.clearButton:hover {
+  color: var(--text-danger);
+}
+
 .separator {
-  width: 1px;
-  height: 18px;
-  margin: 0 var(--space-1);
+  width: 24px;
+  height: 1px;
+  flex: 0 0 auto;
+  margin: 2px 0;
   background: var(--border-surface);
 }
 
 .spacer {
-  flex: 1;
+  flex: 1 1 auto;
 }

@@ -8,6 +8,7 @@ import type {
 } from 'react'
 import {
   FastForward,
+  FolderOpen,
   Loader2,
   Maximize,
   Minimize,
@@ -25,7 +26,6 @@ import {
 } from 'lucide-react'
 import { formatTime } from '../../lib/format'
 import { useI18n } from '../../i18n'
-import wordmark from '../../assets/tocae-wordmark.png'
 import { useVideoViewport } from './useVideoViewport'
 import styles from './VideoPlayer.module.css'
 
@@ -586,6 +586,7 @@ function VideoPlayer({
       ) : (
         <div
           className={styles.placeholder}
+          aria-label={t('appbar.openVideos')}
           onClick={() => inputRef.current?.click()}
           role="button"
           tabIndex={0}
@@ -593,13 +594,12 @@ function VideoPlayer({
             if (event.key === 'Enter' || event.key === ' ') inputRef.current?.click()
           }}
         >
-          <img
-            className={styles.wordmark}
-            src={wordmark}
-            alt="Tocaê Reprodutor"
-            draggable={false}
-          />
+          <h2 className={styles.placeholderTitle}>{t('player.welcomeTitle')}</h2>
           <p>{message ?? t('player.dropHint')}</p>
+          <span className={styles.placeholderAction}>
+            <FolderOpen size={14} aria-hidden="true" />
+            {t('appbar.openVideos')}
+          </span>
         </div>
       )}
 

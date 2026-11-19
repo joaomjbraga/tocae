@@ -62,3 +62,28 @@
   color: #fff;
 }
 
+.titleBar.compact {
+  height: 36px;
+  padding: 0 12px 0 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.titleBar.compact .brand {
+  display: none;
+}
+
+.titleBar.compact .controls {
+  align-self: stretch;
+  height: 100%;
+  margin-top: 0;
+}
+
+.titleBar.compact .control {
+  width: 30px;
+  height: 100%;
+  border-radius: 8px;
+  color: var(--text-subtle);
+}
+

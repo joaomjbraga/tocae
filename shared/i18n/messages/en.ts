@@ -4,6 +4,7 @@ export const enMessages: Messages = {
   // Top bar
   'appbar.openVideos': 'Open videos',
   'appbar.openVideosTitle': 'Open videos (Ctrl+O)',
+  'appbar.navigation': 'Tocaê navigation',
   'appbar.togglePlaylist': 'Show or hide the playlist',
   'appbar.togglePlaylistTitle': 'Show or hide the playlist (L)',
   'appbar.clearPlaylist': 'Clear playlist',
@@ -43,6 +44,10 @@ export const enMessages: Messages = {
   'player.exitFullscreen': 'Exit fullscreen',
   'player.volume': 'Volume',
   'player.dropHint': 'Open a video or drag it here',
+  'player.welcomeTitle': 'Your next video starts here',
+  'player.nowPlayingLabel': 'Now playing',
+  'player.sessionLabel': 'Your session',
+  'player.sessionTitle': 'Tocaê Player',
   'player.nowPlaying': 'Playing {current} of {total}: {name}',
   'player.listCleared': 'Playlist cleared',
   'player.undo': 'Undo',
@@ -51,7 +56,7 @@ export const enMessages: Messages = {
 
   // Playlist
   'playlist.label': 'Playlist',
-  'playlist.title': 'Playlist',
+  'playlist.title': 'Up Next',
   'playlist.hide': 'Hide playlist',
   'playlist.hideTitle': 'Hide playlist (L)',
   'playlist.loading': 'Loading playlist',

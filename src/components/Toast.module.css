@@ -11,8 +11,9 @@
   padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
   border: 1px solid var(--border-hairline);
   border-radius: var(--radius-pill);
-  background: var(--bg-scrim-strong);
-  backdrop-filter: blur(12px);
+  background: var(--bg-glass-strong);
+  box-shadow: var(--shadow-material);
+  backdrop-filter: blur(24px) saturate(1.4);
   overflow: hidden;
   animation: toast-enter var(--duration-enter) var(--ease-standard) both;
 }

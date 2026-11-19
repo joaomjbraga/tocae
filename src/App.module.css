@@ -6,9 +6,14 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--border-surface);
-  border-radius: var(--radius-window);
+  border-radius: 12px;
+  --accent: #a777ff;
+  --accent-strong: #7d58d6;
+  --accent-tint: rgba(153, 111, 255, 0.16);
+  --focus-ring: var(--accent);
   background:
-    radial-gradient(120% 90% at 18% 0%, var(--bg-glow) 0%, var(--bg-mid) 45%, var(--bg-app) 100%);
+    radial-gradient(90% 80% at 90% 0%, rgba(100, 79, 156, 0.16), transparent 58%),
+    linear-gradient(145deg, #1b1924 0%, #17161f 48%, #121118 100%);
 }
 
 .content {
@@ -17,4 +22,8 @@
   flex-direction: column;
   min-height: 0;
   padding: var(--space-2) var(--space-3) var(--space-3);
+}
+
+.playerContent {
+  padding: 0 12px 12px;
 }

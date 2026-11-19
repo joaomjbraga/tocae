@@ -9,6 +9,7 @@ export const ptBRMessages = {
   // Barra superior
   'appbar.openVideos': 'Abrir vídeos',
   'appbar.openVideosTitle': 'Abrir vídeos (Ctrl+O)',
+  'appbar.navigation': 'Navegação do Tocaê',
   'appbar.togglePlaylist': 'Mostrar ou ocultar a lista de reprodução',
   'appbar.togglePlaylistTitle': 'Mostrar ou ocultar a lista (L)',
   'appbar.clearPlaylist': 'Limpar lista',
@@ -48,6 +49,10 @@ export const ptBRMessages = {
   'player.exitFullscreen': 'Sair da tela cheia',
   'player.volume': 'Volume',
   'player.dropHint': 'Abra um vídeo ou arraste-o para aqui',
+  'player.welcomeTitle': 'Seu próximo vídeo começa aqui',
+  'player.nowPlayingLabel': 'Tocando agora',
+  'player.sessionLabel': 'Sua sessão',
+  'player.sessionTitle': 'Tocaê Reprodutor',
   'player.nowPlaying': 'Tocando {current} de {total}: {name}',
   'player.listCleared': 'Lista limpa',
   'player.undo': 'Desfazer',
@@ -56,7 +61,7 @@ export const ptBRMessages = {
 
   // Lista de reprodução
   'playlist.label': 'Lista de reprodução',
-  'playlist.title': 'Lista',
+  'playlist.title': 'A seguir',
   'playlist.hide': 'Ocultar lista',
   'playlist.hideTitle': 'Ocultar lista (L)',
   'playlist.loading': 'Carregando lista',
