@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Copy, Minus, Square, X } from 'lucide-react'
-import type { MessageKey } from '@shared/i18n'
 import { useI18n } from '../i18n'
 import styles from './WindowTitleBar.module.css'
 
 type WindowTitleBarProps = {
-  titleKey?: MessageKey
-  closeOnly?: boolean
   compact?: boolean
 }
 
-function WindowTitleBar({ titleKey, closeOnly = false, compact = false }: WindowTitleBarProps) {
+function WindowTitleBar({ compact = false }: WindowTitleBarProps) {
   const { t } = useI18n()
   const api = window.tocae
   const [isMaximized, setIsMaximized] = useState(false)
@@ -27,8 +24,6 @@ function WindowTitleBar({ titleKey, closeOnly = false, compact = false }: Window
   }, [isMaximized])
 
   useEffect(() => {
-    if (closeOnly) return
-
     let active = true
     const unsubscribe = api.onWindowStateChange(setIsMaximized)
 
@@ -43,7 +38,7 @@ function WindowTitleBar({ titleKey, closeOnly = false, compact = false }: Window
       active = false
       unsubscribe()
     }
-  }, [api, closeOnly])
+  }, [api])
 
   function runWindowAction(action: () => Promise<void>) {
     void action().catch((error: unknown) => console.error('Window control action failed', error))
@@ -56,36 +51,28 @@ function WindowTitleBar({ titleKey, closeOnly = false, compact = false }: Window
   return (
     <div className={`${styles.titleBar} ${compact ? styles.compact : ''}`}>
       <div className={styles.brand}>
-        <span>{titleKey ? t(titleKey) : 'Tocaê Reprodutor'}</span>
+        <span>Tocaê Reprodutor</span>
       </div>
-      <div
-        className={styles.dragRegion}
-        onDoubleClick={closeOnly ? undefined : toggleMaximize}
-        aria-hidden="true"
-      />
+      <div className={styles.dragRegion} onDoubleClick={toggleMaximize} aria-hidden="true" />
       <div className={styles.controls} role="group" aria-label={t('appbar.windowControls')}>
-        {!closeOnly && (
-          <>
-            <button
-              type="button"
-              className={styles.control}
-              onClick={() => runWindowAction(api.minimizeWindow)}
-              aria-label={t('appbar.minimizeWindow')}
-              title={t('appbar.minimizeWindow')}
-            >
-              <Minus size={14} />
-            </button>
-            <button
-              type="button"
-              className={styles.control}
-              onClick={toggleMaximize}
-              aria-label={isMaximized ? t('appbar.restoreWindow') : t('appbar.maximizeWindow')}
-              title={isMaximized ? t('appbar.restoreWindow') : t('appbar.maximizeWindow')}
-            >
-              {isMaximized ? <Copy size={12} /> : <Square size={12} />}
-            </button>
-          </>
-        )}
+        <button
+          type="button"
+          className={styles.control}
+          onClick={() => runWindowAction(api.minimizeWindow)}
+          aria-label={t('appbar.minimizeWindow')}
+          title={t('appbar.minimizeWindow')}
+        >
+          <Minus size={14} />
+        </button>
+        <button
+          type="button"
+          className={styles.control}
+          onClick={toggleMaximize}
+          aria-label={isMaximized ? t('appbar.restoreWindow') : t('appbar.maximizeWindow')}
+          title={isMaximized ? t('appbar.restoreWindow') : t('appbar.maximizeWindow')}
+        >
+          {isMaximized ? <Copy size={12} /> : <Square size={12} />}
+        </button>
         <button
           type="button"
           className={`${styles.control} ${styles.close}`}

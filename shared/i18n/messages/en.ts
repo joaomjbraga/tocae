@@ -3,13 +3,13 @@ import type { Messages } from './pt-BR'
 export const enMessages: Messages = {
   // Top bar
   'appbar.openVideos': 'Open videos',
-  'appbar.openVideosTitle': 'Open videos (Ctrl+O)',
+  'appbar.openVideo': 'Open a video',
+  'appbar.openVideoTitle': 'Open a video (Ctrl+O)',
+  'appbar.openFolder': 'Open video folder',
+  'appbar.openFolderTitle': 'Open video folder (Ctrl+Shift+O)',
   'appbar.navigation': 'Tocaê navigation',
   'appbar.togglePlaylist': 'Show or hide the playlist',
   'appbar.togglePlaylistTitle': 'Show or hide the playlist (L)',
-  'appbar.clearPlaylist': 'Clear playlist',
-  'appbar.shortcuts': 'Keyboard shortcuts',
-  'appbar.about': 'About Tocaê',
   'appbar.windowControls': 'Window controls',
   'appbar.minimizeWindow': 'Minimize window',
   'appbar.maximizeWindow': 'Maximize window',
@@ -21,6 +21,12 @@ export const enMessages: Messages = {
   'language.menu': 'Select language',
   'language.system': 'Follow system',
   'language.systemHint': 'Use the system language: {locale}',
+  'settings.title': 'Settings',
+  'settings.description': 'Player preferences',
+  'settings.languageDescription': 'Choose the interface language.',
+  'settings.languageLabel': 'Interface language',
+  'settings.shortcutsDescription': 'View player and playlist commands.',
+  'settings.defaultPlayerDescription': 'Choose the default app for opening videos.',
 
   // Player
   'player.play': 'Play',
@@ -45,14 +51,45 @@ export const enMessages: Messages = {
   'player.volume': 'Volume',
   'player.dropHint': 'Open a video or drag it here',
   'player.welcomeTitle': 'Your next video starts here',
-  'player.nowPlayingLabel': 'Now playing',
-  'player.sessionLabel': 'Your session',
   'player.sessionTitle': 'Tocaê Player',
   'player.nowPlaying': 'Playing {current} of {total}: {name}',
   'player.listCleared': 'Playlist cleared',
   'player.undo': 'Undo',
   'player.showList': 'Show playlist',
   'player.showListTitle': 'Show playlist (L)',
+
+  // Appearance
+  'navigation.backToPlayer': 'Back to player',
+  'appearance.title': 'Personalization',
+  'appearance.description': 'Adjust the player accent color.',
+  'appearance.accentTitle': 'Player color',
+  'appearance.accentDescription': 'Choose a color for controls and indicators.',
+  'appearance.presets': 'Preset colors',
+  'appearance.colorViolet': 'Violet',
+  'appearance.colorLavender': 'Lavender',
+  'appearance.colorIndigo': 'Indigo',
+  'appearance.colorBlue': 'Blue',
+  'appearance.colorRoyal': 'Royal blue',
+  'appearance.colorSky': 'Sky blue',
+  'appearance.colorAzure': 'Azure',
+  'appearance.colorCyan': 'Cyan',
+  'appearance.colorTurquoise': 'Turquoise',
+  'appearance.colorTeal': 'Teal',
+  'appearance.colorMint': 'Mint',
+  'appearance.colorGreen': 'Green',
+  'appearance.colorEmerald': 'Emerald',
+  'appearance.colorForest': 'Forest green',
+  'appearance.colorLime': 'Lime',
+  'appearance.colorChartreuse': 'Chartreuse',
+  'appearance.colorYellow': 'Yellow',
+  'appearance.colorGold': 'Gold',
+  'appearance.colorOrange': 'Orange',
+  'appearance.colorAmber': 'Amber',
+  'appearance.colorCoral': 'Coral',
+  'appearance.colorRed': 'Red',
+  'appearance.colorRaspberry': 'Raspberry',
+  'appearance.colorPink': 'Pink',
+  'appearance.colorMagenta': 'Magenta',
 
   // Playlist
   'playlist.label': 'Playlist',
@@ -72,6 +109,7 @@ export const enMessages: Messages = {
   'error.playback': 'Could not play this video.',
 
   // About
+  'about.title': 'About Tocaê',
   'about.version': 'Version',
   'about.author': 'Author',
   'about.email': 'Email',
@@ -79,7 +117,10 @@ export const enMessages: Messages = {
 
   // Shortcuts
   'shortcuts.title': 'Keyboard shortcuts',
-  'shortcuts.openVideos': 'Open videos',
+  'shortcuts.openVideo': 'Open a video',
+  'shortcuts.openFolder': 'Open a video folder and its subfolders',
+  'shortcuts.zoomIn': 'Zoom in on the video',
+  'shortcuts.zoomOut': 'Zoom out on the video',
   'shortcuts.playPause': 'Play or pause',
   'shortcuts.fullscreen': 'Enter or exit fullscreen',
   'shortcuts.mute': 'Mute or unmute',
@@ -89,12 +130,29 @@ export const enMessages: Messages = {
   'shortcuts.move': 'Move the focused item in the playlist',
   'shortcuts.key.space': 'Space',
 
+  // Default player
+  'defaultPlayer.title': 'Default player',
+  'defaultPlayer.description': 'Open videos in Tocaê directly from your file manager.',
+  'defaultPlayer.hint': 'This preference applies to supported video formats.',
+  'defaultPlayer.checking': 'Checking the default application...',
+  'defaultPlayer.isDefault': 'Tocaê is set as the default video player.',
+  'defaultPlayer.notDefault': 'Another application is set as the default video player.',
+  'defaultPlayer.unsupported': 'Available only in packaged Linux installations.',
+  'defaultPlayer.set': 'Set as default',
+  'defaultPlayer.setting': 'Applying...',
+  'defaultPlayer.error': 'Could not check the system setting.',
+  'defaultPlayer.errorDetail': 'Make sure xdg-utils is installed and try again.',
+
+  // Updates
+  'updates.available': 'Tocaê version {version} is available.',
+  'updates.viewRelease': 'View update',
+
   // Native dialogs
-  'dialog.openTitle': 'Open videos',
+  'dialog.openTitle': 'Open a video',
+  'dialog.openFolderTitle': 'Open video folder',
+  'dialog.noVideosFound': 'No videos were found in this folder or its subfolders.',
+  'dialog.folderReadError': 'Could not read this folder and locate its videos.',
   'dialog.videosFilter': 'Videos',
   'dialog.allFilesFilter': 'All files',
 
-  // Window titles
-  'window.about': 'About Tocaê',
-  'window.shortcuts': 'Shortcuts',
 }

@@ -4,11 +4,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border: 1px solid var(--border-surface);
-  border-radius: var(--radius-lg);
-  background: var(--bg-glass);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
-  backdrop-filter: blur(24px) saturate(1.25);
+  border-left: 1px solid var(--border-surface);
   transition:
     opacity var(--duration-exit) var(--ease-exit),
     transform var(--duration-exit) var(--ease-exit),

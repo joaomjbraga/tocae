@@ -71,6 +71,8 @@ function VideoPlayer({
   const previewSeekTimerRef = useRef<number | null>(null)
   const lastPreviewSeekRef = useRef(0)
   const viewport = useVideoViewport(areaRef, videoRef, source)
+  const viewportRef = useRef(viewport)
+  viewportRef.current = viewport
   const [playing, setPlaying] = useState(false)
   const [buffering, setBuffering] = useState(false)
   const [idle, setIdle] = useState(false)
@@ -161,6 +163,18 @@ function VideoPlayer({
           event.preventDefault()
           togglePlay()
           break
+        case '+':
+        case '=':
+          if (event.ctrlKey || event.metaKey || event.altKey) break
+          event.preventDefault()
+          viewportRef.current.zoomIn()
+          break
+        case '-':
+        case '_':
+          if (event.ctrlKey || event.metaKey || event.altKey) break
+          event.preventDefault()
+          viewportRef.current.zoomOut()
+          break
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -249,7 +263,8 @@ function VideoPlayer({
     previewSeekTimerRef.current = window.setTimeout(() => {
       previewSeekTimerRef.current = null
       const previewVideo = previewVideoRef.current
-      if (previewVideo?.readyState >= HTMLMediaElement.HAVE_METADATA) {
+      if (!previewVideo) return
+      if (previewVideo.readyState >= HTMLMediaElement.HAVE_METADATA) {
         seekPreviewFrame(previewVideo)
         lastPreviewSeekRef.current = performance.now()
       }

@@ -1,70 +1,52 @@
-import { FolderOpen, Info, Keyboard, Trash2 } from 'lucide-react'
-import LanguageSwitcher from './LanguageSwitcher'
+import { File, FolderOpen, Settings } from 'lucide-react'
 import { useI18n } from '../i18n'
 import styles from './AppBar.module.css'
 
 type AppBarProps = {
-  hasItems: boolean
-  onOpenVideos: () => void
-  onClear: () => void
-  onOpenShortcuts: () => void
-  onOpenAbout: () => void
+  activePage: 'player' | 'settings'
+  onOpenVideo: () => void
+  onOpenFolder: () => void
+  onOpenSettings: () => void
 }
 
-function AppBar({ hasItems, onOpenVideos, onClear, onOpenShortcuts, onOpenAbout }: AppBarProps) {
+function AppBar({ activePage, onOpenVideo, onOpenFolder, onOpenSettings }: AppBarProps) {
   const { t } = useI18n()
 
   return (
     <aside className={styles.appBar} aria-label={t('appbar.navigation')}>
-      <span className={styles.brandMark} aria-hidden="true">
-        T
-      </span>
+      <button
+        type="button"
+        className={styles.button}
+        onClick={onOpenVideo}
+        title={t('appbar.openVideoTitle')}
+        aria-label={t('appbar.openVideo')}
+      >
+        <File size={16} />
+      </button>
 
       <button
         type="button"
         className={styles.button}
-        onClick={onOpenVideos}
-        title={t('appbar.openVideosTitle')}
-        aria-label={t('appbar.openVideos')}
+        onClick={onOpenFolder}
+        title={t('appbar.openFolderTitle')}
+        aria-label={t('appbar.openFolder')}
       >
         <FolderOpen size={16} />
       </button>
 
       <span className={styles.separator} aria-hidden="true" />
 
-      <button
-        type="button"
-        className={`${styles.button} ${styles.clearButton}`}
-        onClick={onClear}
-        disabled={!hasItems}
-        title={t('appbar.clearPlaylist')}
-        aria-label={t('appbar.clearPlaylist')}
-      >
-        <Trash2 size={16} />
-      </button>
-
       <span className={styles.spacer} />
 
-      <LanguageSwitcher compact />
-
       <button
         type="button"
-        className={styles.button}
-        onClick={onOpenShortcuts}
-        title={t('appbar.shortcuts')}
-        aria-label={t('appbar.shortcuts')}
+        className={`${styles.button} ${activePage === 'settings' ? styles.active : ''}`}
+        onClick={onOpenSettings}
+        title={t('settings.title')}
+        aria-label={t('settings.title')}
+        aria-pressed={activePage === 'settings'}
       >
-        <Keyboard size={16} />
-      </button>
-
-      <button
-        type="button"
-        className={styles.button}
-        onClick={onOpenAbout}
-        title={t('appbar.about')}
-        aria-label={t('appbar.about')}
-      >
-        <Info size={16} />
+        <Settings size={16} />
       </button>
     </aside>
   )

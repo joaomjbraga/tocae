@@ -16,9 +16,6 @@ let current: Locale = DEFAULT_LOCALE
 /** `null` enquanto o usuário não escolheu um idioma (seguindo o sistema). */
 let preference: Locale | null = null
 
-type LocaleListener = (locale: Locale) => void
-const listeners = new Set<LocaleListener>()
-
 export function getAppLocale(): Locale {
   return current
 }
@@ -36,20 +33,9 @@ export function getLocaleInfo(): LocaleInfo {
   }
 }
 
-/** Registra um ouvinte avisado quando o idioma muda (títulos das janelas). */
-export function onLocaleChange(listener: LocaleListener): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
-}
-
-function notify(locale: Locale): void {
-  for (const listener of listeners) listener(locale)
-}
-
 /**
  * Aplica um idioma: grava a preferência, atualiza o valor em uso e propaga
- * para todos os renderers (as janelas "Sobre" e "Atalhos" são outras
- * instâncias do app e precisam mudar junto).
+ * para todos os renderers.
  */
 export async function applyLocale(next: Locale | null): Promise<LocaleInfo> {
   preference = next
@@ -58,8 +44,6 @@ export async function applyLocale(next: Locale | null): Promise<LocaleInfo> {
   await writeSettings({ locale: preference })
 
   const source: LocaleSource = preference === null ? 'system' : 'user'
-  notify(current)
-
   for (const window of BrowserWindow.getAllWindows()) {
     window.webContents.send(IPC_CHANNELS.COMMAND, {
       type: 'locale-changed',
@@ -76,7 +60,6 @@ export async function initLocale(): Promise<void> {
   const settings = await readSettings()
   preference = settings.locale
   current = preference ?? getSystemLocale()
-  notify(current)
 }
 
 export function registerLocaleIpc(): void {

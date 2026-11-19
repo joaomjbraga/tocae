@@ -7,22 +7,6 @@
   gap: 8px;
   min-height: 0;
   padding: 12px 6px;
-  border: 1px solid rgba(255, 255, 255, 0.045);
-  border-radius: 12px;
-  background: rgba(11, 10, 16, 0.88);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
-}
-
-.brandMark {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 20px;
-  color: var(--accent);
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
 }
 
 .button {
@@ -52,6 +36,11 @@
   color: var(--text-primary);
 }
 
+.button.active {
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+
 .button:disabled {
   color: var(--text-disabled);
   cursor: default;
@@ -60,10 +49,6 @@
 .button:disabled:hover {
   background: transparent;
   color: var(--text-disabled);
-}
-
-.clearButton:hover {
-  color: var(--text-danger);
 }
 
 .separator {

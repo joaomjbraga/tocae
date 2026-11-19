@@ -8,13 +8,13 @@
 export const ptBRMessages = {
   // Barra superior
   'appbar.openVideos': 'Abrir vídeos',
-  'appbar.openVideosTitle': 'Abrir vídeos (Ctrl+O)',
+  'appbar.openVideo': 'Abrir um vídeo',
+  'appbar.openVideoTitle': 'Abrir um vídeo (Ctrl+O)',
+  'appbar.openFolder': 'Abrir pasta de vídeos',
+  'appbar.openFolderTitle': 'Abrir pasta de vídeos (Ctrl+Shift+O)',
   'appbar.navigation': 'Navegação do Tocaê',
   'appbar.togglePlaylist': 'Mostrar ou ocultar a lista de reprodução',
   'appbar.togglePlaylistTitle': 'Mostrar ou ocultar a lista (L)',
-  'appbar.clearPlaylist': 'Limpar lista',
-  'appbar.shortcuts': 'Atalhos de teclado',
-  'appbar.about': 'Sobre o Tocaê',
   'appbar.windowControls': 'Controles da janela',
   'appbar.minimizeWindow': 'Minimizar janela',
   'appbar.maximizeWindow': 'Maximizar janela',
@@ -26,6 +26,12 @@ export const ptBRMessages = {
   'language.menu': 'Selecionar idioma',
   'language.system': 'Seguir o sistema',
   'language.systemHint': 'Usar o idioma do sistema: {locale}',
+  'settings.title': 'Configurações',
+  'settings.description': 'Preferências do reprodutor',
+  'settings.languageDescription': 'Escolha o idioma da interface.',
+  'settings.languageLabel': 'Idioma da interface',
+  'settings.shortcutsDescription': 'Consulte os comandos do reprodutor e da lista.',
+  'settings.defaultPlayerDescription': 'Defina o aplicativo padrão para abrir vídeos.',
 
   // Player
   'player.play': 'Reproduzir',
@@ -50,14 +56,45 @@ export const ptBRMessages = {
   'player.volume': 'Volume',
   'player.dropHint': 'Abra um vídeo ou arraste-o para aqui',
   'player.welcomeTitle': 'Seu próximo vídeo começa aqui',
-  'player.nowPlayingLabel': 'Tocando agora',
-  'player.sessionLabel': 'Sua sessão',
   'player.sessionTitle': 'Tocaê Reprodutor',
   'player.nowPlaying': 'Tocando {current} de {total}: {name}',
   'player.listCleared': 'Lista limpa',
   'player.undo': 'Desfazer',
   'player.showList': 'Mostrar lista',
   'player.showListTitle': 'Mostrar lista (L)',
+
+  // Aparência
+  'navigation.backToPlayer': 'Voltar ao reprodutor',
+  'appearance.title': 'Personalização',
+  'appearance.description': 'Ajuste a cor de destaque do reprodutor.',
+  'appearance.accentTitle': 'Cor do reprodutor',
+  'appearance.accentDescription': 'Escolha uma cor para os controles e indicadores.',
+  'appearance.presets': 'Cores predefinidas',
+  'appearance.colorViolet': 'Violeta',
+  'appearance.colorLavender': 'Lavanda',
+  'appearance.colorIndigo': 'Índigo',
+  'appearance.colorBlue': 'Azul',
+  'appearance.colorRoyal': 'Azul-real',
+  'appearance.colorSky': 'Azul-celeste',
+  'appearance.colorAzure': 'Azul-cerúleo',
+  'appearance.colorCyan': 'Ciano',
+  'appearance.colorTurquoise': 'Turquesa',
+  'appearance.colorTeal': 'Verde-azulado',
+  'appearance.colorMint': 'Menta',
+  'appearance.colorGreen': 'Verde',
+  'appearance.colorEmerald': 'Esmeralda',
+  'appearance.colorForest': 'Verde-floresta',
+  'appearance.colorLime': 'Lima',
+  'appearance.colorChartreuse': 'Chartreuse',
+  'appearance.colorYellow': 'Amarelo',
+  'appearance.colorGold': 'Dourado',
+  'appearance.colorOrange': 'Laranja',
+  'appearance.colorAmber': 'Âmbar',
+  'appearance.colorCoral': 'Coral',
+  'appearance.colorRed': 'Vermelho',
+  'appearance.colorRaspberry': 'Framboesa',
+  'appearance.colorPink': 'Rosa',
+  'appearance.colorMagenta': 'Magenta',
 
   // Lista de reprodução
   'playlist.label': 'Lista de reprodução',
@@ -77,6 +114,7 @@ export const ptBRMessages = {
   'error.playback': 'Não foi possível reproduzir este vídeo.',
 
   // Sobre
+  'about.title': 'Sobre o Tocaê',
   'about.version': 'Versão',
   'about.author': 'Autor',
   'about.email': 'E-mail',
@@ -84,7 +122,10 @@ export const ptBRMessages = {
 
   // Atalhos
   'shortcuts.title': 'Atalhos de teclado',
-  'shortcuts.openVideos': 'Abrir vídeos',
+  'shortcuts.openVideo': 'Abrir um vídeo',
+  'shortcuts.openFolder': 'Abrir pasta de vídeos e subpastas',
+  'shortcuts.zoomIn': 'Aumentar o zoom do vídeo',
+  'shortcuts.zoomOut': 'Diminuir o zoom do vídeo',
   'shortcuts.playPause': 'Reproduzir ou pausar',
   'shortcuts.fullscreen': 'Entrar ou sair da tela cheia',
   'shortcuts.mute': 'Silenciar ou ativar o som',
@@ -94,14 +135,30 @@ export const ptBRMessages = {
   'shortcuts.move': 'Mover o item focado na lista',
   'shortcuts.key.space': 'Espaço',
 
+  // Reprodutor padrão
+  'defaultPlayer.title': 'Reprodutor padrão',
+  'defaultPlayer.description': 'Abra vídeos no Tocaê diretamente pelo gerenciador de arquivos.',
+  'defaultPlayer.hint': 'A preferência se aplica aos formatos de vídeo compatíveis.',
+  'defaultPlayer.checking': 'Verificando o aplicativo padrão...',
+  'defaultPlayer.isDefault': 'O Tocaê está definido como reprodutor padrão.',
+  'defaultPlayer.notDefault': 'Outro aplicativo está definido como reprodutor padrão.',
+  'defaultPlayer.unsupported': 'Disponível somente em instalações empacotadas para Linux.',
+  'defaultPlayer.set': 'Definir como padrão',
+  'defaultPlayer.setting': 'Aplicando...',
+  'defaultPlayer.error': 'Não foi possível verificar a configuração do sistema.',
+  'defaultPlayer.errorDetail': 'Verifique se xdg-utils está instalado e tente novamente.',
+
+  // Atualizações
+  'updates.available': 'A versão {version} do Tocaê está disponível.',
+  'updates.viewRelease': 'Ver atualização',
+
   // Diálogos nativos
-  'dialog.openTitle': 'Abrir vídeos',
+  'dialog.openTitle': 'Abrir um vídeo',
+  'dialog.openFolderTitle': 'Abrir pasta de vídeos',
+  'dialog.noVideosFound': 'Não foram encontrados vídeos nesta pasta ou em suas subpastas.',
+  'dialog.folderReadError': 'Não foi possível ler esta pasta e localizar os vídeos.',
   'dialog.videosFilter': 'Vídeos',
   'dialog.allFilesFilter': 'Todos os arquivos',
-
-  // Títulos das janelas
-  'window.about': 'Sobre o Tocaê',
-  'window.shortcuts': 'Atalhos',
 } as const
 
 export type MessageKey = keyof typeof ptBRMessages

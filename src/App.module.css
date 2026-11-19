@@ -7,9 +7,9 @@
   overflow: hidden;
   border: 1px solid var(--border-surface);
   border-radius: 12px;
-  --accent: #a777ff;
-  --accent-strong: #7d58d6;
-  --accent-tint: rgba(153, 111, 255, 0.16);
+  --accent: var(--player-accent, #a777ff);
+  --accent-strong: color-mix(in srgb, var(--accent) 74%, #000);
+  --accent-tint: color-mix(in srgb, var(--accent) 16%, transparent);
   --focus-ring: var(--accent);
   background:
     radial-gradient(90% 80% at 90% 0%, rgba(100, 79, 156, 0.16), transparent 58%),

@@ -6,7 +6,11 @@ export const IPC_CHANNELS = {
   PLAYLIST_READ: 'playlist:read',
   PLAYLIST_WRITE: 'playlist:write',
   VIDEO_PICK: 'video:pick',
-  WINDOW_OPEN: 'window:open',
+  VIDEO_FOLDER_PICK: 'video-folder:pick',
+  DEFAULT_PLAYER_STATUS: 'default-player:status',
+  DEFAULT_PLAYER_SET: 'default-player:set',
+  RELEASES_OPEN: 'releases:open',
+  RENDERER_READY: 'renderer:ready',
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_TOGGLE_MAXIMIZE: 'window:toggle-maximize',
   WINDOW_CLOSE: 'window:close',
@@ -18,6 +22,8 @@ export const IPC_CHANNELS = {
 
 export type AppCommand =
   | { type: 'open-videos'; paths: string[] }
+  | { type: 'play-videos'; paths: string[] }
+  | { type: 'update-available'; version: string }
   | { type: 'next-video' }
   | { type: 'previous-video' }
   | { type: 'toggle-playlist' }
@@ -36,14 +42,21 @@ export interface LocaleInfo {
   source: LocaleSource
 }
 
-export type WindowTarget = 'about' | 'shortcuts'
+export interface DefaultPlayerStatus {
+  supported: boolean
+  isDefault: boolean
+}
 
 export interface TocaeApi {
   onCommand(callback: (command: AppCommand) => void): () => void
+  notifyRendererReady(): void
   readPlaylist(): Promise<PersistedPlaylist>
   writePlaylist(items: PlaylistItem[], currentIndex: number): Promise<void>
   openVideoDialog(): Promise<void>
-  openWindow(target: WindowTarget): Promise<void>
+  openFolderDialog(): Promise<void>
+  getDefaultPlayerStatus(): Promise<DefaultPlayerStatus>
+  setDefaultPlayer(): Promise<void>
+  openReleasesPage(): Promise<void>
   minimizeWindow(): Promise<void>
   toggleMaximizeWindow(): Promise<void>
   closeWindow(): Promise<void>

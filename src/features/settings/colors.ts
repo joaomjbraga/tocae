@@ -1,0 +1,30 @@
+export const DEFAULT_ACCENT_COLOR = '#a777ff'
+export const ACCENT_COLOR_STORAGE_KEY = 'tocae.player.accent-color'
+
+export const ACCENT_COLOR_PRESETS = [
+  { color: DEFAULT_ACCENT_COLOR, label: 'appearance.colorViolet' },
+  { color: '#8b5cf6', label: 'appearance.colorLavender' },
+  { color: '#6366f1', label: 'appearance.colorIndigo' },
+  { color: '#5687ff', label: 'appearance.colorBlue' },
+  { color: '#4169e1', label: 'appearance.colorRoyal' },
+  { color: '#38bdf8', label: 'appearance.colorSky' },
+  { color: '#0ea5e9', label: 'appearance.colorAzure' },
+  { color: '#22c7c7', label: 'appearance.colorCyan' },
+  { color: '#2dd4bf', label: 'appearance.colorTurquoise' },
+  { color: '#55c7a6', label: 'appearance.colorTeal' },
+  { color: '#6ee7b7', label: 'appearance.colorMint' },
+  { color: '#55b86a', label: 'appearance.colorGreen' },
+  { color: '#10b981', label: 'appearance.colorEmerald' },
+  { color: '#228b22', label: 'appearance.colorForest' },
+  { color: '#a6c84f', label: 'appearance.colorLime' },
+  { color: '#84cc16', label: 'appearance.colorChartreuse' },
+  { color: '#e3b341', label: 'appearance.colorYellow' },
+  { color: '#fbbf24', label: 'appearance.colorGold' },
+  { color: '#f5a044', label: 'appearance.colorOrange' },
+  { color: '#f59e0b', label: 'appearance.colorAmber' },
+  { color: '#f07862', label: 'appearance.colorCoral' },
+  { color: '#e45468', label: 'appearance.colorRed' },
+  { color: '#db2777', label: 'appearance.colorRaspberry' },
+  { color: '#e56fae', label: 'appearance.colorPink' },
+  { color: '#d946ef', label: 'appearance.colorMagenta' },
+] as const

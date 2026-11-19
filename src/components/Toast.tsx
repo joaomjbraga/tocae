@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { CSSProperties } from 'react'
-import { Undo2 } from 'lucide-react'
+import { ExternalLink, Undo2 } from 'lucide-react'
 import styles from './Toast.module.css'
 
 /** `--toast-duration` alimenta a linha de contagem regressiva. */
@@ -9,6 +9,7 @@ type TimerStyle = CSSProperties & { '--toast-duration': string }
 type ToastProps = {
   message: string
   actionLabel?: string
+  actionIcon?: 'undo' | 'external'
   onAction?: () => void
   onDismiss: () => void
   durationMs?: number
@@ -19,7 +20,14 @@ type ToastProps = {
  * controles, para não colidir com o auto-hide e aparecer mesmo com a lista
  * fechada (o "limpar" também existe na barra superior).
  */
-function Toast({ message, actionLabel, onAction, onDismiss, durationMs = 5000 }: ToastProps) {
+function Toast({
+  message,
+  actionLabel,
+  actionIcon = 'undo',
+  onAction,
+  onDismiss,
+  durationMs = 5000,
+}: ToastProps) {
   useEffect(() => {
     const timer = window.setTimeout(onDismiss, durationMs)
     return () => window.clearTimeout(timer)
@@ -30,7 +38,7 @@ function Toast({ message, actionLabel, onAction, onDismiss, durationMs = 5000 }:
       <span className={styles.message}>{message}</span>
       {onAction && actionLabel && (
         <button type="button" className={styles.action} onClick={onAction}>
-          <Undo2 size={14} />
+          {actionIcon === 'external' ? <ExternalLink size={14} /> : <Undo2 size={14} />}
           {actionLabel}
         </button>
       )}

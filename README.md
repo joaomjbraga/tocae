@@ -16,6 +16,8 @@ Reprodutor de vídeo minimalista construído com Electron, React e TypeScript. A
 - Use a janela principal sem moldura, com controles próprios e cantos arredondados
 - Assista a vídeos verticais sem cortar a imagem; amplie e mova a área ampliada
 - Navegue pela timeline com prévia do quadro ou avance e volte em intervalos de 1 segundo
+- Defina o Tocaê como reprodutor padrão de vídeos no Linux
+- Receba um aviso quando uma nova versão do Tocaê estiver disponível
 - Troque entre português (Brasil) e inglês a qualquer momento
 
 ## Estrutura do projeto
@@ -42,12 +44,13 @@ Os textos ficam em `shared/i18n/messages/`, com o catálogo em português como f
 ```sh
 npm install
 npm run dev      # servidor de desenvolvimento do Vite
-npm run build    # verificação de tipos + bundle + pacotes .deb e .rpm
+npm run build          # verificação de tipos + bundle + instaladores .deb e .rpm
+npm run build:windows  # verificação de tipos + bundle + instalador Windows .exe (em Windows)
 ```
 
-## Pacotes Linux
+## Instaladores Linux
 
-O projeto é empacotado apenas para Linux, nos formatos `.deb` (Debian/Ubuntu) e `.rpm` (Fedora/RHEL). O `npm run build` gera os pacotes em `release/<versão>/`; a arquitetura acompanha a máquina que fez o build.
+O `npm run build` gera instaladores `.deb` (Debian/Ubuntu) e `.rpm` (Fedora/RHEL) em `release/<versão>/`; a arquitetura acompanha a máquina que fez o build.
 
 ```sh
 # Debian/Ubuntu
@@ -57,11 +60,15 @@ sudo apt install ./release/0.0.4/tocae-reprodutor_0.0.4_amd64.deb
 sudo dnf install ./release/0.0.4/tocae-reprodutor-0.0.4.x86_64.rpm
 ```
 
-Para gerar o `.rpm` é preciso ter o `rpmbuild` instalado (pacote `rpm` no Debian/Ubuntu). Os pacotes registram o aplicativo no menu, instalam os ícones nos tamanhos usuais e declaram as dependências de runtime do Electron. Os metadados (categoria, mantenedor, descrição e nome do executável) ficam em `electron-builder.json5`.
+Para gerar o `.rpm` é preciso ter o `rpmbuild` instalado (pacote `rpm` no Debian/Ubuntu). Os pacotes registram o aplicativo no menu e o suporte aos tipos MIME de vídeo compatíveis, instalam os ícones nos tamanhos usuais e declaram as dependências de runtime do Electron. Depois de instalar, escolha **Configurações → Reprodutor padrão** para associar os vídeos ao Tocaê. Os metadados (categoria, mantenedor, descrição e nome do executável) ficam em `electron-builder.json5`.
+
+## Instalador Windows
+
+No Windows, execute `npm run build:windows` para gerar um instalador NSIS em `release/<versão>/`. O instalador permite escolher a pasta de instalação e cria atalhos no Menu Iniciar e na área de trabalho; não é gerada uma versão portátil.
 
 ## Versionamento
 
-O workflow de build cria automaticamente a tag `v<versão>` quando a versão em `package.json` muda em um push para a `main`. Se a tag já existir, nada é feito. A tag só é criada depois que o build dos pacotes termina com sucesso.
+Em um push para `main`, quando a versão estável de `package.json` ainda não tem uma release, o workflow cria primeiro a tag `v<versão>`, depois constrói os instaladores Windows e Linux em paralelo e publica a release do GitHub com os arquivos `.deb`, `.rpm` e `.exe` se os dois builds passarem. Pull requests validam os builds sem criar tags ou releases. O app verifica a release mais recente ao iniciar e a cada 24 horas, avisando quando encontra uma versão mais nova. O aviso leva à página da release; atualização e instalação continuam sendo manuais.
 
 ## Autor
 

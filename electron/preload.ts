@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { IpcRendererEvent } from 'electron'
 import { IPC_CHANNELS } from '@shared/ipc'
-import type { AppCommand, TocaeApi, WindowTarget } from '@shared/ipc'
+import type { AppCommand, TocaeApi } from '@shared/ipc'
 import type { Locale } from '@shared/i18n'
 import type { PlaylistItem } from '@shared/playlist'
 
@@ -11,11 +11,15 @@ const api: TocaeApi = {
     ipcRenderer.on(IPC_CHANNELS.COMMAND, listener)
     return () => ipcRenderer.off(IPC_CHANNELS.COMMAND, listener)
   },
+  notifyRendererReady: () => ipcRenderer.send(IPC_CHANNELS.RENDERER_READY),
   readPlaylist: () => ipcRenderer.invoke(IPC_CHANNELS.PLAYLIST_READ),
   writePlaylist: (items: PlaylistItem[], currentIndex: number) =>
     ipcRenderer.invoke(IPC_CHANNELS.PLAYLIST_WRITE, items, currentIndex),
   openVideoDialog: () => ipcRenderer.invoke(IPC_CHANNELS.VIDEO_PICK),
-  openWindow: (target: WindowTarget) => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_OPEN, target),
+  openFolderDialog: () => ipcRenderer.invoke(IPC_CHANNELS.VIDEO_FOLDER_PICK),
+  getDefaultPlayerStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEFAULT_PLAYER_STATUS),
+  setDefaultPlayer: () => ipcRenderer.invoke(IPC_CHANNELS.DEFAULT_PLAYER_SET),
+  openReleasesPage: () => ipcRenderer.invoke(IPC_CHANNELS.RELEASES_OPEN),
   minimizeWindow: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_MINIMIZE),
   toggleMaximizeWindow: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_TOGGLE_MAXIMIZE),
   closeWindow: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_CLOSE),

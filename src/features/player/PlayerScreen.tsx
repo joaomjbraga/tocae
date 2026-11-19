@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ListVideo, Music2 } from 'lucide-react'
+import { ListVideo } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
 import AppBar from '../../components/AppBar'
 import Toast from '../../components/Toast'
 import PlaylistPanel from '../playlist/PlaylistPanel'
 import VideoPlayer from './VideoPlayer'
+import SettingsPage from '../settings/SettingsPage'
 import { usePlaylist } from '../playlist/usePlaylist'
 import type { PlaylistSnapshot } from '../playlist/usePlaylist'
 import { useI18n } from '../../i18n'
@@ -19,10 +20,16 @@ type ToastState = { key: MessageKey; snapshot: PlaylistSnapshot }
 /** Mensagem viva: guarda a chave para poder ser retraduzida na troca de idioma. */
 type Announcement = { key: MessageKey; params?: TranslationParams }
 
-function PlayerScreen() {
+type PlayerScreenProps = {
+  accentColor: string
+  onAccentColorChange: (color: string) => void
+}
+
+function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
   const playlist = usePlaylist()
   const { t } = useI18n()
   const api = window.tocae
+  const [activePage, setActivePage] = useState<'player' | 'settings'>('player')
   // O painel fica montado durante a saída para poder animar; `panelLeaving`
   // marca o estado intermediário.
   const [panelLeaving, setPanelLeaving] = useState(false)
@@ -32,6 +39,7 @@ function PlayerScreen() {
   // resultado de um reordenamento pelo teclado.
   const [announcement, setAnnouncement] = useState<Announcement | null>(null)
   const [toast, setToast] = useState<ToastState | null>(null)
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const announcedIdRef = useRef<string | null>(null)
 
   const announce = useCallback(
@@ -59,6 +67,13 @@ function PlayerScreen() {
         case 'open-videos':
           playlist.addPaths(command.paths)
           break
+        case 'play-videos':
+          playlist.openPaths(command.paths)
+          setActivePage('player')
+          break
+        case 'update-available':
+          setUpdateVersion(command.version)
+          break
         case 'next-video':
           playlist.next()
           break
@@ -74,6 +89,10 @@ function PlayerScreen() {
       }
     })
   }, [api, playlist, handleClear])
+
+  useEffect(() => {
+    if (api && playlist.loaded) api.notifyRendererReady()
+  }, [api, playlist.loaded])
 
   // Mantém o painel montado durante a animação de saída e cancela a saída se
   // ele for reaberto no meio do caminho.
@@ -123,9 +142,16 @@ function PlayerScreen() {
       const target = event.target as HTMLElement | null
       if (target instanceof HTMLInputElement && target.type !== 'range') return
 
-      if ((event.ctrlKey || event.metaKey) && (event.key === 'o' || event.key === 'O')) {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        (event.key === 'o' || event.key === 'O')
+      ) {
         event.preventDefault()
-        void api?.openVideoDialog()
+        if (event.shiftKey) {
+          void api?.openFolderDialog()
+        } else {
+          void api?.openVideoDialog()
+        }
         return
       }
 
@@ -158,97 +184,113 @@ function PlayerScreen() {
 
   const errorMessage = playlist.error ? t(playlist.error) : null
 
+  function handleOpenReleases() {
+    void api.openReleasesPage().catch((error: unknown) => {
+      console.error('Could not open the Tocaê releases page', error)
+    })
+  }
+
   return (
     <div className={styles.screen}>
       <AppBar
-        hasItems={playlist.items.length > 0}
-        onOpenVideos={() => void api?.openVideoDialog()}
-        onClear={handleClear}
-        onOpenShortcuts={() => void api?.openWindow('shortcuts')}
-        onOpenAbout={() => void api?.openWindow('about')}
+        activePage={activePage}
+        onOpenVideo={() => void api?.openVideoDialog()}
+        onOpenFolder={() => void api?.openFolderDialog()}
+        onOpenSettings={() => setActivePage('settings')}
       />
 
       <section className={styles.workspace}>
-        <header className={styles.workspaceHeader}>
-          <div className={styles.mediaHeading}>
-            <span className={styles.mediaIcon} aria-hidden="true">
-              <Music2 size={16} />
-            </span>
-            <div className={styles.mediaCopy}>
-              <span className={styles.eyebrow}>
-                {playlist.current ? t('player.nowPlayingLabel') : t('player.sessionLabel')}
-              </span>
-              <h1 className={styles.mediaTitle}>
-                {playlist.current?.name ?? t('player.sessionTitle')}
-              </h1>
+        <div className={styles.pageStack}>
+          <div
+            className={`${styles.playbackPage} ${activePage === 'player' ? '' : styles.playbackPageHidden}`}
+            aria-hidden={activePage !== 'player'}
+          >
+            <header className={styles.workspaceHeader}>
+              <div className={styles.mediaHeading}>
+                <h1 className={styles.mediaTitle}>
+                  {playlist.current?.name ?? t('player.sessionTitle')}
+                </h1>
+              </div>
+
+              {!(playlist.panelVisible || panelLeaving) && (
+                <button
+                  type="button"
+                  className={styles.queueButton}
+                  onClick={playlist.togglePanel}
+                  title={t('appbar.togglePlaylistTitle')}
+                  aria-label={t('appbar.togglePlaylist')}
+                  aria-pressed={playlist.panelVisible}
+                >
+                  <ListVideo size={15} aria-hidden="true" />
+                  <span>{t('playlist.title')}</span>
+                  <span className={styles.queueCount}>{playlist.items.length}</span>
+                </button>
+              )}
+            </header>
+
+            <div className={styles.layout}>
+              <div className={styles.stage}>
+                <p className="sr-only" role="status" aria-live="polite">
+                  {announcementText}
+                </p>
+                <VideoPlayer
+                  source={playlist.source}
+                  message={errorMessage}
+                  hasNext={playlist.hasNext}
+                  hasPrevious={playlist.hasPrevious}
+                  onNext={playlist.next}
+                  onPrevious={playlist.previous}
+                  onEnded={playlist.next}
+                  onFailed={playlist.failCurrent}
+                  onFilesSelected={playlist.addFiles}
+                />
+                {toast && (
+                  <Toast
+                    message={t(toast.key)}
+                    actionLabel={t('player.undo')}
+                    onAction={handleUndoClear}
+                    onDismiss={() => setToast(null)}
+                  />
+                )}
+              </div>
+
+              {(playlist.panelVisible || panelLeaving) && (
+                <PlaylistPanel
+                  items={playlist.items}
+                  currentIndex={playlist.currentIndex}
+                  closing={!playlist.panelVisible}
+                  loading={!playlist.loaded}
+                  pulseIds={playlist.pulseIds}
+                  onPlay={playlist.playIndex}
+                  onMove={playlist.move}
+                  onRemove={playlist.remove}
+                  onClear={handleClear}
+                  onClose={playlist.togglePanel}
+                  onFilesSelected={playlist.addFiles}
+                  onAnnounce={announce}
+                />
+              )}
             </div>
-            {playlist.current && (
-              <span className={styles.mediaPosition}>
-                {String(playlist.currentIndex + 1).padStart(2, '0')} /{' '}
-                {String(playlist.items.length).padStart(2, '0')}
-              </span>
-            )}
           </div>
 
-          {!(playlist.panelVisible || panelLeaving) && (
-            <button
-              type="button"
-              className={styles.queueButton}
-              onClick={playlist.togglePanel}
-              title={t('appbar.togglePlaylistTitle')}
-              aria-label={t('appbar.togglePlaylist')}
-              aria-pressed={playlist.panelVisible}
-            >
-              <ListVideo size={15} aria-hidden="true" />
-              <span>{t('playlist.title')}</span>
-              <span className={styles.queueCount}>{playlist.items.length}</span>
-            </button>
-          )}
-        </header>
-
-        <div className={styles.layout}>
-          <div className={styles.stage}>
-            <p className="sr-only" role="status" aria-live="polite">
-              {announcementText}
-            </p>
-            <VideoPlayer
-              source={playlist.source}
-              message={errorMessage}
-              hasNext={playlist.hasNext}
-              hasPrevious={playlist.hasPrevious}
-              onNext={playlist.next}
-              onPrevious={playlist.previous}
-              onEnded={playlist.next}
-              onFailed={playlist.failCurrent}
-              onFilesSelected={playlist.addFiles}
-            />
-            {toast && (
-              <Toast
-                message={t(toast.key)}
-                actionLabel={t('player.undo')}
-                onAction={handleUndoClear}
-                onDismiss={() => setToast(null)}
-              />
-            )}
-          </div>
-
-          {(playlist.panelVisible || panelLeaving) && (
-            <PlaylistPanel
-              items={playlist.items}
-              currentIndex={playlist.currentIndex}
-              closing={!playlist.panelVisible}
-              loading={!playlist.loaded}
-              pulseIds={playlist.pulseIds}
-              onPlay={playlist.playIndex}
-              onMove={playlist.move}
-              onRemove={playlist.remove}
-              onClear={handleClear}
-              onClose={playlist.togglePanel}
-              onFilesSelected={playlist.addFiles}
-              onAnnounce={announce}
+          {activePage === 'settings' && (
+            <SettingsPage
+              accentColor={accentColor}
+              onAccentColorChange={onAccentColorChange}
+              onBack={() => setActivePage('player')}
             />
           )}
         </div>
+        {updateVersion && (
+          <Toast
+            message={t('updates.available', { version: updateVersion })}
+            actionLabel={t('updates.viewRelease')}
+            actionIcon="external"
+            onAction={handleOpenReleases}
+            onDismiss={() => setUpdateVersion(null)}
+            durationMs={12000}
+          />
+        )}
       </section>
     </div>
   )

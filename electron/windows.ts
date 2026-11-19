@@ -8,20 +8,9 @@ import {
   PRELOAD_PATH,
   RENDERER_DIST,
   VITE_DEV_SERVER_URL,
-  aboutTitle,
-  shortcutsTitle,
 } from './paths'
-import { getAppLocale, onLocaleChange } from './locale'
 
 let mainWindow: BrowserWindow | null = null
-let aboutWindow: BrowserWindow | null = null
-let shortcutsWindow: BrowserWindow | null = null
-
-// Os títulos das janelas auxiliares acompanham o idioma em uso.
-onLocaleChange((locale) => {
-  aboutWindow?.setTitle(aboutTitle(locale))
-  shortcutsWindow?.setTitle(shortcutsTitle(locale))
-})
 
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow
@@ -57,75 +46,6 @@ export function createMainWindow(): BrowserWindow {
   return mainWindow
 }
 
-export function createAboutWindow(): void {
-  if (aboutWindow) {
-    aboutWindow.focus()
-    return
-  }
-
-  aboutWindow = new BrowserWindow({
-    title: aboutTitle(getAppLocale()),
-    width: 420,
-    height: 340,
-    resizable: false,
-    maximizable: false,
-    minimizable: false,
-    parent: mainWindow ?? undefined,
-    frame: false,
-    transparent: true,
-    hasShadow: true,
-    backgroundColor: '#00000000',
-    show: false,
-    icon: ICON_PATH,
-    webPreferences: {
-      preload: PRELOAD_PATH,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  })
-
-  aboutWindow.removeMenu()
-  aboutWindow.once('ready-to-show', () => aboutWindow?.show())
-  aboutWindow.on('closed', () => { aboutWindow = null })
-
-  loadRenderer(aboutWindow, { hash: 'about' })
-}
-
-export function createShortcutsWindow(): void {
-  if (shortcutsWindow) {
-    shortcutsWindow.focus()
-    return
-  }
-
-  shortcutsWindow = new BrowserWindow({
-    title: shortcutsTitle(getAppLocale()),
-    width: 380,
-    height: 440,
-    resizable: false,
-    maximizable: false,
-    minimizable: false,
-    parent: mainWindow ?? undefined,
-    // Espelha --bg-app (src/styles/tokens.css): evita flash branco antes do
-    // renderer aplicar o gradiente.
-    backgroundColor: '#101014',
-    show: false,
-    icon: ICON_PATH,
-    webPreferences: {
-      preload: PRELOAD_PATH,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  })
-
-  shortcutsWindow.removeMenu()
-  shortcutsWindow.once('ready-to-show', () => shortcutsWindow?.show())
-  shortcutsWindow.on('closed', () => { shortcutsWindow = null })
-
-  loadRenderer(shortcutsWindow, { hash: 'shortcuts' })
-}
-
 export function focusMainWindow(): void {
   if (!mainWindow) return
   if (mainWindow.isMinimized()) mainWindow.restore()
@@ -133,10 +53,6 @@ export function focusMainWindow(): void {
 }
 
 export function registerWindowIpc(): void {
-  ipcMain.handle(IPC_CHANNELS.WINDOW_OPEN, (_event, target: unknown) => {
-    if (target === 'about') createAboutWindow()
-    else if (target === 'shortcuts') createShortcutsWindow()
-  })
   ipcMain.handle(IPC_CHANNELS.WINDOW_MINIMIZE, (event) => {
     windowFromSender(event).minimize()
   })
@@ -165,10 +81,10 @@ function windowFromSender(event: IpcMainInvokeEvent): BrowserWindow {
   return window
 }
 
-function loadRenderer(window: BrowserWindow, options: { hash?: string } = {}): void {
+function loadRenderer(window: BrowserWindow): void {
   if (VITE_DEV_SERVER_URL) {
-    window.loadURL(options.hash ? `${VITE_DEV_SERVER_URL}#${options.hash}` : VITE_DEV_SERVER_URL).catch(console.error)
+    window.loadURL(VITE_DEV_SERVER_URL).catch(console.error)
   } else {
-    window.loadFile(path.join(RENDERER_DIST, 'index.html'), options).catch(console.error)
+    window.loadFile(path.join(RENDERER_DIST, 'index.html')).catch(console.error)
   }
 }

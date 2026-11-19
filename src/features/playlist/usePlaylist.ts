@@ -88,7 +88,7 @@ export function usePlaylist() {
     void api.writePlaylist(state.items, state.currentIndex)
   }, [state.items, state.currentIndex, state.loaded])
 
-  const addEntries = useCallback((entries: PlaylistItem[]) => {
+  const addEntries = useCallback((entries: PlaylistItem[], activatePath?: string) => {
     if (entries.length === 0) return
 
     setState((prev) => {
@@ -108,17 +108,23 @@ export function usePlaylist() {
       if (fresh.length === 0 && duplicates.length === 0) return prev
 
       const pulseIds = [...new Set([...prev.pulseIds, ...duplicates])].slice(-PULSE_LIMIT)
+      const items = fresh.length > 0 ? [...prev.items, ...fresh] : prev.items
+      const activatedIndex = activatePath
+        ? items.findIndex((item) => item.path === activatePath)
+        : -1
 
       return {
         ...prev,
-        items: fresh.length > 0 ? [...prev.items, ...fresh] : prev.items,
+        items,
         currentIndex:
-          fresh.length === 0
-            ? prev.currentIndex
-            : prev.currentIndex === -1
-              ? prev.items.length
-              : prev.currentIndex,
-        error: fresh.length > 0 ? null : prev.error,
+          activatedIndex >= 0
+            ? activatedIndex
+            : fresh.length === 0
+              ? prev.currentIndex
+              : prev.currentIndex === -1
+                ? prev.items.length
+                : prev.currentIndex,
+        error: fresh.length > 0 || activatedIndex >= 0 ? null : prev.error,
         pulseIds,
       }
     })
@@ -131,6 +137,16 @@ export function usePlaylist() {
           .filter((filePath) => filePath.length > 0)
           .map((filePath) => createEntry(filePath, filePath)),
       )
+    },
+    [addEntries],
+  )
+
+  const openPaths = useCallback(
+    (paths: string[]) => {
+      const entries = paths
+        .filter((filePath) => filePath.length > 0)
+        .map((filePath) => createEntry(filePath, filePath))
+      addEntries(entries, entries[0]?.path)
     },
     [addEntries],
   )
@@ -269,6 +285,7 @@ export function usePlaylist() {
       hasNext: state.currentIndex >= 0 && state.currentIndex + 1 < state.items.length,
       hasPrevious: state.currentIndex > 0,
       addPaths,
+      openPaths,
       addFiles,
       playIndex,
       next,
@@ -288,6 +305,7 @@ export function usePlaylist() {
       state.panelVisible,
       state.loaded,
       addPaths,
+      openPaths,
       addFiles,
       playIndex,
       next,

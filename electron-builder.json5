@@ -9,7 +9,7 @@
   "productName": "Tocaê Reprodutor",
   "directories": {
     "output": "release/${version}",
-    "buildResources": "build"
+    "buildResources": "public"
   },
   "files": [
     "dist",
@@ -17,9 +17,19 @@
   ],
   "linux": {
     "target": ["deb", "rpm"],
-    "icon": "build/icons",
+    "icon": "public/tocae.png",
     "category": "AudioVideo;Player;",
     "executableName": "tocae-reprodutor",
+    "mimeTypes": [
+      "video/mp4",
+      "video/x-m4v",
+      "video/webm",
+      "video/x-matroska",
+      "video/x-msvideo",
+      "video/quicktime",
+      "video/ogg",
+      "video/mpeg"
+    ],
     // O nome do .desktop instalado precisa ser o mesmo que o app registra em
     // app.setDesktopName() para o ambiente associar a janela ao lançador.
     "syncDesktopName": true,
@@ -43,5 +53,16 @@
   },
   "rpm": {
     "packageCategory": "video"
+  },
+  "win": {
+    "target": ["nsis"],
+    "icon": "public/tocae.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
   }
 }
