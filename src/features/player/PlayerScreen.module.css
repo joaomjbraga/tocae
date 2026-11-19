@@ -6,6 +6,14 @@
   min-height: 0;
 }
 
+.playerMode {
+  gap: 0;
+}
+
+.settingsMode {
+  margin: 0 12px 12px;
+}
+
 .workspace {
   position: relative;
   flex: 1;
@@ -17,6 +25,11 @@
   padding: 12px;
   overflow: hidden;
   background: transparent;
+}
+
+.playerWorkspace {
+  gap: 0;
+  padding: 0;
 }
 
 .workspaceHeader {
@@ -47,8 +60,42 @@
   min-height: 0;
 }
 
+.playerWorkspace .playbackPage {
+  gap: 0;
+}
+
 .playbackPageHidden {
   visibility: hidden;
+  pointer-events: none;
+}
+
+.playerWorkspace .workspaceHeader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 56px;
+  min-height: 56px;
+  padding: 0 16px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(19, 17, 26, 0.88), transparent);
+  transition:
+    opacity var(--duration-exit) var(--ease-exit),
+    transform var(--duration-exit) var(--ease-exit);
+}
+
+.playerWorkspace .workspaceHeaderHidden {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+
+.playerWorkspace .queueButton {
+  pointer-events: auto;
+}
+
+.playerWorkspace .workspaceHeaderHidden .queueButton {
   pointer-events: none;
 }
 
@@ -122,6 +169,10 @@
   min-height: 0;
 }
 
+.playerWorkspace .layout {
+  gap: 0;
+}
+
 .stage {
   position: relative;
   flex: 1;
@@ -135,13 +186,27 @@
     gap: 8px;
   }
 
+  .playerMode {
+    gap: 0;
+  }
+
   .workspace {
     padding: 8px;
     gap: 8px;
   }
 
+  .playerWorkspace {
+    gap: 0;
+    padding: 0;
+  }
+
   .workspaceHeader {
     min-height: 42px;
+  }
+
+  .playerWorkspace .workspaceHeader {
+    height: 52px;
+    min-height: 52px;
   }
 }
 

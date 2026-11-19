@@ -40,6 +40,7 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
   const [announcement, setAnnouncement] = useState<Announcement | null>(null)
   const [toast, setToast] = useState<ToastState | null>(null)
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
+  const [playerControlsVisible, setPlayerControlsVisible] = useState(true)
   const announcedIdRef = useRef<string | null>(null)
 
   const announce = useCallback(
@@ -191,7 +192,11 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
   }
 
   return (
-    <div className={styles.screen}>
+    <div
+      className={`${styles.screen} ${
+        activePage === 'player' ? styles.playerMode : styles.settingsMode
+      }`}
+    >
       <AppBar
         activePage={activePage}
         onOpenVideo={() => void api?.openVideoDialog()}
@@ -199,13 +204,21 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
         onOpenSettings={() => setActivePage('settings')}
       />
 
-      <section className={styles.workspace}>
+      <section
+        className={`${styles.workspace} ${
+          activePage === 'player' ? styles.playerWorkspace : ''
+        }`}
+      >
         <div className={styles.pageStack}>
           <div
             className={`${styles.playbackPage} ${activePage === 'player' ? '' : styles.playbackPageHidden}`}
             aria-hidden={activePage !== 'player'}
           >
-            <header className={styles.workspaceHeader}>
+            <header
+              className={`${styles.workspaceHeader} ${
+                playerControlsVisible ? '' : styles.workspaceHeaderHidden
+              }`}
+            >
               <div className={styles.mediaHeading}>
                 <h1 className={styles.mediaTitle}>
                   {playlist.current?.name ?? t('player.sessionTitle')}
@@ -243,6 +256,7 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
                   onEnded={playlist.next}
                   onFailed={playlist.failCurrent}
                   onFilesSelected={playlist.addFiles}
+                  onControlsVisibilityChange={setPlayerControlsVisible}
                 />
                 {toast && (
                   <Toast

@@ -1,21 +1,25 @@
 .panel {
-  width: 250px;
-  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  width: min(250px, 72vw);
   display: flex;
   flex-direction: column;
   min-height: 0;
   border-left: 1px solid var(--border-surface);
+  background: var(--bg-glass-strong);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(20px) saturate(1.3);
   transition:
     opacity var(--duration-exit) var(--ease-exit),
-    transform var(--duration-exit) var(--ease-exit),
-    margin-right var(--duration-panel) var(--ease-standard);
+    transform var(--duration-exit) var(--ease-exit);
 }
 
-/* Saída: encolhe a largura para 0 para o palco ocupar o espaço sem salto. */
 .panel.closing {
   opacity: 0;
-  transform: translateX(16px);
-  margin-right: calc(-250px - var(--space-3));
+  transform: translateX(calc(100% + var(--space-3)));
   pointer-events: none;
 }
 
@@ -413,16 +417,6 @@
 
 @media (max-width: 700px) {
   .panel {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: min(250px, 72vw);
-    z-index: 4;
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
-  }
-
-  .panel.closing {
-    margin-right: 0;
   }
 }

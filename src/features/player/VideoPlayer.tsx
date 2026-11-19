@@ -47,6 +47,7 @@ type VideoPlayerProps = {
   onEnded: () => void
   onFailed: () => void
   onFilesSelected: (files: File[]) => void
+  onControlsVisibilityChange: (visible: boolean) => void
 }
 
 function VideoPlayer({
@@ -59,6 +60,7 @@ function VideoPlayer({
   onEnded,
   onFailed,
   onFilesSelected,
+  onControlsVisibilityChange,
 }: VideoPlayerProps) {
   const { t } = useI18n()
   const areaRef = useRef<HTMLElement>(null)
@@ -142,6 +144,10 @@ function VideoPlayer({
       if (idleTimerRef.current !== null) window.clearTimeout(idleTimerRef.current)
     }
   }, [playing])
+
+  useEffect(() => {
+    onControlsVisibilityChange(!playing || !idle)
+  }, [idle, onControlsVisibilityChange, playing])
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
