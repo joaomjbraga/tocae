@@ -66,9 +66,11 @@
   --radius-md: 6px;
   --radius-lg: 10px;
   --radius-pill: 999px;
+  --radius-window: 14px;
 
   /* Tipografia */
-  --font-ui: 'Inter', 'Segoe UI Variable', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI Variable',
+    Inter, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --text-2xs: 11px;
   --text-xs: 12px;
   --text-sm: 13px;

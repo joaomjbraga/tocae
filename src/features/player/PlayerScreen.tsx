@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ListVideo } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
-import AppBar from './AppBar'
-import PlaylistPanel from './PlaylistPanel'
-import Toast from './Toast'
+import AppBar from '../../components/AppBar'
+import Toast from '../../components/Toast'
+import PlaylistPanel from '../playlist/PlaylistPanel'
 import VideoPlayer from './VideoPlayer'
-import { usePlaylist } from '../hooks/usePlaylist'
-import type { PlaylistSnapshot } from '../hooks/usePlaylist'
-import { useI18n } from '../i18n'
+import { usePlaylist } from '../playlist/usePlaylist'
+import type { PlaylistSnapshot } from '../playlist/usePlaylist'
+import { useI18n } from '../../i18n'
 import styles from './PlayerScreen.module.css'
 
 /** Deve cobrir a saída animada do painel (--duration-exit) antes de desmontar. */
 const PANEL_EXIT_MS = 160
 
-type ToastState = { message: string; snapshot: PlaylistSnapshot }
+/** Guarda a chave, não o texto, para o toast acompanhar a troca de idioma. */
+type ToastState = { key: MessageKey; snapshot: PlaylistSnapshot }
 
 /** Mensagem viva: guarda a chave para poder ser retraduzida na troca de idioma. */
 type Announcement = { key: MessageKey; params?: TranslationParams }
@@ -41,7 +42,7 @@ function PlayerScreen() {
   // processo principal, para que o desfazer exista nos três casos.
   const handleClear = useCallback(() => {
     const snapshot = playlist.clear()
-    if (snapshot) setToast({ message: t('player.listCleared'), snapshot })
+    if (snapshot) setToast({ key: 'player.listCleared', snapshot })
   }, [playlist, t])
 
   const handleUndoClear = useCallback(() => {
@@ -194,7 +195,7 @@ function PlayerScreen() {
           )}
           {toast && (
             <Toast
-              message={toast.message}
+              message={t(toast.key)}
               actionLabel={t('player.undo')}
               onAction={handleUndoClear}
               onDismiss={() => setToast(null)}

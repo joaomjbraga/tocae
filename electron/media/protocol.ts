@@ -24,36 +24,60 @@ export function registerMediaProtocol(): void {
 }
 
 async function handleMediaRequest(request: Request): Promise<Response> {
-  const { pathname } = new URL(request.url)
-  const filePath = decodeURIComponent(pathname.slice(1))
+  let filePath: string
+  try {
+    filePath = decodeURIComponent(new URL(request.url).pathname.slice(1))
+  } catch {
+    return new Response('Bad request', { status: 400 })
+  }
 
-  const result = await stat(filePath)
-  if (!result.isFile()) {
+  let size: number
+  try {
+    const result = await stat(filePath)
+    if (!result.isFile()) return new Response('Not found', { status: 404 })
+    size = result.size
+  } catch {
     return new Response('Not found', { status: 404 })
   }
 
-  const size = result.size
-  const rangeMatch = /bytes=(\d*)-(\d*)/.exec(request.headers.get('Range') ?? '')
+  const baseHeaders = { 'Content-Type': mimeTypeFor(filePath) }
+  if (size === 0) return streamResponse(createReadStream(filePath), baseHeaders)
 
-  if (rangeMatch) {
-    const start = rangeMatch[1] ? Number(rangeMatch[1]) : 0
-    const end = rangeMatch[2] ? Number(rangeMatch[2]) : size - 1
-    return streamResponse(createReadStream(filePath, { start, end }), {
-      'Content-Type': mimeTypeFor(filePath),
-      'Accept-Ranges': 'bytes',
-      'Content-Length': String(end - start + 1),
-      'Content-Range': `bytes ${start}-${end}/${size}`,
-    }, 206)
-  }
+  // Formatos: `bytes=start-end`, `bytes=start-` e `bytes=-suffix`.
+  const rangeMatch = /^bytes=(\d*)-(\d*)$/.exec((request.headers.get('Range') ?? '').trim())
+  if (rangeMatch?.[1] || rangeMatch?.[2]) {
+    const start = rangeMatch[1]
+      ? Number(rangeMatch[1])
+      : Math.max(0, size - Number(rangeMatch[2]))
+    const end = rangeMatch[1] && rangeMatch[2] ? Number(rangeMatch[2]) : size - 1
 
-  if (size === 0) {
-    return streamResponse(createReadStream(filePath), {
-      'Content-Type': mimeTypeFor(filePath),
-    })
+    if (
+      !Number.isSafeInteger(start) ||
+      !Number.isSafeInteger(end) ||
+      start > end ||
+      start >= size
+    ) {
+      return new Response('Range Not Satisfiable', {
+        status: 416,
+        headers: { 'Content-Range': `bytes */${size}` },
+      })
+    }
+
+    const lastByte = Math.min(end, size - 1)
+    return streamResponse(
+      createReadStream(filePath, { start, end: lastByte }),
+      {
+        ...baseHeaders,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': String(lastByte - start + 1),
+        'Content-Range': `bytes ${start}-${lastByte}/${size}`,
+      },
+      206,
+    )
   }
 
   return streamResponse(createReadStream(filePath), {
-    'Content-Type': mimeTypeFor(filePath),
+    ...baseHeaders,
     'Accept-Ranges': 'bytes',
     'Content-Length': String(size),
   })

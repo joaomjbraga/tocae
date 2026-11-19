@@ -2,13 +2,18 @@ import { app, ipcMain } from 'electron'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { IPC_CHANNELS } from '@shared/ipc'
-import type { PlaylistItem } from '@shared/playlist'
+import type { PersistedPlaylist, PlaylistItem } from '@shared/playlist'
 
 const STORE_FILE_NAME = 'playlist.json'
 
-interface StoredPlaylist {
+interface StoredPlaylist extends PersistedPlaylist {
   version: number
-  items: PlaylistItem[]
+}
+
+function normalizedIndex(value: unknown, length: number): number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < length
+    ? value
+    : -1
 }
 
 function storeFilePath(): string {
@@ -36,28 +41,37 @@ function withoutDuplicates(items: PlaylistItem[]): PlaylistItem[] {
   })
 }
 
-export async function readPlaylist(): Promise<PlaylistItem[]> {
+export async function readPlaylist(): Promise<PersistedPlaylist> {
   let raw: string
   try {
     raw = await readFile(storeFilePath(), 'utf8')
   } catch {
-    return []
+    return { items: [], currentIndex: -1 }
   }
 
   try {
     const parsed: unknown = JSON.parse(raw)
     const stored = parsed as Partial<StoredPlaylist> | null
-    if (!stored || !Array.isArray(stored.items)) return []
-    return withoutDuplicates(stored.items.filter(isPlaylistItem))
+    if (!stored || !Array.isArray(stored.items)) return { items: [], currentIndex: -1 }
+    const items = withoutDuplicates(stored.items.filter(isPlaylistItem))
+    return { items, currentIndex: normalizedIndex(stored.currentIndex, items.length) }
   } catch {
-    return []
+    return { items: [], currentIndex: -1 }
   }
 }
 
-export async function writePlaylist(items: PlaylistItem[]): Promise<void> {
+export async function writePlaylist(items: PlaylistItem[], currentIndex: number): Promise<void> {
   const file = storeFilePath()
   const tempFile = `${file}.tmp`
-  const payload: StoredPlaylist = { version: 1, items: withoutDuplicates(items) }
+  const cleanItems = withoutDuplicates(items)
+  // Remove duplicatas pode mudar os índices: acompanha o id do item selecionado.
+  const selectedId = items[currentIndex]?.id
+  const cleanIndex = selectedId ? cleanItems.findIndex((item) => item.id === selectedId) : -1
+  const payload: StoredPlaylist = {
+    version: 1,
+    items: cleanItems,
+    currentIndex: cleanIndex,
+  }
 
   await mkdir(path.dirname(file), { recursive: true })
   await writeFile(tempFile, JSON.stringify(payload, null, 2), 'utf8')
@@ -67,8 +81,11 @@ export async function writePlaylist(items: PlaylistItem[]): Promise<void> {
 export function registerPlaylistIpc(): void {
   ipcMain.handle(IPC_CHANNELS.PLAYLIST_READ, () => readPlaylist())
 
-  ipcMain.handle(IPC_CHANNELS.PLAYLIST_WRITE, async (_event, items: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.PLAYLIST_WRITE, async (_event, items: unknown, currentIndex: unknown) => {
     if (!Array.isArray(items)) return
-    await writePlaylist(items.filter(isPlaylistItem))
+    await writePlaylist(
+      items.filter(isPlaylistItem),
+      typeof currentIndex === 'number' && Number.isInteger(currentIndex) ? currentIndex : -1,
+    )
   })
 }

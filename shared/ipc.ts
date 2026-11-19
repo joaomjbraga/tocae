@@ -1,5 +1,5 @@
 import type { Locale } from './i18n'
-import type { PlaylistItem } from './playlist'
+import type { PersistedPlaylist, PlaylistItem } from './playlist'
 
 export const IPC_CHANNELS = {
   COMMAND: 'app:command',
@@ -7,6 +7,11 @@ export const IPC_CHANNELS = {
   PLAYLIST_WRITE: 'playlist:write',
   VIDEO_PICK: 'video:pick',
   WINDOW_OPEN: 'window:open',
+  WINDOW_MINIMIZE: 'window:minimize',
+  WINDOW_TOGGLE_MAXIMIZE: 'window:toggle-maximize',
+  WINDOW_CLOSE: 'window:close',
+  WINDOW_IS_MAXIMIZED: 'window:is-maximized',
+  WINDOW_STATE: 'window:state',
   LOCALE_GET: 'locale:get',
   LOCALE_SET: 'locale:set',
 } as const
@@ -35,10 +40,15 @@ export type WindowTarget = 'about' | 'shortcuts'
 
 export interface TocaeApi {
   onCommand(callback: (command: AppCommand) => void): () => void
-  readPlaylist(): Promise<PlaylistItem[]>
-  writePlaylist(items: PlaylistItem[]): Promise<void>
+  readPlaylist(): Promise<PersistedPlaylist>
+  writePlaylist(items: PlaylistItem[], currentIndex: number): Promise<void>
   openVideoDialog(): Promise<void>
   openWindow(target: WindowTarget): Promise<void>
+  minimizeWindow(): Promise<void>
+  toggleMaximizeWindow(): Promise<void>
+  closeWindow(): Promise<void>
+  isWindowMaximized(): Promise<boolean>
+  onWindowStateChange(callback: (isMaximized: boolean) => void): () => void
   getPathForFile(file: File): string
   /** Idioma em uso, o do sistema e a origem da escolha. */
   getLocale(): Promise<LocaleInfo>
@@ -46,5 +56,5 @@ export interface TocaeApi {
    * Troca o idioma. `null` volta para "seguir o sistema". A troca é
    * persistida e propagada para as outras janelas.
    */
-  setLocale(locale: Locale | null): Promise<void>
+  setLocale(locale: Locale | null): Promise<LocaleInfo>
 }

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { PlaylistItem } from '@shared/playlist'
+import type { PersistedPlaylist, PlaylistItem } from '@shared/playlist'
 import type { MessageKey } from '@shared/i18n'
-import { baseNameFor } from '../lib/format'
-import { isVideoFile, toMediaUrl } from '../lib/media'
+import { baseNameFor } from '../../lib/format'
+import { isVideoFile, toMediaUrl } from '../../lib/media'
 
 // O erro é guardado como chave de tradução, não como texto pronto: assim o
 // idioma pode mudar sem que a mensagem exibida fique desatualizada.
@@ -20,10 +20,7 @@ interface PlaylistState {
 }
 
 /** O que "Limpar lista" remove, guardado para permitir o desfazer. */
-export interface PlaylistSnapshot {
-  items: PlaylistItem[]
-  currentIndex: number
-}
+export type PlaylistSnapshot = PersistedPlaylist
 
 const INITIAL_STATE: PlaylistState = {
   items: [],
@@ -72,8 +69,8 @@ export function usePlaylist() {
 
     api
       .readPlaylist()
-      .then((items) => {
-        if (active) setState((prev) => ({ ...prev, items, loaded: true }))
+      .then(({ items, currentIndex }) => {
+        if (active) setState((prev) => ({ ...prev, items, currentIndex, loaded: true }))
       })
       .catch(() => {
         if (active) setState((prev) => ({ ...prev, loaded: true }))
@@ -88,8 +85,8 @@ export function usePlaylist() {
     if (!state.loaded) return
     const api = window.tocae
     if (!api) return
-    void api.writePlaylist(state.items)
-  }, [state.items, state.loaded])
+    void api.writePlaylist(state.items, state.currentIndex)
+  }, [state.items, state.currentIndex, state.loaded])
 
   const addEntries = useCallback((entries: PlaylistItem[]) => {
     if (entries.length === 0) return

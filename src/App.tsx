@@ -1,6 +1,7 @@
 import About from './components/About'
-import PlayerScreen from './components/PlayerScreen'
+import PlayerScreen from './features/player/PlayerScreen'
 import Shortcuts from './components/Shortcuts'
+import WindowTitleBar from './components/WindowTitleBar'
 import styles from './App.module.css'
 
 function App() {
@@ -13,7 +14,8 @@ function App() {
   }
 
   return (
-    <div className={styles.app}>
+    <div className={styles.app} data-window-shell>
+      <WindowTitleBar />
       <main className={styles.content}>
         <PlayerScreen />
       </main>

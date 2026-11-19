@@ -1,8 +1,14 @@
 .app {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100vh;
   min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-surface);
+  border-radius: var(--radius-window);
+  background:
+    radial-gradient(120% 90% at 18% 0%, var(--bg-glow) 0%, var(--bg-mid) 45%, var(--bg-app) 100%);
 }
 
 .content {
@@ -10,5 +16,5 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-3);
 }

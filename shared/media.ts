@@ -4,6 +4,7 @@ export const VIDEO_EXTENSIONS = [
   'mkv',
   'avi',
   'mov',
+  'qt',
   'm4v',
   'ogv',
   'ogg',

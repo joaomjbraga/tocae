@@ -13,7 +13,21 @@ Reprodutor de vídeo minimalista construído com Electron, React e TypeScript. A
 - Reproduza uma lista de vídeos em sequência
 - Reordene a lista arrastando os itens ou pelo teclado
 - Pule entre vídeos com atalhos de uma tecla
+- Use a janela principal sem moldura, com controles próprios e cantos arredondados
+- Assista a vídeos verticais sem cortar a imagem; amplie e mova a área ampliada
+- Navegue pela timeline com prévia do quadro ou avance e volte em intervalos de 1 segundo
 - Troque entre português (Brasil) e inglês a qualquer momento
+
+## Estrutura do projeto
+
+- `src/features/player/`: reprodução, controles, zoom, prévia e navegação pela timeline
+- `src/features/playlist/`: estado e interface da lista de reprodução
+- `src/components/`: componentes reutilizáveis da aplicação
+- `src/lib/`: utilitários do renderer
+- `shared/`: tipos, contratos IPC e traduções compartilhados com o Electron
+- `electron/`: processo principal, preload e integração com o sistema
+
+O player preserva a proporção original de cada vídeo, inclusive em retrato. O zoom pode ser movido com o mouse ou toque e é limitado às bordas visíveis da imagem. A interface usa controles compactos e translúcidos, com adaptação para janelas estreitas.
 
 ## Idiomas
 
@@ -37,10 +51,10 @@ O projeto é empacotado apenas para Linux, nos formatos `.deb` (Debian/Ubuntu) e
 
 ```sh
 # Debian/Ubuntu
-sudo apt install ./release/0.0.3/tocae-reprodutor_0.0.3_amd64.deb
+sudo apt install ./release/0.0.4/tocae-reprodutor_0.0.4_amd64.deb
 
 # Fedora/RHEL
-sudo dnf install ./release/0.0.3/tocae-reprodutor-0.0.3.x86_64.rpm
+sudo dnf install ./release/0.0.4/tocae-reprodutor-0.0.4.x86_64.rpm
 ```
 
 Para gerar o `.rpm` é preciso ter o `rpmbuild` instalado (pacote `rpm` no Debian/Ubuntu). Os pacotes registram o aplicativo no menu, instalam os ícones nos tamanhos usuais e declaram as dependências de runtime do Electron. Os metadados (categoria, mantenedor, descrição e nome do executável) ficam em `electron-builder.json5`.

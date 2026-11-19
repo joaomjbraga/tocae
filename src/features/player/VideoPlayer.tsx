@@ -1,27 +1,41 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ChangeEvent, CSSProperties, DragEvent, SyntheticEvent } from 'react'
+import type {
+  ChangeEvent,
+  CSSProperties,
+  DragEvent,
+  PointerEvent as ReactPointerEvent,
+  SyntheticEvent,
+} from 'react'
 import {
+  FastForward,
   Loader2,
   Maximize,
   Minimize,
   Pause,
   Play,
+  Rewind,
+  RotateCcw,
   SkipBack,
   SkipForward,
   Volume1,
   Volume2,
   VolumeX,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react'
-import { formatTime } from '../lib/format'
-import { useI18n } from '../i18n'
-import wordmark from '../assets/tocae-wordmark.png'
+import { formatTime } from '../../lib/format'
+import { useI18n } from '../../i18n'
+import wordmark from '../../assets/tocae-wordmark.png'
+import { useVideoViewport } from './useVideoViewport'
 import styles from './VideoPlayer.module.css'
 
 /** Tempo parado até os controles do player se esconderem. */
 const IDLE_DELAY_MS = 2500
+const SEEK_STEP_SECONDS = 1
 
 /** A timeline desenha o progresso com um custom property lido pelo CSS do trilho. */
 type SeekStyle = CSSProperties & { '--progress': string }
+type PreviewStyle = CSSProperties & { '--preview-position': string }
 
 type VideoPlayerProps = {
   source: string | null
@@ -49,9 +63,14 @@ function VideoPlayer({
   const { t } = useI18n()
   const areaRef = useRef<HTMLElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const previewVideoRef = useRef<HTMLVideoElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const failedSourceRef = useRef<string | null>(null)
   const idleTimerRef = useRef<number | null>(null)
+  const previewTimeRef = useRef<number | null>(null)
+  const previewSeekTimerRef = useRef<number | null>(null)
+  const lastPreviewSeekRef = useRef(0)
+  const viewport = useVideoViewport(areaRef, videoRef, source)
   const [playing, setPlaying] = useState(false)
   const [buffering, setBuffering] = useState(false)
   const [idle, setIdle] = useState(false)
@@ -59,6 +78,9 @@ function VideoPlayer({
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [seeking, setSeeking] = useState(false)
+  const [previewTime, setPreviewTime] = useState<number | null>(null)
+  const [previewFrameReady, setPreviewFrameReady] = useState(false)
+  const [previewVisible, setPreviewVisible] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
@@ -78,6 +100,22 @@ function VideoPlayer({
     setPlaying(false)
     setBuffering(false)
     setIdle(false)
+    previewTimeRef.current = null
+    lastPreviewSeekRef.current = 0
+    setPreviewTime(null)
+    setPreviewFrameReady(false)
+    setPreviewVisible(false)
+    if (previewSeekTimerRef.current !== null) {
+      window.clearTimeout(previewSeekTimerRef.current)
+      previewSeekTimerRef.current = null
+    }
+
+    return () => {
+      if (previewSeekTimerRef.current !== null) {
+        window.clearTimeout(previewSeekTimerRef.current)
+        previewSeekTimerRef.current = null
+      }
+    }
   }, [source])
 
   // Controles se escondem depois de um tempo parado durante a reprodução,
@@ -160,7 +198,9 @@ function VideoPlayer({
   function handleError(event: SyntheticEvent<HTMLVideoElement>) {
     const video = event.currentTarget
     const code = video.error?.code ?? 0
-    if (code === 0 || code === 1 || code === 2) return
+    // 1 = ABORTED (troca de fonte); 0 = desconhecido, sem informação útil.
+    // 2 = NETWORK: arquivo ausente/ilegível precisa cair no tratamento de falha.
+    if (code === 0 || code === 1) return
     if (failedSourceRef.current === source) return
     failedSourceRef.current = source
     setPlaying(false)
@@ -175,6 +215,51 @@ function VideoPlayer({
     const video = videoRef.current
     if (!video) return
     const time = Number(event.target.value)
+    video.currentTime = time
+    setCurrentTime(time)
+  }
+
+  function seekPreviewFrame(video: HTMLVideoElement) {
+    const time = previewTimeRef.current
+    if (time === null || !Number.isFinite(video.duration)) return
+    const target = Math.min(video.duration, time)
+    if (Math.abs(video.currentTime - target) > 0.05) {
+      video.currentTime = target
+    } else {
+      setPreviewFrameReady(true)
+    }
+  }
+
+  function handleTimelinePointerMove(event: ReactPointerEvent<HTMLInputElement>) {
+    if (duration <= 0) return
+    const bounds = event.currentTarget.getBoundingClientRect()
+    if (bounds.width <= 0) return
+    const progress = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width))
+    const time = progress * duration
+    previewTimeRef.current = time
+    setPreviewTime(time)
+    setPreviewVisible(true)
+    setPreviewFrameReady(false)
+
+    const elapsed = performance.now() - lastPreviewSeekRef.current
+    const delay = Math.max(0, 100 - elapsed)
+    if (previewSeekTimerRef.current !== null) {
+      window.clearTimeout(previewSeekTimerRef.current)
+    }
+    previewSeekTimerRef.current = window.setTimeout(() => {
+      previewSeekTimerRef.current = null
+      const previewVideo = previewVideoRef.current
+      if (previewVideo?.readyState >= HTMLMediaElement.HAVE_METADATA) {
+        seekPreviewFrame(previewVideo)
+        lastPreviewSeekRef.current = performance.now()
+      }
+    }, delay)
+  }
+
+  function seekBy(delta: number) {
+    const video = videoRef.current
+    if (!video || !Number.isFinite(video.duration)) return
+    const time = Math.min(video.duration, Math.max(0, video.currentTime + delta))
     video.currentTime = time
     setCurrentTime(time)
   }
@@ -227,11 +312,24 @@ function VideoPlayer({
   const hasVideo = source !== null
   const paused = !playing
   const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0
+  const previewPosition =
+    duration > 0 && previewTime !== null
+      ? `${Math.min(100, Math.max(0, (previewTime / duration) * 100))}%`
+      : '0%'
+  const previewStyle: PreviewStyle = { '--preview-position': previewPosition }
 
   return (
     <section
       ref={areaRef}
-      className={`${styles.videoArea} ${dragging ? styles.dragging : ''} ${playing ? styles.playing : styles.paused} ${idle ? styles.idle : ''}`}
+      className={[
+        styles.videoArea,
+        dragging ? styles.dragging : '',
+        playing ? styles.playing : styles.paused,
+        idle ? styles.idle : '',
+        viewport.isPortrait ? styles.portrait : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       onDragOver={(event) => {
         event.preventDefault()
         setDragging(true)
@@ -244,12 +342,30 @@ function VideoPlayer({
           <video
             key={source}
             ref={videoRef}
-            className={styles.video}
+            className={[
+              styles.video,
+              viewport.isZoomable ? styles.zoomable : '',
+              viewport.isPanning ? styles.panning : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            style={viewport.videoStyle}
             src={source ?? undefined}
             autoPlay
             controls={false}
             muted={muted}
-            onClick={togglePlay}
+            onClick={(event) => {
+              if (viewport.draggedVideoRef.current) {
+                viewport.draggedVideoRef.current = false
+                event.preventDefault()
+                return
+              }
+              togglePlay()
+            }}
+            onPointerDown={viewport.handlePointerDown}
+            onPointerMove={viewport.handlePointerMove}
+            onPointerUp={viewport.handlePointerUp}
+            onPointerCancel={viewport.handlePointerCancel}
             onContextMenu={(event) => event.preventDefault()}
             onPlay={() => {
               setPlaying(true)
@@ -264,9 +380,46 @@ function VideoPlayer({
             onError={handleError}
             onTimeUpdate={handleTimeUpdate}
             onVolumeChange={handleVolumeSync}
-            onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
+            onLoadedMetadata={(event) => {
+              const video = event.currentTarget
+              setDuration(video.duration)
+              viewport.setVideoOrientation(video.videoWidth, video.videoHeight)
+            }}
             onDurationChange={(event) => setDuration(event.currentTarget.duration)}
           />
+          <div className={styles.zoomControls} role="group" aria-label={t('player.zoomControls')}>
+            <button
+              type="button"
+              className={styles.controlButton}
+              onClick={viewport.zoomOut}
+              disabled={!viewport.canZoomOut}
+              aria-label={t('player.zoomOut')}
+              title={t('player.zoomOut')}
+            >
+              <ZoomOut size={16} />
+            </button>
+            <span className={styles.zoomValue}>{Math.round(viewport.zoom * 100)}%</span>
+            <button
+              type="button"
+              className={styles.controlButton}
+              onClick={viewport.zoomIn}
+              disabled={!viewport.canZoomIn}
+              aria-label={t('player.zoomIn')}
+              title={t('player.zoomIn')}
+            >
+              <ZoomIn size={16} />
+            </button>
+            <button
+              type="button"
+              className={styles.controlButton}
+              onClick={viewport.resetZoom}
+              disabled={!viewport.canResetZoom}
+              aria-label={t('player.resetZoom')}
+              title={t('player.resetZoom')}
+            >
+              <RotateCcw size={15} />
+            </button>
+          </div>
           <button
             type="button"
             className={styles.playPause}
@@ -312,26 +465,92 @@ function VideoPlayer({
             >
               <SkipForward size={16} />
             </button>
+            <button
+              type="button"
+              className={styles.controlButton}
+              onClick={() => seekBy(-SEEK_STEP_SECONDS)}
+              disabled={duration <= 0}
+              aria-label={t('player.seekBackward')}
+              title={t('player.seekBackward')}
+            >
+              <Rewind size={16} />
+            </button>
             <span className={styles.time}>{formatTime(currentTime)}</span>
-            <input
-              type="range"
-              className={styles.seek}
-              style={{ '--progress': `${progressPercent}%` } as SeekStyle}
-              min={0}
-              max={duration || 0}
-              step="any"
-              value={currentTime}
-              onChange={handleSeek}
-              onPointerDown={() => setSeeking(true)}
-              onPointerUp={() => setSeeking(false)}
-              onPointerCancel={() => setSeeking(false)}
-              aria-label={t('player.timeline')}
-              aria-valuetext={t('player.timelineValue', {
-                current: formatTime(currentTime),
-                total: formatTime(duration),
-              })}
-            />
+            <div className={styles.timeline}>
+              {previewTime !== null && (
+                <div
+                  className={`${styles.seekPreview} ${previewVisible ? styles.previewVisible : ''}`}
+                  style={previewStyle}
+                  aria-hidden="true"
+                >
+                  <video
+                    key={`preview-${source}`}
+                    ref={previewVideoRef}
+                    className={`${styles.previewFrame} ${previewFrameReady ? styles.previewFrameReady : ''}`}
+                    src={source ?? undefined}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                    onLoadedMetadata={(event) => seekPreviewFrame(event.currentTarget)}
+                    onLoadedData={(event) => {
+                      const video = event.currentTarget
+                      const target = previewTimeRef.current
+                      if (target !== null && Math.abs(video.currentTime - target) <= 0.05) {
+                        setPreviewFrameReady(true)
+                      }
+                    }}
+                    onSeeked={() => setPreviewFrameReady(true)}
+                  />
+                  {!previewFrameReady && <span className={styles.previewPlaceholder} />}
+                  <span className={styles.previewTimestamp}>{formatTime(previewTime)}</span>
+                </div>
+              )}
+              <input
+                type="range"
+                className={styles.seek}
+                style={{ '--progress': `${progressPercent}%` } as SeekStyle}
+                min={0}
+                max={duration || 0}
+                step="1"
+                value={currentTime}
+                onChange={handleSeek}
+                onPointerEnter={handleTimelinePointerMove}
+                onPointerMove={handleTimelinePointerMove}
+                onPointerLeave={() => {
+                  if (!seeking) setPreviewVisible(false)
+                }}
+                onPointerDown={(event) => {
+                  setSeeking(true)
+                  handleTimelinePointerMove(event)
+                }}
+                onPointerUp={(event) => {
+                  setSeeking(false)
+                  if (!event.currentTarget.matches(':hover')) setPreviewVisible(false)
+                }}
+                onPointerCancel={() => {
+                  setSeeking(false)
+                  setPreviewVisible(false)
+                }}
+                aria-label={t('player.timeline')}
+                aria-valuetext={t('player.timelineValue', {
+                  current: formatTime(currentTime),
+                  total: formatTime(duration),
+                })}
+              />
+            </div>
             <span className={styles.time}>{formatTime(duration)}</span>
+            <button
+              type="button"
+              className={styles.controlButton}
+              onClick={() => seekBy(SEEK_STEP_SECONDS)}
+              disabled={duration <= 0}
+              aria-label={t('player.seekForward')}
+              title={t('player.seekForward')}
+            >
+              <FastForward size={16} />
+            </button>
             <div className={styles.volume}>
               <button
                 type="button"

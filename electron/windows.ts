@@ -1,4 +1,5 @@
 import { BrowserWindow, ipcMain } from 'electron'
+import type { IpcMainInvokeEvent } from 'electron'
 import path from 'node:path'
 import { IPC_CHANNELS } from '@shared/ipc'
 import {
@@ -33,9 +34,10 @@ export function createMainWindow(): BrowserWindow {
     height: 600,
     minWidth: 480,
     minHeight: 320,
-    // Espelha --bg-app (src/styles/tokens.css): evita flash branco antes do
-    // renderer aplicar o gradiente.
-    backgroundColor: '#101014',
+    frame: false,
+    transparent: true,
+    hasShadow: true,
+    backgroundColor: '#00000000',
     show: false,
     icon: ICON_PATH,
     webPreferences: {
@@ -47,6 +49,7 @@ export function createMainWindow(): BrowserWindow {
     },
   })
 
+  watchWindowState(mainWindow)
   mainWindow.once('ready-to-show', () => mainWindow?.show())
   mainWindow.on('closed', () => { mainWindow = null })
 
@@ -133,6 +136,32 @@ export function registerWindowIpc(): void {
     if (target === 'about') createAboutWindow()
     else if (target === 'shortcuts') createShortcutsWindow()
   })
+  ipcMain.handle(IPC_CHANNELS.WINDOW_MINIMIZE, (event) => {
+    windowFromSender(event).minimize()
+  })
+  ipcMain.handle(IPC_CHANNELS.WINDOW_TOGGLE_MAXIMIZE, (event) => {
+    const window = windowFromSender(event)
+    if (window.isMaximized()) window.unmaximize()
+    else window.maximize()
+  })
+  ipcMain.handle(IPC_CHANNELS.WINDOW_CLOSE, (event) => {
+    windowFromSender(event).close()
+  })
+  ipcMain.handle(IPC_CHANNELS.WINDOW_IS_MAXIMIZED, (event) => {
+    return windowFromSender(event).isMaximized()
+  })
+}
+
+function watchWindowState(window: BrowserWindow): void {
+  const notify = () => window.webContents.send(IPC_CHANNELS.WINDOW_STATE, window.isMaximized())
+  window.on('maximize', notify)
+  window.on('unmaximize', notify)
+}
+
+function windowFromSender(event: IpcMainInvokeEvent): BrowserWindow {
+  const window = BrowserWindow.fromWebContents(event.sender)
+  if (!window) throw new Error('Window control requested by a sender without a BrowserWindow')
+  return window
 }
 
 function loadRenderer(window: BrowserWindow, options: { hash?: string } = {}): void {

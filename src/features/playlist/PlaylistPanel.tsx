@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, DragEvent, KeyboardEvent } from 'react'
 import { GripVertical, ListVideo, Play, Trash2, X } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
-import { useI18n } from '../i18n'
+import { useI18n } from '../../i18n'
 import styles from './PlaylistPanel.module.css'
 
 /** `--i` alimenta o atraso em cascata da animação de entrada das linhas. */

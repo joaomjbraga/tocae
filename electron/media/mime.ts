@@ -1,7 +1,6 @@
 import path from 'node:path'
 
-export const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mkv', 'avi', 'mov', 'm4v', 'ogv', 'ogg'] as const
-
+/** A lista canônica de extensões fica em `shared/media.ts` (usada pelo diálogo e pelo renderer). */
 export function mimeTypeFor(filePath: string): string {
   const extension = path.extname(filePath).toLowerCase()
   switch (extension) {

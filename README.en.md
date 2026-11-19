@@ -13,7 +13,21 @@ Minimalist video player built with Electron, React and TypeScript. It opens a vi
 - Play a list of videos in sequence
 - Reorder the playlist by dragging items or with the keyboard
 - Jump between videos with single-key shortcuts
+- Use the frameless main window with custom controls and rounded corners
+- Watch portrait videos without cropping; zoom in and pan the enlarged image
+- Preview frames on the timeline or skip forward and backward in 1-second intervals
 - Switch between Portuguese (Brazil) and English at any time
+
+## Project structure
+
+- `src/features/player/`: playback, controls, zoom, previews and timeline navigation
+- `src/features/playlist/`: playlist state and interface
+- `src/components/`: reusable application components
+- `src/lib/`: renderer utilities
+- `shared/`: types, IPC contracts and translations shared with Electron
+- `electron/`: main process, preload and system integration
+
+The player preserves each video's aspect ratio, including portrait footage. Zoom can be panned with a mouse or touch and is constrained to the image bounds. Its compact, translucent controls adapt to narrow windows.
 
 ## Languages
 
@@ -37,10 +51,10 @@ The project is packaged for Linux only, as `.deb` (Debian/Ubuntu) and `.rpm` (Fe
 
 ```sh
 # Debian/Ubuntu
-sudo apt install ./release/0.0.3/tocae-reprodutor_0.0.3_amd64.deb
+sudo apt install ./release/0.0.4/tocae-reprodutor_0.0.4_amd64.deb
 
 # Fedora/RHEL
-sudo dnf install ./release/0.0.3/tocae-reprodutor-0.0.3.x86_64.rpm
+sudo dnf install ./release/0.0.4/tocae-reprodutor-0.0.4.x86_64.rpm
 ```
 
 Building the `.rpm` requires `rpmbuild` (the `rpm` package on Debian/Ubuntu). The packages register the application in the menu, install the icons at the usual sizes and declare the Electron runtime dependencies. The metadata (category, maintainer, description and executable name) lives in `electron-builder.json5`.

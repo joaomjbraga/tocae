@@ -2,8 +2,12 @@
   position: relative;
   flex: 1;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
   overflow: hidden;
+  min-width: 0;
+  min-height: 0;
   background: linear-gradient(180deg, var(--bg-sheen) 0%, rgba(0, 0, 0, 0.25) 100%);
   border: 1px solid var(--border-surface);
   border-radius: var(--radius-lg);
@@ -15,6 +19,10 @@
   background: var(--bg-fullscreen);
 }
 
+.videoArea.portrait {
+  background: #080808;
+}
+
 .videoArea.dragging {
   border-style: dashed;
   border-color: var(--text-subtle);
@@ -23,8 +31,55 @@
 .video {
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   object-fit: contain;
   display: block;
+  transform: translate3d(var(--pan-x), var(--pan-y), 0) scale(var(--zoom));
+  transform-origin: center;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.video.zoomable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.video.panning {
+  cursor: grabbing;
+  transition: none;
+}
+
+.zoomControls {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-lg);
+  background: rgba(18, 18, 20, 0.72);
+  backdrop-filter: blur(20px) saturate(1.4);
+  transition:
+    opacity var(--duration-exit) var(--ease-exit),
+    transform var(--duration-exit) var(--ease-exit);
+}
+
+.zoomValue {
+  min-width: 40px;
+  color: var(--text-primary);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.videoArea.playing.idle .zoomControls {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
 }
 
 .playPause {
@@ -63,17 +118,17 @@
 
 .controlsBar {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: var(--space-3);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--bg-bar);
-  border-top: 1px solid var(--border-strong);
-  border-bottom-left-radius: var(--radius-lg);
-  border-bottom-right-radius: var(--radius-lg);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-lg);
+  background: rgba(12, 12, 14, 0.78);
+  backdrop-filter: blur(24px) saturate(1.5);
   opacity: 0;
   pointer-events: none;
   transform: translateY(6px);
@@ -99,7 +154,9 @@
 }
 
 .videoArea:fullscreen .controlsBar {
-  border-radius: 0;
+  left: var(--space-5);
+  right: var(--space-5);
+  bottom: var(--space-5);
 }
 
 .controlButton {
@@ -181,7 +238,17 @@
   flex-shrink: 0;
 }
 
+.timeline {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 14px;
+  display: flex;
+  align-items: center;
+}
+
 .seek {
+  width: 100%;
   flex: 1;
   min-width: 0;
   height: 14px;
@@ -189,6 +256,74 @@
   background: transparent;
   appearance: none;
   -webkit-appearance: none;
+}
+
+.seekPreview {
+  position: absolute;
+  left: clamp(84px, var(--preview-position), calc(100% - 84px));
+  bottom: calc(100% + var(--space-2));
+  z-index: 2;
+  width: 168px;
+  padding: var(--space-1);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-lg);
+  background: rgba(12, 12, 14, 0.9);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition:
+    opacity var(--duration-fast),
+    transform var(--duration-fast),
+    visibility var(--duration-fast);
+}
+
+.seekPreview.previewVisible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+.previewFrame {
+  width: 100%;
+  height: 90px;
+  display: block;
+  border-radius: var(--radius-sm);
+  background: #000;
+  object-fit: contain;
+  opacity: 0;
+}
+
+.previewFrame.previewFrameReady {
+  opacity: 1;
+}
+
+.previewPlaceholder {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-1);
+  right: var(--space-1);
+  height: 90px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(110deg, #17171a 30%, #25252b 50%, #17171a 70%);
+  background-size: 220% 100%;
+  animation: preview-loading var(--duration-shimmer) var(--ease-linear) infinite;
+}
+
+.previewTimestamp {
+  display: block;
+  padding-top: var(--space-1);
+  color: var(--text-primary);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+@keyframes preview-loading {
+  to {
+    background-position: -120% 0;
+  }
 }
 
 .seek::-webkit-slider-runnable-track {
@@ -281,4 +416,30 @@
   overflow: hidden;
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
+}
+
+@media (max-width: 720px) {
+  .controlsBar {
+    gap: var(--space-1);
+    padding: var(--space-2);
+  }
+
+  .volumeSlider {
+    width: 48px;
+  }
+}
+
+@media (max-width: 560px) {
+  .controlsBar {
+    flex-wrap: wrap;
+  }
+
+  .timeline {
+    order: 1;
+    flex: 1 1 100%;
+  }
+
+  .volumeSlider {
+    display: none;
+  }
 }
