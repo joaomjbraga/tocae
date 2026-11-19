@@ -264,7 +264,8 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
                   type="button"
                   className={styles.queueButton}
                   onClick={playlist.togglePanel}
-                  title={t('appbar.togglePlaylistTitle')}
+                  data-tooltip={t('appbar.togglePlaylistTitle')}
+                  data-tooltip-placement="bottom"
                   aria-label={t('appbar.togglePlaylist')}
                   aria-pressed={playlist.panelVisible}
                 >

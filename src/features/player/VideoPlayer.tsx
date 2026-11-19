@@ -550,7 +550,7 @@ function VideoPlayer({
                 </div>
                 <div className={styles.audioInfo}>
                   <span>{playing ? t('player.audioNowPlaying') : t('player.audioPaused')}</span>
-                  <strong title={title}>{title}</strong>
+                  <strong data-tooltip={title}>{title}</strong>
                 </div>
               </div>
             </>
@@ -588,7 +588,8 @@ function VideoPlayer({
                 className={`${styles.controlButton} ${styles.imageFullscreen}`}
                 onClick={toggleFullscreen}
                 aria-label={t('player.fullscreen')}
-                title={t('player.fullscreen')}
+                data-tooltip={t('player.fullscreen')}
+                data-tooltip-placement="bottom"
               >
                 <Maximize size={16} />
               </button>
@@ -602,7 +603,8 @@ function VideoPlayer({
                 onClick={viewport.zoomOut}
                 disabled={!viewport.canZoomOut}
                 aria-label={t('player.zoomOut')}
-                title={t('player.zoomOut')}
+                data-tooltip={t('player.zoomOut')}
+                data-tooltip-placement="bottom"
               >
                 <ZoomOut size={16} />
               </button>
@@ -613,7 +615,8 @@ function VideoPlayer({
                 onClick={viewport.zoomIn}
                 disabled={!viewport.canZoomIn}
                 aria-label={t('player.zoomIn')}
-                title={t('player.zoomIn')}
+                data-tooltip={t('player.zoomIn')}
+                data-tooltip-placement="bottom"
               >
                 <ZoomIn size={16} />
               </button>
@@ -623,7 +626,8 @@ function VideoPlayer({
                 onClick={viewport.resetZoom}
                 disabled={!viewport.canResetZoom}
                 aria-label={t('player.resetZoom')}
-                title={t('player.resetZoom')}
+                data-tooltip={t('player.resetZoom')}
+                data-tooltip-placement="bottom"
               >
                 <RotateCcw size={15} />
               </button>
@@ -641,7 +645,8 @@ function VideoPlayer({
                 onClick={() => onAutoNextChange(!autoNext)}
                 aria-label={t('playbackSettings.autoNextTitle')}
                 aria-pressed={autoNext}
-                title={t('playbackSettings.autoNextTitle')}
+                data-tooltip={t('playbackSettings.autoNextTitle')}
+                data-tooltip-placement="bottom"
               >
                 <ListEnd size={18} />
                 <span className={styles.playbackToggleLabel}>
@@ -654,7 +659,8 @@ function VideoPlayer({
                 onClick={() => onLoopCurrentChange(!loopCurrent)}
                 aria-label={t('playbackSettings.repeatTitle')}
                 aria-pressed={loopCurrent}
-                title={t('playbackSettings.repeatTitle')}
+                data-tooltip={t('playbackSettings.repeatTitle')}
+                data-tooltip-placement="bottom"
               >
                 <Repeat1 size={18} />
                 <span className={styles.playbackToggleLabel}>
@@ -669,7 +675,7 @@ function VideoPlayer({
               className={styles.playPause}
               onClick={togglePlay}
               aria-label={t('player.play')}
-              title={t('player.play')}
+              data-tooltip={t('player.play')}
             >
               <Play size={24} />
             </button>
@@ -687,7 +693,7 @@ function VideoPlayer({
               className={styles.controlButton}
               onClick={togglePlay}
               aria-label={paused ? t('player.play') : t('player.pause')}
-              title={paused ? t('player.play') : t('player.pause')}
+              data-tooltip={paused ? t('player.play') : t('player.pause')}
             >
               {paused ? <Play size={16} /> : <Pause size={16} />}
             </button>
@@ -697,7 +703,7 @@ function VideoPlayer({
               onClick={onPrevious}
               disabled={!hasPrevious}
               aria-label={t('player.previous')}
-              title={t('player.previousTitle')}
+              data-tooltip={t('player.previousTitle')}
             >
               <SkipBack size={16} />
             </button>
@@ -707,7 +713,7 @@ function VideoPlayer({
               onClick={onNext}
               disabled={!hasNext}
               aria-label={t('player.next')}
-              title={t('player.nextTitle')}
+              data-tooltip={t('player.nextTitle')}
             >
               <SkipForward size={16} />
             </button>
@@ -717,7 +723,7 @@ function VideoPlayer({
               onClick={() => seekBy(-SEEK_STEP_SECONDS)}
               disabled={duration <= 0}
               aria-label={t('player.seekBackward')}
-              title={t('player.seekBackward')}
+              data-tooltip={t('player.seekBackward')}
             >
               <Rewind size={16} />
             </button>
@@ -797,7 +803,7 @@ function VideoPlayer({
               onClick={() => seekBy(SEEK_STEP_SECONDS)}
               disabled={duration <= 0}
               aria-label={t('player.seekForward')}
-              title={t('player.seekForward')}
+              data-tooltip={t('player.seekForward')}
             >
               <FastForward size={16} />
             </button>
@@ -807,7 +813,7 @@ function VideoPlayer({
                 className={styles.controlButton}
                 onClick={toggleMute}
                 aria-label={muted ? t('player.unmute') : t('player.mute')}
-                title={muted ? t('player.unmute') : t('player.mute')}
+                data-tooltip={muted ? t('player.unmute') : t('player.mute')}
               >
                 {volumeIcon}
               </button>
@@ -827,7 +833,7 @@ function VideoPlayer({
               className={styles.controlButton}
               onClick={toggleFullscreen}
               aria-label={isFullscreen ? t('player.exitFullscreen') : t('player.fullscreen')}
-              title={isFullscreen ? t('player.exitFullscreen') : t('player.fullscreen')}
+              data-tooltip={isFullscreen ? t('player.exitFullscreen') : t('player.fullscreen')}
             >
               {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
             </button>

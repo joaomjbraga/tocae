@@ -18,7 +18,8 @@ function AppBar({ activePage, onOpenMedia, onOpenMediaFolder, onOpenSettings }: 
         type="button"
         className={styles.button}
         onClick={onOpenMedia}
-        title={t('appbar.openMediaFileTitle')}
+        data-tooltip={t('appbar.openMediaFileTitle')}
+        data-tooltip-placement="bottom"
         aria-label={t('appbar.openMediaFile')}
       >
         <File size={16} />
@@ -28,7 +29,8 @@ function AppBar({ activePage, onOpenMedia, onOpenMediaFolder, onOpenSettings }: 
         type="button"
         className={styles.button}
         onClick={onOpenMediaFolder}
-        title={t('appbar.openMediaFolderTitle')}
+        data-tooltip={t('appbar.openMediaFolderTitle')}
+        data-tooltip-placement="bottom"
         aria-label={t('appbar.openMediaFolder')}
       >
         <FolderOpen size={16} />
@@ -42,7 +44,8 @@ function AppBar({ activePage, onOpenMedia, onOpenMediaFolder, onOpenSettings }: 
         type="button"
         className={`${styles.button} ${activePage === 'settings' ? styles.active : ''}`}
         onClick={onOpenSettings}
-        title={t('settings.title')}
+        data-tooltip={t('settings.title')}
+        data-tooltip-placement="bottom"
         aria-label={t('settings.title')}
         aria-pressed={activePage === 'settings'}
       >

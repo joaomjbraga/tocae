@@ -90,7 +90,8 @@ function SettingsPage({
           className={styles.backButton}
           onClick={onBack}
           aria-label={t('navigation.backToPlayer')}
-          title={t('navigation.backToPlayer')}
+          data-tooltip={t('navigation.backToPlayer')}
+          data-tooltip-placement="bottom"
         >
           <ArrowLeft size={16} aria-hidden="true" />
         </button>
