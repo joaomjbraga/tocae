@@ -1,6 +1,6 @@
 .about {
   position: relative;
-  height: 100vh;
+  height: 100%;
   animation: window-enter var(--duration-panel) var(--ease-standard) both;
   display: flex;
   flex-direction: column;

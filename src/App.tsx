@@ -5,19 +5,17 @@ import WindowTitleBar from './components/WindowTitleBar'
 import styles from './App.module.css'
 
 function App() {
-  if (window.location.hash === '#about') {
-    return <About />
-  }
-
   if (window.location.hash === '#shortcuts') {
     return <Shortcuts />
   }
 
+  const isAbout = window.location.hash === '#about'
+
   return (
     <div className={styles.app} data-window-shell>
-      <WindowTitleBar />
+      <WindowTitleBar titleKey={isAbout ? 'window.about' : undefined} closeOnly={isAbout} />
       <main className={styles.content}>
-        <PlayerScreen />
+        {isAbout ? <About /> : <PlayerScreen />}
       </main>
     </div>
   )

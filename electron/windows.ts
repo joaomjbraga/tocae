@@ -71,9 +71,10 @@ export function createAboutWindow(): void {
     maximizable: false,
     minimizable: false,
     parent: mainWindow ?? undefined,
-    // Espelha --bg-app (src/styles/tokens.css): evita flash branco antes do
-    // renderer aplicar o gradiente.
-    backgroundColor: '#101014',
+    frame: false,
+    transparent: true,
+    hasShadow: true,
+    backgroundColor: '#00000000',
     show: false,
     icon: ICON_PATH,
     webPreferences: {
