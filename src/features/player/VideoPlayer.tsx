@@ -26,12 +26,14 @@ import {
 } from 'lucide-react'
 import { formatTime } from '../../lib/format'
 import { useI18n } from '../../i18n'
+import { getPlaybackPosition, savePlaybackPosition } from './playbackProgress'
 import { useVideoViewport } from './useVideoViewport'
 import styles from './VideoPlayer.module.css'
 
 /** Tempo parado até os controles do player se esconderem. */
 const IDLE_DELAY_MS = 2500
 const SEEK_STEP_SECONDS = 1
+const PROGRESS_SAVE_INTERVAL_SECONDS = 5
 
 /** A timeline desenha o progresso com um custom property lido pelo CSS do trilho. */
 type SeekStyle = CSSProperties & { '--progress': string }
@@ -69,6 +71,7 @@ function VideoPlayer({
   const inputRef = useRef<HTMLInputElement>(null)
   const failedSourceRef = useRef<string | null>(null)
   const idleTimerRef = useRef<number | null>(null)
+  const lastSavedPositionRef = useRef(0)
   const previewTimeRef = useRef<number | null>(null)
   const previewSeekTimerRef = useRef<number | null>(null)
   const lastPreviewSeekRef = useRef(0)
@@ -104,6 +107,7 @@ function VideoPlayer({
     setPlaying(false)
     setBuffering(false)
     setIdle(false)
+    lastSavedPositionRef.current = 0
     previewTimeRef.current = null
     lastPreviewSeekRef.current = 0
     setPreviewTime(null)
@@ -119,6 +123,22 @@ function VideoPlayer({
         window.clearTimeout(previewSeekTimerRef.current)
         previewSeekTimerRef.current = null
       }
+    }
+  }, [source])
+
+  useEffect(() => {
+    function saveCurrentPosition() {
+      const video = videoRef.current
+      if (!source || !video || video.ended) return
+      savePlaybackPosition(source, video.currentTime)
+      lastSavedPositionRef.current = Math.floor(video.currentTime)
+    }
+
+    window.addEventListener('beforeunload', saveCurrentPosition)
+    window.addEventListener('pagehide', saveCurrentPosition)
+    return () => {
+      window.removeEventListener('beforeunload', saveCurrentPosition)
+      window.removeEventListener('pagehide', saveCurrentPosition)
     }
   }, [source])
 
@@ -212,6 +232,9 @@ function VideoPlayer({
 
   function handleEnded() {
     setPlaying(false)
+    if (source) savePlaybackPosition(source, 0)
+    lastSavedPositionRef.current = 0
+    setCurrentTime(0)
     onEnded()
   }
 
@@ -227,8 +250,25 @@ function VideoPlayer({
     onFailed()
   }
 
+  function persistPlaybackPosition(position: number, force = false) {
+    if (!source || !Number.isFinite(position)) return
+    const roundedPosition = Math.floor(position)
+    if (
+      !force &&
+      Math.abs(roundedPosition - lastSavedPositionRef.current) < PROGRESS_SAVE_INTERVAL_SECONDS
+    ) {
+      return
+    }
+    savePlaybackPosition(source, roundedPosition)
+    lastSavedPositionRef.current = roundedPosition
+  }
+
   function handleTimeUpdate(event: SyntheticEvent<HTMLVideoElement>) {
-    if (!seeking) setCurrentTime(event.currentTarget.currentTime)
+    const position = event.currentTarget.currentTime
+    if (!seeking) {
+      setCurrentTime(position)
+      persistPlaybackPosition(position)
+    }
   }
 
   function handleSeek(event: ChangeEvent<HTMLInputElement>) {
@@ -283,6 +323,7 @@ function VideoPlayer({
     const time = Math.min(video.duration, Math.max(0, video.currentTime + delta))
     video.currentTime = time
     setCurrentTime(time)
+    if (video.paused) persistPlaybackPosition(time, true)
   }
 
   function handleVolumeChange(event: ChangeEvent<HTMLInputElement>) {
@@ -392,7 +433,11 @@ function VideoPlayer({
               setPlaying(true)
               setBuffering(false)
             }}
-            onPause={() => setPlaying(false)}
+            onPause={(event) => {
+              const video = event.currentTarget
+              setPlaying(false)
+              if (!video.ended) persistPlaybackPosition(video.currentTime, true)
+            }}
             onWaiting={() => setBuffering(true)}
             onPlaying={() => setBuffering(false)}
             onCanPlay={() => setBuffering(false)}
@@ -405,6 +450,17 @@ function VideoPlayer({
               const video = event.currentTarget
               setDuration(video.duration)
               viewport.setVideoOrientation(video.videoWidth, video.videoHeight)
+              const resumePosition = source ? getPlaybackPosition(source) : 0
+              if (resumePosition > 0 && Number.isFinite(video.duration) && video.duration > 0) {
+                if (resumePosition < video.duration - 1) {
+                  video.currentTime = resumePosition
+                  setCurrentTime(resumePosition)
+                  lastSavedPositionRef.current = resumePosition
+                } else {
+                  if (source) savePlaybackPosition(source, 0)
+                  lastSavedPositionRef.current = 0
+                }
+              }
             }}
             onDurationChange={(event) => setDuration(event.currentTarget.duration)}
           />
@@ -548,12 +604,16 @@ function VideoPlayer({
                 }}
                 onPointerUp={(event) => {
                   setSeeking(false)
+                  persistPlaybackPosition(event.currentTarget.valueAsNumber, true)
                   if (!event.currentTarget.matches(':hover')) setPreviewVisible(false)
                 }}
                 onPointerCancel={() => {
                   setSeeking(false)
+                  const video = videoRef.current
+                  if (video) persistPlaybackPosition(video.currentTime, true)
                   setPreviewVisible(false)
                 }}
+                onKeyUp={(event) => persistPlaybackPosition(event.currentTarget.valueAsNumber, true)}
                 aria-label={t('player.timeline')}
                 aria-valuetext={t('player.timelineValue', {
                   current: formatTime(currentTime),

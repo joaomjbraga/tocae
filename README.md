@@ -16,6 +16,7 @@ Reprodutor de vídeo minimalista construído com Electron, React e TypeScript. A
 - Use a janela principal sem moldura, com controles próprios e cantos arredondados
 - Assista a vídeos verticais sem cortar a imagem; amplie e mova a área ampliada
 - Navegue pela timeline com prévia do quadro ou avance e volte em intervalos de 1 segundo
+- Continue cada vídeo de onde parou, inclusive depois de fechar o aplicativo
 - Defina o Tocaê como reprodutor padrão de vídeos no Linux
 - Receba um aviso quando uma nova versão do Tocaê estiver disponível
 - Troque entre português (Brasil) e inglês a qualquer momento
