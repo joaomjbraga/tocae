@@ -5,8 +5,8 @@ export const IPC_CHANNELS = {
   COMMAND: 'app:command',
   PLAYLIST_READ: 'playlist:read',
   PLAYLIST_WRITE: 'playlist:write',
-  VIDEO_PICK: 'video:pick',
-  VIDEO_FOLDER_PICK: 'video-folder:pick',
+  MEDIA_PICK: 'media:pick',
+  MEDIA_FOLDER_PICK: 'media-folder:pick',
   DEFAULT_PLAYER_STATUS: 'default-player:status',
   DEFAULT_PLAYER_SET: 'default-player:set',
   RELEASES_OPEN: 'releases:open',
@@ -21,8 +21,8 @@ export const IPC_CHANNELS = {
 } as const
 
 export type AppCommand =
-  | { type: 'open-videos'; paths: string[] }
-  | { type: 'play-videos'; paths: string[] }
+  | { type: 'open-media'; paths: string[] }
+  | { type: 'play-media'; paths: string[] }
   | { type: 'update-available'; version: string }
   | { type: 'next-video' }
   | { type: 'previous-video' }
@@ -52,8 +52,8 @@ export interface TocaeApi {
   notifyRendererReady(): void
   readPlaylist(): Promise<PersistedPlaylist>
   writePlaylist(items: PlaylistItem[], currentIndex: number): Promise<void>
-  openVideoDialog(): Promise<void>
-  openFolderDialog(): Promise<void>
+  openMediaDialog(): Promise<void>
+  openMediaFolderDialog(): Promise<void>
   getDefaultPlayerStatus(): Promise<DefaultPlayerStatus>
   setDefaultPlayer(): Promise<void>
   openReleasesPage(): Promise<void>

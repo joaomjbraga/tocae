@@ -1,8 +1,8 @@
 {
   "name": "tocae-reprodutor",
   "private": true,
-  "version": "0.0.4",
-  "description": "Reprodutor de vídeo minimalista",
+  "version": "1.0.0",
+  "description": "Reprodutor multimídia minimalista",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "João M J Braga <joaomarcos.jbraga@gmail.com>",
   "homepage": "https://github.com/joaomjbraga/tocae-reprodutor",

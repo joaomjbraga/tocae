@@ -28,21 +28,35 @@
       "video/x-msvideo",
       "video/quicktime",
       "video/ogg",
-      "video/mpeg"
+      "video/mpeg",
+      "audio/mpeg",
+      "audio/mp4",
+      "audio/aac",
+      "audio/wav",
+      "audio/flac",
+      "audio/ogg",
+      "audio/webm",
+      "image/jpeg",
+      "image/png",
+      "image/apng",
+      "image/webp",
+      "image/gif",
+      "image/bmp",
+      "image/avif"
     ],
     // O nome do .desktop instalado precisa ser o mesmo que o app registra em
     // app.setDesktopName() para o ambiente associar a janela ao lançador.
     "syncDesktopName": true,
     "maintainer": "João M J Braga <joaomarcos.jbraga@gmail.com>",
     "vendor": "João M J Braga",
-    "synopsis": "Reprodutor de vídeo minimalista",
-    "description": "Reprodutor de vídeo minimalista construído com Electron, React e TypeScript. Abre um vídeo e reproduz sem complicação.",
+    "synopsis": "Reprodutor multimídia minimalista",
+    "description": "Reprodutor multimídia minimalista construído com Electron, React e TypeScript. Reproduz vídeos e músicas e exibe imagens.",
     "desktop": {
       "entry": {
         "Name[pt_BR]": "Tocaê Reprodutor",
-        "Comment[pt_BR]": "Reprodutor de vídeo minimalista",
-        "Comment[en]": "Minimalist video player",
-        "Keywords": "video;player;playlist;media;vídeo;reprodutor;",
+        "Comment[pt_BR]": "Reprodutor multimídia minimalista",
+        "Comment[en]": "Minimalist media player",
+        "Keywords": "video;audio;image;player;playlist;media;vídeo;música;imagem;reprodutor;",
         "StartupNotify": "true"
       }
     }

@@ -1,6 +1,6 @@
 import { app, Menu } from 'electron'
 import { fileURLToPath } from 'node:url'
-import { isVideoPath } from '@shared/media'
+import { isMediaPath } from '@shared/media'
 import { registerMediaSchemes, registerMediaProtocol } from './media/protocol'
 import { registerDialogIpc } from './dialogs'
 import { registerPlaylistIpc } from './playlist'
@@ -17,7 +17,7 @@ import { DESKTOP_FILE_NAME } from './paths'
 
 registerMediaSchemes()
 
-function videoPathsFromArgs(args: string[]): string[] {
+function mediaPathsFromArgs(args: string[]): string[] {
   const paths: string[] = []
   for (const argument of args) {
     if (argument.startsWith('-')) continue
@@ -30,14 +30,14 @@ function videoPathsFromArgs(args: string[]): string[] {
         continue
       }
     }
-    if (isVideoPath(filePath)) paths.push(filePath)
+    if (isMediaPath(filePath)) paths.push(filePath)
   }
   return paths
 }
 
-function openVideoPaths(args: string[]): void {
-  const paths = videoPathsFromArgs(args)
-  if (paths.length > 0) sendCommand({ type: 'play-videos', paths })
+function openMediaPaths(args: string[]): void {
+  const paths = mediaPathsFromArgs(args)
+  if (paths.length > 0) sendCommand({ type: 'play-media', paths })
 }
 
 const gotTheLock = app.requestSingleInstanceLock()
@@ -49,11 +49,11 @@ if (!gotTheLock) {
 
   app.on('second-instance', (_event, argv) => {
     focusMainWindow()
-    openVideoPaths(argv.slice(1))
+    openMediaPaths(argv.slice(1))
   })
   app.on('open-file', (event, filePath) => {
     event.preventDefault()
-    openVideoPaths([filePath])
+    openMediaPaths([filePath])
   })
   app.on('window-all-closed', () => app.quit())
 
@@ -72,7 +72,7 @@ if (!gotTheLock) {
     await initLocale()
     const window = createMainWindow()
     window.webContents.on('did-start-loading', markRendererNotReady)
-    openVideoPaths(process.argv.slice(1))
+    openMediaPaths(process.argv.slice(1))
     startUpdateChecks()
   })
 }

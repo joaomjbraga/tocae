@@ -4,12 +4,12 @@ import styles from './AppBar.module.css'
 
 type AppBarProps = {
   activePage: 'player' | 'settings'
-  onOpenVideo: () => void
-  onOpenFolder: () => void
+  onOpenMedia: () => void
+  onOpenMediaFolder: () => void
   onOpenSettings: () => void
 }
 
-function AppBar({ activePage, onOpenVideo, onOpenFolder, onOpenSettings }: AppBarProps) {
+function AppBar({ activePage, onOpenMedia, onOpenMediaFolder, onOpenSettings }: AppBarProps) {
   const { t } = useI18n()
 
   return (
@@ -17,9 +17,9 @@ function AppBar({ activePage, onOpenVideo, onOpenFolder, onOpenSettings }: AppBa
       <button
         type="button"
         className={styles.button}
-        onClick={onOpenVideo}
-        title={t('appbar.openVideoTitle')}
-        aria-label={t('appbar.openVideo')}
+        onClick={onOpenMedia}
+        title={t('appbar.openMediaFileTitle')}
+        aria-label={t('appbar.openMediaFile')}
       >
         <File size={16} />
       </button>
@@ -27,9 +27,9 @@ function AppBar({ activePage, onOpenVideo, onOpenFolder, onOpenSettings }: AppBa
       <button
         type="button"
         className={styles.button}
-        onClick={onOpenFolder}
-        title={t('appbar.openFolderTitle')}
-        aria-label={t('appbar.openFolder')}
+        onClick={onOpenMediaFolder}
+        title={t('appbar.openMediaFolderTitle')}
+        aria-label={t('appbar.openMediaFolder')}
       >
         <FolderOpen size={16} />
       </button>

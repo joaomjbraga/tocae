@@ -2,13 +2,13 @@ import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { dialog, ipcMain } from 'electron'
 import { IPC_CHANNELS } from '@shared/ipc'
-import { isVideoPath, VIDEO_EXTENSIONS } from '@shared/media'
+import { isMediaPath, MEDIA_EXTENSIONS } from '@shared/media'
 import { translate } from '@shared/i18n'
 import { sendCommand } from './commands'
 import { getAppLocale } from './locale'
 import { getMainWindow } from './windows'
 
-export async function openVideoDialog(): Promise<void> {
+export async function openMediaDialog(): Promise<void> {
   const window = getMainWindow()
   if (!window) return
 
@@ -19,18 +19,18 @@ export async function openVideoDialog(): Promise<void> {
     title: translate(locale, 'dialog.openTitle'),
     properties: ['openFile'],
     filters: [
-      { name: translate(locale, 'dialog.videosFilter'), extensions: [...VIDEO_EXTENSIONS] },
+      { name: translate(locale, 'dialog.mediaFilter'), extensions: [...MEDIA_EXTENSIONS] },
       { name: translate(locale, 'dialog.allFilesFilter'), extensions: ['*'] },
     ],
   })
 
   if (result.canceled || result.filePaths.length === 0) return
-  sendCommand({ type: 'open-videos', paths: result.filePaths })
+  sendCommand({ type: 'open-media', paths: result.filePaths })
 }
 
-async function findVideosInFolder(folderPath: string): Promise<string[]> {
+async function findMediaInFolder(folderPath: string): Promise<string[]> {
   const entries = await readdir(folderPath, { withFileTypes: true })
-  const videos: string[] = []
+  const media: string[] = []
 
   entries.sort((left, right) =>
     left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' }),
@@ -39,16 +39,16 @@ async function findVideosInFolder(folderPath: string): Promise<string[]> {
   for (const entry of entries) {
     const entryPath = path.join(folderPath, entry.name)
     if (entry.isDirectory()) {
-      videos.push(...(await findVideosInFolder(entryPath)))
-    } else if (entry.isFile() && isVideoPath(entry.name)) {
-      videos.push(entryPath)
+      media.push(...(await findMediaInFolder(entryPath)))
+    } else if (entry.isFile() && isMediaPath(entry.name)) {
+      media.push(entryPath)
     }
   }
 
-  return videos
+  return media
 }
 
-export async function openFolderDialog(): Promise<void> {
+export async function openMediaFolderDialog(): Promise<void> {
   const window = getMainWindow()
   if (!window) return
 
@@ -63,7 +63,7 @@ export async function openFolderDialog(): Promise<void> {
 
   let paths: string[]
   try {
-    paths = await findVideosInFolder(folderPath)
+    paths = await findMediaInFolder(folderPath)
   } catch (error) {
     console.error('Failed to scan the selected video folder', error)
     await dialog.showMessageBox(window, {
@@ -79,15 +79,15 @@ export async function openFolderDialog(): Promise<void> {
     await dialog.showMessageBox(window, {
       type: 'info',
       title: translate(locale, 'dialog.openFolderTitle'),
-      message: translate(locale, 'dialog.noVideosFound'),
+      message: translate(locale, 'dialog.noMediaFound'),
     })
     return
   }
 
-  sendCommand({ type: 'open-videos', paths })
+  sendCommand({ type: 'open-media', paths })
 }
 
 export function registerDialogIpc(): void {
-  ipcMain.handle(IPC_CHANNELS.VIDEO_PICK, () => openVideoDialog())
-  ipcMain.handle(IPC_CHANNELS.VIDEO_FOLDER_PICK, () => openFolderDialog())
+  ipcMain.handle(IPC_CHANNELS.MEDIA_PICK, () => openMediaDialog())
+  ipcMain.handle(IPC_CHANNELS.MEDIA_FOLDER_PICK, () => openMediaFolderDialog())
 }

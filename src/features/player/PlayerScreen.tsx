@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ListVideo } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
+import { mediaTypeForPath } from '@shared/media'
 import AppBar from '../../components/AppBar'
 import Toast from '../../components/Toast'
 import PlaylistPanel from '../playlist/PlaylistPanel'
@@ -65,10 +66,10 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
 
     return api.onCommand((command) => {
       switch (command.type) {
-        case 'open-videos':
+        case 'open-media':
           playlist.addPaths(command.paths)
           break
-        case 'play-videos':
+        case 'play-media':
           playlist.openPaths(command.paths)
           setActivePage('player')
           break
@@ -149,9 +150,9 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
       ) {
         event.preventDefault()
         if (event.shiftKey) {
-          void api?.openFolderDialog()
+          void api?.openMediaFolderDialog()
         } else {
-          void api?.openVideoDialog()
+          void api?.openMediaDialog()
         }
         return
       }
@@ -184,6 +185,7 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
   )
 
   const errorMessage = playlist.error ? t(playlist.error) : null
+  const mediaType = playlist.current ? mediaTypeForPath(playlist.current.path) : null
 
   function handleOpenReleases() {
     void api.openReleasesPage().catch((error: unknown) => {
@@ -199,8 +201,8 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
     >
       <AppBar
         activePage={activePage}
-        onOpenVideo={() => void api?.openVideoDialog()}
-        onOpenFolder={() => void api?.openFolderDialog()}
+        onOpenMedia={() => void api?.openMediaDialog()}
+        onOpenMediaFolder={() => void api?.openMediaFolderDialog()}
         onOpenSettings={() => setActivePage('settings')}
       />
 
@@ -248,6 +250,8 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
                 </p>
                 <VideoPlayer
                   source={playlist.source}
+                  mediaType={mediaType}
+                  title={playlist.current?.name ?? ''}
                   message={errorMessage}
                   hasNext={playlist.hasNext}
                   hasPrevious={playlist.hasPrevious}

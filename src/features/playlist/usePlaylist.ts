@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PersistedPlaylist, PlaylistItem } from '@shared/playlist'
 import type { MessageKey } from '@shared/i18n'
 import { baseNameFor } from '../../lib/format'
-import { isVideoFile, toMediaUrl } from '../../lib/media'
+import { isMediaFile, toMediaUrl } from '../../lib/media'
 
 // O erro é guardado como chave de tradução, não como texto pronto: assim o
 // idioma pode mudar sem que a mensagem exibida fique desatualizada.
@@ -158,7 +158,7 @@ export function usePlaylist() {
       let unresolved = 0
 
       for (const file of files) {
-        if (!isVideoFile(file)) {
+        if (!isMediaFile(file)) {
           unresolved += 1
           continue
         }

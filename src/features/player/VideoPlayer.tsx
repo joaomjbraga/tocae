@@ -3,12 +3,14 @@ import type {
   ChangeEvent,
   CSSProperties,
   DragEvent,
+  MediaHTMLAttributes,
   PointerEvent as ReactPointerEvent,
   SyntheticEvent,
 } from 'react'
 import {
   FastForward,
   FolderOpen,
+  Music2,
   Loader2,
   Maximize,
   Minimize,
@@ -25,6 +27,7 @@ import {
   ZoomOut,
 } from 'lucide-react'
 import { formatTime } from '../../lib/format'
+import type { MediaType } from '@shared/media'
 import { useI18n } from '../../i18n'
 import { getPlaybackPosition, savePlaybackPosition } from './playbackProgress'
 import { useVideoViewport } from './useVideoViewport'
@@ -41,6 +44,8 @@ type PreviewStyle = CSSProperties & { '--preview-position': string }
 
 type VideoPlayerProps = {
   source: string | null
+  mediaType: MediaType | null
+  title: string
   message: string | null
   hasNext: boolean
   hasPrevious: boolean
@@ -54,6 +59,8 @@ type VideoPlayerProps = {
 
 function VideoPlayer({
   source,
+  mediaType,
+  title,
   message,
   hasNext,
   hasPrevious,
@@ -67,6 +74,7 @@ function VideoPlayer({
   const { t } = useI18n()
   const areaRef = useRef<HTMLElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
   const previewVideoRef = useRef<HTMLVideoElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const failedSourceRef = useRef<string | null>(null)
@@ -128,10 +136,10 @@ function VideoPlayer({
 
   useEffect(() => {
     function saveCurrentPosition() {
-      const video = videoRef.current
-      if (!source || !video || video.ended) return
-      savePlaybackPosition(source, video.currentTime)
-      lastSavedPositionRef.current = Math.floor(video.currentTime)
+      const media = getMediaElement()
+      if (!source || !media || media.ended) return
+      savePlaybackPosition(source, media.currentTime)
+      lastSavedPositionRef.current = Math.floor(media.currentTime)
     }
 
     window.addEventListener('beforeunload', saveCurrentPosition)
@@ -192,12 +200,14 @@ function VideoPlayer({
         case '+':
         case '=':
           if (event.ctrlKey || event.metaKey || event.altKey) break
+          if (mediaType !== 'video') break
           event.preventDefault()
           viewportRef.current.zoomIn()
           break
         case '-':
         case '_':
           if (event.ctrlKey || event.metaKey || event.altKey) break
+          if (mediaType !== 'video') break
           event.preventDefault()
           viewportRef.current.zoomOut()
           break
@@ -205,7 +215,7 @@ function VideoPlayer({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [mediaType])
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? [])
@@ -221,13 +231,17 @@ function VideoPlayer({
   }
 
   function togglePlay() {
-    const video = videoRef.current
-    if (!video) return
-    if (video.paused) {
-      void video.play()
+    const media = getMediaElement()
+    if (!media) return
+    if (media.paused) {
+      void media.play()
     } else {
-      video.pause()
+      media.pause()
     }
+  }
+
+  function getMediaElement(): HTMLMediaElement | null {
+    return audioRef.current ?? videoRef.current
   }
 
   function handleEnded() {
@@ -238,9 +252,9 @@ function VideoPlayer({
     onEnded()
   }
 
-  function handleError(event: SyntheticEvent<HTMLVideoElement>) {
-    const video = event.currentTarget
-    const code = video.error?.code ?? 0
+  function handleError(event: SyntheticEvent<HTMLMediaElement>) {
+    const media = event.currentTarget
+    const code = media.error?.code ?? 0
     // 1 = ABORTED (troca de fonte); 0 = desconhecido, sem informação útil.
     // 2 = NETWORK: arquivo ausente/ilegível precisa cair no tratamento de falha.
     if (code === 0 || code === 1) return
@@ -263,7 +277,7 @@ function VideoPlayer({
     lastSavedPositionRef.current = roundedPosition
   }
 
-  function handleTimeUpdate(event: SyntheticEvent<HTMLVideoElement>) {
+  function handleTimeUpdate(event: SyntheticEvent<HTMLMediaElement>) {
     const position = event.currentTarget.currentTime
     if (!seeking) {
       setCurrentTime(position)
@@ -272,10 +286,10 @@ function VideoPlayer({
   }
 
   function handleSeek(event: ChangeEvent<HTMLInputElement>) {
-    const video = videoRef.current
-    if (!video) return
+    const media = getMediaElement()
+    if (!media) return
     const time = Number(event.target.value)
-    video.currentTime = time
+    media.currentTime = time
     setCurrentTime(time)
   }
 
@@ -291,7 +305,7 @@ function VideoPlayer({
   }
 
   function handleTimelinePointerMove(event: ReactPointerEvent<HTMLInputElement>) {
-    if (duration <= 0) return
+    if (mediaType !== 'video' || duration <= 0) return
     const bounds = event.currentTarget.getBoundingClientRect()
     if (bounds.width <= 0) return
     const progress = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width))
@@ -318,12 +332,12 @@ function VideoPlayer({
   }
 
   function seekBy(delta: number) {
-    const video = videoRef.current
-    if (!video || !Number.isFinite(video.duration)) return
-    const time = Math.min(video.duration, Math.max(0, video.currentTime + delta))
-    video.currentTime = time
+    const media = getMediaElement()
+    if (!media || !Number.isFinite(media.duration)) return
+    const time = Math.min(media.duration, Math.max(0, media.currentTime + delta))
+    media.currentTime = time
     setCurrentTime(time)
-    if (video.paused) persistPlaybackPosition(time, true)
+    if (media.paused) persistPlaybackPosition(time, true)
   }
 
   function handleVolumeChange(event: ChangeEvent<HTMLInputElement>) {
@@ -331,26 +345,79 @@ function VideoPlayer({
   }
 
   function applyVolume(value: number) {
-    const video = videoRef.current
-    if (!video) return
+    const media = getMediaElement()
+    if (!media) return
     const clamped = Math.min(1, Math.max(0, value))
-    video.volume = clamped
-    if (clamped > 0 && video.muted) {
-      video.muted = false
+    media.volume = clamped
+    if (clamped > 0 && media.muted) {
+      media.muted = false
       setMuted(false)
     }
     setVolume(clamped)
   }
 
-  function handleVolumeSync(event: SyntheticEvent<HTMLVideoElement>) {
+  function handleVolumeSync(event: SyntheticEvent<HTMLMediaElement>) {
     setVolume(event.currentTarget.volume)
     setMuted(event.currentTarget.muted)
   }
 
+  function handleMediaPlay() {
+    setPlaying(true)
+    setBuffering(false)
+  }
+
+  function handleMediaPause(event: SyntheticEvent<HTMLMediaElement>) {
+    const media = event.currentTarget
+    setPlaying(false)
+    if (!media.ended) persistPlaybackPosition(media.currentTime, true)
+  }
+
+  function handleMediaMetadata(event: SyntheticEvent<HTMLMediaElement>) {
+    const media = event.currentTarget
+    setDuration(media.duration)
+    if (media instanceof HTMLVideoElement) {
+      viewport.setVideoOrientation(media.videoWidth, media.videoHeight)
+    }
+
+    const resumePosition = source ? getPlaybackPosition(source) : 0
+    if (resumePosition <= 0 || !Number.isFinite(media.duration) || media.duration <= 0) return
+
+    if (resumePosition < media.duration - 1) {
+      media.currentTime = resumePosition
+      setCurrentTime(resumePosition)
+      lastSavedPositionRef.current = resumePosition
+    } else {
+      if (source) savePlaybackPosition(source, 0)
+      lastSavedPositionRef.current = 0
+    }
+  }
+
+  function handleImageError() {
+    if (failedSourceRef.current === source) return
+    failedSourceRef.current = source
+    onFailed()
+  }
+
+  const mediaEventProps: MediaHTMLAttributes<HTMLMediaElement> = {
+    onPlay: handleMediaPlay,
+    onPause: handleMediaPause,
+    onWaiting: () => setBuffering(true),
+    onPlaying: () => setBuffering(false),
+    onCanPlay: () => setBuffering(false),
+    onSeeked: () => setBuffering(false),
+    onEnded: handleEnded,
+    onError: handleError,
+    onTimeUpdate: handleTimeUpdate,
+    onVolumeChange: handleVolumeSync,
+    onLoadedMetadata: handleMediaMetadata,
+    onDurationChange: (event: SyntheticEvent<HTMLMediaElement>) =>
+      setDuration(event.currentTarget.duration),
+  }
+
   function toggleMute() {
-    const video = videoRef.current
-    if (!video) return
-    video.muted = !video.muted
+    const media = getMediaElement()
+    if (!media) return
+    media.muted = !media.muted
   }
 
   const volumeIcon = muted || volume === 0 ? (
@@ -371,7 +438,10 @@ function VideoPlayer({
     }
   }
 
-  const hasVideo = source !== null
+  const hasMedia = source !== null && mediaType !== null
+  const hasPlaybackControls = mediaType === 'video' || mediaType === 'audio'
+  const mediaMode =
+    mediaType === 'audio' ? styles.audioMode : mediaType === 'image' ? styles.imageMode : ''
   const paused = !playing
   const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0
   const previewPosition =
@@ -385,6 +455,7 @@ function VideoPlayer({
       ref={areaRef}
       className={[
         styles.videoArea,
+        mediaMode,
         dragging ? styles.dragging : '',
         playing ? styles.playing : styles.paused,
         idle ? styles.idle : '',
@@ -399,120 +470,132 @@ function VideoPlayer({
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
     >
-      {hasVideo ? (
+      {hasMedia ? (
         <>
-          <video
-            key={source}
-            ref={videoRef}
-            className={[
-              styles.video,
-              viewport.isZoomable ? styles.zoomable : '',
-              viewport.isPanning ? styles.panning : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            style={viewport.videoStyle}
-            src={source ?? undefined}
-            autoPlay
-            controls={false}
-            muted={muted}
-            onClick={(event) => {
-              if (viewport.draggedVideoRef.current) {
-                viewport.draggedVideoRef.current = false
-                event.preventDefault()
-                return
-              }
-              togglePlay()
-            }}
-            onPointerDown={viewport.handlePointerDown}
-            onPointerMove={viewport.handlePointerMove}
-            onPointerUp={viewport.handlePointerUp}
-            onPointerCancel={viewport.handlePointerCancel}
-            onContextMenu={(event) => event.preventDefault()}
-            onPlay={() => {
-              setPlaying(true)
-              setBuffering(false)
-            }}
-            onPause={(event) => {
-              const video = event.currentTarget
-              setPlaying(false)
-              if (!video.ended) persistPlaybackPosition(video.currentTime, true)
-            }}
-            onWaiting={() => setBuffering(true)}
-            onPlaying={() => setBuffering(false)}
-            onCanPlay={() => setBuffering(false)}
-            onSeeked={() => setBuffering(false)}
-            onEnded={handleEnded}
-            onError={handleError}
-            onTimeUpdate={handleTimeUpdate}
-            onVolumeChange={handleVolumeSync}
-            onLoadedMetadata={(event) => {
-              const video = event.currentTarget
-              setDuration(video.duration)
-              viewport.setVideoOrientation(video.videoWidth, video.videoHeight)
-              const resumePosition = source ? getPlaybackPosition(source) : 0
-              if (resumePosition > 0 && Number.isFinite(video.duration) && video.duration > 0) {
-                if (resumePosition < video.duration - 1) {
-                  video.currentTime = resumePosition
-                  setCurrentTime(resumePosition)
-                  lastSavedPositionRef.current = resumePosition
-                } else {
-                  if (source) savePlaybackPosition(source, 0)
-                  lastSavedPositionRef.current = 0
+          {mediaType === 'video' && (
+            <video
+              key={source}
+              ref={videoRef}
+              className={[
+                styles.video,
+                viewport.isZoomable ? styles.zoomable : '',
+                viewport.isPanning ? styles.panning : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              style={viewport.videoStyle}
+              src={source ?? undefined}
+              autoPlay
+              controls={false}
+              muted={muted}
+              {...mediaEventProps}
+              onClick={(event) => {
+                if (viewport.draggedVideoRef.current) {
+                  viewport.draggedVideoRef.current = false
+                  event.preventDefault()
+                  return
                 }
-              }
-            }}
-            onDurationChange={(event) => setDuration(event.currentTarget.duration)}
-          />
-          <div className={styles.zoomControls} role="group" aria-label={t('player.zoomControls')}>
+                togglePlay()
+              }}
+              onPointerDown={viewport.handlePointerDown}
+              onPointerMove={viewport.handlePointerMove}
+              onPointerUp={viewport.handlePointerUp}
+              onPointerCancel={viewport.handlePointerCancel}
+              onContextMenu={(event) => event.preventDefault()}
+            />
+          )}
+          {mediaType === 'audio' && (
+            <>
+              <audio
+                key={source}
+                ref={audioRef}
+                className={styles.audioElement}
+                src={source ?? undefined}
+                autoPlay
+                controls={false}
+                muted={muted}
+                {...mediaEventProps}
+              />
+              <div className={styles.audioArtwork} aria-hidden="true">
+                <Music2 size={72} strokeWidth={1.2} />
+              </div>
+            </>
+          )}
+          {mediaType === 'image' && (
+            <>
+              <img
+                key={source}
+                className={styles.image}
+                src={source ?? undefined}
+                alt={title}
+                draggable={false}
+                onError={handleImageError}
+              />
+              <button
+                type="button"
+                className={`${styles.controlButton} ${styles.imageFullscreen}`}
+                onClick={toggleFullscreen}
+                aria-label={t('player.fullscreen')}
+                title={t('player.fullscreen')}
+              >
+                <Maximize size={16} />
+              </button>
+            </>
+          )}
+          {mediaType === 'video' && (
+            <div className={styles.zoomControls} role="group" aria-label={t('player.zoomControls')}>
+              <button
+                type="button"
+                className={styles.controlButton}
+                onClick={viewport.zoomOut}
+                disabled={!viewport.canZoomOut}
+                aria-label={t('player.zoomOut')}
+                title={t('player.zoomOut')}
+              >
+                <ZoomOut size={16} />
+              </button>
+              <span className={styles.zoomValue}>{Math.round(viewport.zoom * 100)}%</span>
+              <button
+                type="button"
+                className={styles.controlButton}
+                onClick={viewport.zoomIn}
+                disabled={!viewport.canZoomIn}
+                aria-label={t('player.zoomIn')}
+                title={t('player.zoomIn')}
+              >
+                <ZoomIn size={16} />
+              </button>
+              <button
+                type="button"
+                className={styles.controlButton}
+                onClick={viewport.resetZoom}
+                disabled={!viewport.canResetZoom}
+                aria-label={t('player.resetZoom')}
+                title={t('player.resetZoom')}
+              >
+                <RotateCcw size={15} />
+              </button>
+            </div>
+          )}
+          {hasPlaybackControls && (
             <button
               type="button"
-              className={styles.controlButton}
-              onClick={viewport.zoomOut}
-              disabled={!viewport.canZoomOut}
-              aria-label={t('player.zoomOut')}
-              title={t('player.zoomOut')}
+              className={styles.playPause}
+              onClick={togglePlay}
+              aria-label={t('player.play')}
+              title={t('player.play')}
             >
-              <ZoomOut size={16} />
+              <Play size={24} />
             </button>
-            <span className={styles.zoomValue}>{Math.round(viewport.zoom * 100)}%</span>
-            <button
-              type="button"
-              className={styles.controlButton}
-              onClick={viewport.zoomIn}
-              disabled={!viewport.canZoomIn}
-              aria-label={t('player.zoomIn')}
-              title={t('player.zoomIn')}
-            >
-              <ZoomIn size={16} />
-            </button>
-            <button
-              type="button"
-              className={styles.controlButton}
-              onClick={viewport.resetZoom}
-              disabled={!viewport.canResetZoom}
-              aria-label={t('player.resetZoom')}
-              title={t('player.resetZoom')}
-            >
-              <RotateCcw size={15} />
-            </button>
-          </div>
-          <button
-            type="button"
-            className={styles.playPause}
-            onClick={togglePlay}
-            aria-label={t('player.play')}
-            title={t('player.play')}
-          >
-            <Play size={24} />
-          </button>
-          {buffering && (
+          )}
+          {hasPlaybackControls && buffering && (
             <div className={styles.buffer} role="status" aria-live="polite">
               <Loader2 size={28} className={styles.spinner} />
               <span className="sr-only">{t('player.loadingVideo')}</span>
             </div>
           )}
-          <div className={styles.controlsBar}>
+          {hasPlaybackControls && (
+            <div className={styles.controlsBar}>
             <button
               type="button"
               className={styles.controlButton}
@@ -554,7 +637,7 @@ function VideoPlayer({
             </button>
             <span className={styles.time}>{formatTime(currentTime)}</span>
             <div className={styles.timeline}>
-              {previewTime !== null && (
+              {mediaType === 'video' && previewTime !== null && (
                 <div
                   className={`${styles.seekPreview} ${previewVisible ? styles.previewVisible : ''}`}
                   style={previewStyle}
@@ -609,8 +692,8 @@ function VideoPlayer({
                 }}
                 onPointerCancel={() => {
                   setSeeking(false)
-                  const video = videoRef.current
-                  if (video) persistPlaybackPosition(video.currentTime, true)
+                  const media = getMediaElement()
+                  if (media) persistPlaybackPosition(media.currentTime, true)
                   setPreviewVisible(false)
                 }}
                 onKeyUp={(event) => persistPlaybackPosition(event.currentTarget.valueAsNumber, true)}
@@ -663,11 +746,12 @@ function VideoPlayer({
               {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
             </button>
           </div>
+          )}
         </>
       ) : (
         <div
           className={styles.placeholder}
-          aria-label={t('appbar.openVideos')}
+          aria-label={t('appbar.openMedia')}
           onClick={() => inputRef.current?.click()}
           role="button"
           tabIndex={0}
@@ -679,7 +763,7 @@ function VideoPlayer({
           <p>{message ?? t('player.dropHint')}</p>
           <span className={styles.placeholderAction}>
             <FolderOpen size={14} aria-hidden="true" />
-            {t('appbar.openVideos')}
+            {t('appbar.openMedia')}
           </span>
         </div>
       )}
@@ -688,7 +772,7 @@ function VideoPlayer({
         ref={inputRef}
         className={styles.fileInput}
         type="file"
-        accept="video/*"
+        accept="video/*,audio/*,image/*,.oga,.opus,.weba,.apng,.avif"
         multiple
         onChange={handleFileChange}
       />

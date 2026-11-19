@@ -4,7 +4,7 @@ import { IPC_CHANNELS } from '@shared/ipc'
 import type { DefaultPlayerStatus } from '@shared/ipc'
 import { DESKTOP_FILE_NAME } from './paths'
 
-const VIDEO_MIME_TYPES = [
+const MEDIA_MIME_TYPES = [
   'video/mp4',
   'video/x-m4v',
   'video/webm',
@@ -13,6 +13,20 @@ const VIDEO_MIME_TYPES = [
   'video/quicktime',
   'video/ogg',
   'video/mpeg',
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/aac',
+  'audio/wav',
+  'audio/flac',
+  'audio/ogg',
+  'audio/webm',
+  'image/jpeg',
+  'image/png',
+  'image/apng',
+  'image/webp',
+  'image/gif',
+  'image/bmp',
+  'image/avif',
 ]
 
 function runXdgMime(args: string[]): Promise<string> {
@@ -33,7 +47,7 @@ export async function getDefaultPlayerStatus(): Promise<DefaultPlayerStatus> {
   }
 
   const handlers = await Promise.all(
-    VIDEO_MIME_TYPES.map((mimeType) => runXdgMime(['query', 'default', mimeType])),
+    MEDIA_MIME_TYPES.map((mimeType) => runXdgMime(['query', 'default', mimeType])),
   )
 
   return {
@@ -44,10 +58,10 @@ export async function getDefaultPlayerStatus(): Promise<DefaultPlayerStatus> {
 
 export async function setDefaultPlayer(): Promise<void> {
   if (process.platform !== 'linux' || !app.isPackaged) {
-    throw new Error('Setting the default video player requires a packaged Linux installation.')
+    throw new Error('Setting the default media player requires a packaged Linux installation.')
   }
 
-  for (const mimeType of VIDEO_MIME_TYPES) {
+  for (const mimeType of MEDIA_MIME_TYPES) {
     await runXdgMime(['default', DESKTOP_FILE_NAME, mimeType])
   }
 }

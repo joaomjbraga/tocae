@@ -4,22 +4,24 @@
 
 **Português (Brasil)** · [English](README.en.md)
 
-Reprodutor de vídeo minimalista construído com Electron, React e TypeScript. Abre um vídeo e reproduz sem complicação.
+Reprodutor multimídia minimalista construído com Electron, React e TypeScript. Reproduz vídeos e músicas e exibe imagens.
 
 ![Demo](.github/demo.png)
 
 ## Recursos
 
-- Reproduza uma lista de vídeos em sequência
+- Reproduza vídeos e músicas e navegue por imagens em uma única lista
 - Reordene a lista arrastando os itens ou pelo teclado
-- Pule entre vídeos com atalhos de uma tecla
+- Pule entre mídias com atalhos de uma tecla
 - Use a janela principal sem moldura, com controles próprios e cantos arredondados
 - Assista a vídeos verticais sem cortar a imagem; amplie e mova a área ampliada
 - Navegue pela timeline com prévia do quadro ou avance e volte em intervalos de 1 segundo
-- Continue cada vídeo de onde parou, inclusive depois de fechar o aplicativo
-- Defina o Tocaê como reprodutor padrão de vídeos no Linux
+- Continue a reprodução de vídeos e músicas de onde parou, inclusive depois de fechar o aplicativo
+- Defina o Tocaê como reprodutor padrão de mídias no Linux
 - Receba um aviso quando uma nova versão do Tocaê estiver disponível
 - Troque entre português (Brasil) e inglês a qualquer momento
+
+Formatos aceitos: vídeos MP4, WebM, MKV, AVI, MOV e OGV; músicas MP3, M4A, AAC, WAV, FLAC, OGG e Opus; imagens JPG, PNG, APNG, GIF, WebP, BMP e AVIF. Imagens ficam paradas até a navegação para outra mídia; músicas usam a linha do tempo e os controles de reprodução.
 
 ## Estrutura do projeto
 
@@ -30,7 +32,7 @@ Reprodutor de vídeo minimalista construído com Electron, React e TypeScript. A
 - `shared/`: tipos, contratos IPC e traduções compartilhados com o Electron
 - `electron/`: processo principal, preload e integração com o sistema
 
-O player preserva a proporção original de cada vídeo, inclusive em retrato. O zoom pode ser movido com o mouse ou toque e é limitado às bordas visíveis da imagem. A interface usa controles compactos e translúcidos, com adaptação para janelas estreitas.
+O player preserva a proporção original de vídeos e imagens, inclusive em retrato. O zoom pode ser movido com o mouse ou toque e é limitado às bordas visíveis do vídeo. Músicas usam os mesmos controles de reprodução e linha do tempo. A interface usa controles compactos e translúcidos, com adaptação para janelas estreitas.
 
 ## Idiomas
 
@@ -55,13 +57,13 @@ O `npm run build` gera instaladores `.deb` (Debian/Ubuntu) e `.rpm` (Fedora/RHEL
 
 ```sh
 # Debian/Ubuntu
-sudo apt install ./release/0.0.4/tocae-reprodutor_0.0.4_amd64.deb
+sudo apt install ./release/1.0.0/tocae-reprodutor_1.0.0_amd64.deb
 
 # Fedora/RHEL
-sudo dnf install ./release/0.0.4/tocae-reprodutor-0.0.4.x86_64.rpm
+sudo dnf install ./release/1.0.0/tocae-reprodutor-1.0.0.x86_64.rpm
 ```
 
-Para gerar o `.rpm` é preciso ter o `rpmbuild` instalado (pacote `rpm` no Debian/Ubuntu). Os pacotes registram o aplicativo no menu e o suporte aos tipos MIME de vídeo compatíveis, instalam os ícones nos tamanhos usuais e declaram as dependências de runtime do Electron. Depois de instalar, escolha **Configurações → Reprodutor padrão** para associar os vídeos ao Tocaê. Os metadados (categoria, mantenedor, descrição e nome do executável) ficam em `electron-builder.json5`.
+Para gerar o `.rpm` é preciso ter o `rpmbuild` instalado (pacote `rpm` no Debian/Ubuntu). Os pacotes registram o aplicativo no menu e os tipos MIME de vídeo, áudio e imagem compatíveis, instalam os ícones nos tamanhos usuais e declaram as dependências de runtime do Electron. Depois de instalar, escolha **Configurações → Reprodutor padrão** para associar as mídias ao Tocaê. Os metadados (categoria, mantenedor, descrição e nome do executável) ficam em `electron-builder.json5`.
 
 ## Instalador Windows
 

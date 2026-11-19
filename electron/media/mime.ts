@@ -17,11 +17,40 @@ export function mimeTypeFor(filePath: string): string {
     case '.qt':
       return 'video/quicktime'
     case '.ogv':
-    case '.ogg':
       return 'video/ogg'
     case '.mpg':
     case '.mpeg':
       return 'video/mpeg'
+    case '.mp3':
+      return 'audio/mpeg'
+    case '.m4a':
+      return 'audio/mp4'
+    case '.aac':
+      return 'audio/aac'
+    case '.wav':
+      return 'audio/wav'
+    case '.flac':
+      return 'audio/flac'
+    case '.ogg':
+    case '.oga':
+    case '.opus':
+      return 'audio/ogg'
+    case '.weba':
+      return 'audio/webm'
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg'
+    case '.png':
+    case '.apng':
+      return 'image/png'
+    case '.webp':
+      return 'image/webp'
+    case '.gif':
+      return 'image/gif'
+    case '.bmp':
+      return 'image/bmp'
+    case '.avif':
+      return 'image/avif'
     default:
       return 'application/octet-stream'
   }
