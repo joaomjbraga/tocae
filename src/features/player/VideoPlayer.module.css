@@ -39,6 +39,10 @@
   transition: transform var(--duration-fast) var(--ease-standard);
 }
 
+.videoArea.immersive:not(.portrait) .video {
+  object-fit: cover;
+}
+
 .audioElement {
   display: none;
 }
@@ -296,6 +300,11 @@
 
 .videoArea:fullscreen .playbackToggles {
   top: var(--space-3);
+}
+
+.videoArea.immersive:not(:fullscreen) .zoomControls,
+.videoArea.immersive:not(:fullscreen) .playbackToggles {
+  top: calc(36px + 56px + 8px);
 }
 
 .playbackToggle {

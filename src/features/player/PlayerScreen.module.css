@@ -167,6 +167,11 @@
   pointer-events: none;
 }
 
+.playerWorkspace.immersivePlayerWorkspace .workspaceHeader {
+  top: 36px;
+  background: none;
+}
+
 .mediaHeading {
   flex: 1 1 auto;
   min-width: 0;

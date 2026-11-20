@@ -21,6 +21,7 @@ export function useMediaViewport(
   areaRef: RefObject<HTMLElement | null>,
   mediaRef: RefObject<ZoomableMediaElement | null>,
   source: string | null,
+  fillLandscape: boolean,
 ) {
   const [zoom, setZoom] = useState(MIN_ZOOM)
   const [pan, setPan] = useState<PanPosition>(INITIAL_PAN)
@@ -48,8 +49,9 @@ export function useMediaViewport(
 
     const observer = new ResizeObserver(keepPanInBounds)
     observer.observe(area)
+    keepPanInBounds()
     return () => observer.disconnect()
-  }, [zoom])
+  }, [fillLandscape, isPortrait, zoom])
 
   function getPanLimits(scale: number): PanPosition {
     const area = areaRef.current?.getBoundingClientRect()
@@ -59,7 +61,10 @@ export function useMediaViewport(
     const height = media instanceof HTMLVideoElement ? media.videoHeight : media.naturalHeight
     if (!width || !height) return INITIAL_PAN
 
-    const fitScale = Math.min(area.width / width, area.height / height)
+    const fitScale =
+      fillLandscape && !isPortrait
+        ? Math.max(area.width / width, area.height / height)
+        : Math.min(area.width / width, area.height / height)
     return {
       x: Math.max(0, (width * fitScale * scale - area.width) / 2),
       y: Math.max(0, (height * fitScale * scale - area.height) / 2),

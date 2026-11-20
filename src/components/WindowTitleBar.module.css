@@ -87,3 +87,28 @@
   color: var(--text-subtle);
 }
 
+.titleBar.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(12, 12, 16, 0.55), transparent);
+  backdrop-filter: none;
+}
+
+.titleBar.overlay .dragRegion,
+.titleBar.overlay .controls {
+  pointer-events: auto;
+}
+
+.titleBar.overlay .dragRegion {
+  margin-left: 48px;
+}
+
+.titleBar.overlay .control {
+  color: var(--text-primary);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.75));
+}
+

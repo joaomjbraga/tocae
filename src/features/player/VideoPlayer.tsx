@@ -48,6 +48,7 @@ type VideoPlayerProps = {
   source: string | null
   mediaType: MediaType | null
   title: string
+  immersive: boolean
   autoNext: boolean
   onAutoNextChange: (enabled: boolean) => void
   loopCurrent: boolean
@@ -67,6 +68,7 @@ function VideoPlayer({
   source,
   mediaType,
   title,
+  immersive,
   autoNext,
   onAutoNextChange,
   loopCurrent,
@@ -99,7 +101,7 @@ function VideoPlayer({
   const previewTimeRef = useRef<number | null>(null)
   const previewSeekTimerRef = useRef<number | null>(null)
   const lastPreviewSeekRef = useRef(0)
-  const viewport = useMediaViewport(areaRef, viewportMediaRef, source)
+  const viewport = useMediaViewport(areaRef, viewportMediaRef, source, immersive)
   const viewportRef = useRef(viewport)
   viewportRef.current = viewport
   const [playing, setPlaying] = useState(false)
@@ -473,6 +475,7 @@ function VideoPlayer({
       className={[
         styles.videoArea,
         mediaMode,
+        immersive ? styles.immersive : '',
         dragging ? styles.dragging : '',
         playing ? styles.playing : '',
         idle ? styles.idle : '',

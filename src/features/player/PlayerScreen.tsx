@@ -26,9 +26,14 @@ type Announcement = { key: MessageKey; params?: TranslationParams }
 type PlayerScreenProps = {
   accentColor: string
   onAccentColorChange: (color: string) => void
+  onImmersiveVideoChange: (immersive: boolean) => void
 }
 
-function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
+function PlayerScreen({
+  accentColor,
+  onAccentColorChange,
+  onImmersiveVideoChange,
+}: PlayerScreenProps) {
   const playlist = usePlaylist()
   const { t } = useI18n()
   const api = window.tocae
@@ -262,6 +267,12 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
 
   const errorMessage = playlist.error ? t(playlist.error) : null
   const mediaType = playlist.current ? mediaTypeForPath(playlist.current.path) : null
+  const immersiveVideo = activePage === 'player' && mediaType === 'video'
+
+  useEffect(() => {
+    onImmersiveVideoChange(immersiveVideo)
+    return () => onImmersiveVideoChange(false)
+  }, [immersiveVideo, onImmersiveVideoChange])
 
   function handleOpenReleases() {
     void api.openReleasesPage().catch((error: unknown) => {
@@ -285,7 +296,9 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
       <section
         className={`${styles.workspace} ${
           activePage === 'player' ? styles.playerWorkspace : ''
-        } ${activeStreamingService ? styles.serviceWorkspace : ''}`}
+        } ${activeStreamingService ? styles.serviceWorkspace : ''} ${
+          immersiveVideo ? styles.immersivePlayerWorkspace : ''
+        }`}
       >
         {activeStreamingService ? (
           <div className={styles.servicePage}>
@@ -345,6 +358,7 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
                     source={playlist.source}
                     mediaType={mediaType}
                     title={playlist.current?.name ?? ''}
+                    immersive={immersiveVideo}
                     autoNext={playbackPreferences.autoNext}
                     onAutoNextChange={handleAutoNextChange}
                     loopCurrent={playbackPreferences.repeatCurrent}

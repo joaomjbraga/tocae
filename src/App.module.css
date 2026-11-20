@@ -27,3 +27,9 @@
 .playerContent {
   padding: 0;
 }
+
+.immersive .content {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}

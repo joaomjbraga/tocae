@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { CSSProperties } from 'react'
 import PlayerScreen from './features/player/PlayerScreen'
 import {
@@ -21,21 +21,30 @@ function getSavedAccentColor() {
 
 function App() {
   const [accentColor, setAccentColor] = useState<string>(getSavedAccentColor)
+  const [immersiveVideo, setImmersiveVideo] = useState(false)
 
   function handleAccentColorChange(color: string) {
     window.localStorage.setItem(ACCENT_COLOR_STORAGE_KEY, color)
     setAccentColor(color)
   }
 
+  const handleImmersiveVideoChange = useCallback((immersive: boolean) => {
+    setImmersiveVideo(immersive)
+  }, [])
+
   return (
     <div
-      className={styles.app}
+      className={`${styles.app} ${immersiveVideo ? styles.immersive : ''}`}
       data-window-shell
       style={{ '--player-accent': accentColor } as AppStyle}
     >
-      <WindowTitleBar compact />
+      <WindowTitleBar compact overlay={immersiveVideo} />
       <main className={`${styles.content} ${styles.playerContent}`}>
-        <PlayerScreen accentColor={accentColor} onAccentColorChange={handleAccentColorChange} />
+        <PlayerScreen
+          accentColor={accentColor}
+          onAccentColorChange={handleAccentColorChange}
+          onImmersiveVideoChange={handleImmersiveVideoChange}
+        />
       </main>
     </div>
   )

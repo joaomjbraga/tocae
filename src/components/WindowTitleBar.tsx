@@ -5,9 +5,10 @@ import styles from './WindowTitleBar.module.css'
 
 type WindowTitleBarProps = {
   compact?: boolean
+  overlay?: boolean
 }
 
-function WindowTitleBar({ compact = false }: WindowTitleBarProps) {
+function WindowTitleBar({ compact = false, overlay = false }: WindowTitleBarProps) {
   const { t } = useI18n()
   const api = window.tocae
   const [isMaximized, setIsMaximized] = useState(false)
@@ -49,7 +50,11 @@ function WindowTitleBar({ compact = false }: WindowTitleBarProps) {
   }
 
   return (
-    <div className={`${styles.titleBar} ${compact ? styles.compact : ''}`}>
+    <div
+      className={`${styles.titleBar} ${compact ? styles.compact : ''} ${
+        overlay ? styles.overlay : ''
+      }`}
+    >
       <div className={styles.brand}>
         <span>Tocaê Reprodutor</span>
       </div>
