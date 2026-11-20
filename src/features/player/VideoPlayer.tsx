@@ -71,6 +71,7 @@ type VideoPlayerProps = {
   onFailed: () => void
   onFilesSelected: (files: File[]) => void
   onControlsVisibilityChange: (visible: boolean) => void
+  playbackAction: { action: 'play' | 'pause' | 'toggle'; id: number } | null
 }
 
 function VideoPlayer({
@@ -96,6 +97,7 @@ function VideoPlayer({
   onFailed,
   onFilesSelected,
   onControlsVisibilityChange,
+  playbackAction,
 }: VideoPlayerProps) {
   const { t } = useI18n()
   const areaRef = useRef<HTMLElement>(null)
@@ -155,6 +157,21 @@ function VideoPlayer({
   } | null>(null)
   const activeFilePathRef = useRef(filePath)
   activeFilePathRef.current = filePath
+
+  useEffect(() => {
+    if (!playbackAction) return
+    const media = getMediaElement()
+    if (!media) return
+
+    if (playbackAction.action === 'play' && media.paused) {
+      void media.play()
+    } else if (playbackAction.action === 'pause' && !media.paused) {
+      media.pause()
+    } else if (playbackAction.action === 'toggle') {
+      if (media.paused) void media.play()
+      else media.pause()
+    }
+  }, [playbackAction])
 
   const tracks = trackState?.filePath === filePath ? trackState.tracks : []
   const audioTracks = tracks.filter((track) => track.kind === 'audio')

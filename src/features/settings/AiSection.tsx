@@ -102,6 +102,15 @@ function AiSection() {
               spellCheck={false}
             />
           </label>
+          <label className={styles.field}>
+            <span>{t('settings.aiEmbeddingModel')}</span>
+            <input
+              value={config.embeddingModel ?? 'text-embedding-3-small'}
+              onChange={(event) => setConfig({ ...config, embeddingModel: event.target.value })}
+              placeholder="text-embedding-3-small"
+              spellCheck={false}
+            />
+          </label>
           <button type="submit" className={styles.primary} disabled={saving}>
             <Check size={14} aria-hidden="true" />
             {t('settings.aiSave')}

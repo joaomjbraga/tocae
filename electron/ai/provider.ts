@@ -26,6 +26,7 @@ export interface AiToolCall {
 }
 
 export interface AiProvider {
+  embed(texts: readonly string[], signal: AbortSignal): Promise<number[][]>
   sendStream(
     messages: readonly AiProviderMessage[],
     signal: AbortSignal,
@@ -42,6 +43,56 @@ export class OpenAiCompatibleProvider implements AiProvider {
   constructor(config: AiProviderConfig, apiKey: string) {
     this.config = config
     this.apiKey = apiKey
+  }
+
+  async embed(texts: readonly string[], signal: AbortSignal): Promise<number[][]> {
+    if (texts.length === 0) return []
+    const baseUrl = this.config.baseUrl.replace(/\/+$/, '')
+    const response = await fetch(`${baseUrl}/embeddings`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        model: this.config.embeddingModel ?? 'text-embedding-3-small',
+        input: texts,
+      }),
+      signal,
+    })
+
+    if (!response.ok) {
+      const detail = await safeResponseDetail(response)
+      throw new AiProviderError(
+        `O provedor rejeitou embeddings (HTTP ${response.status})${detail ? `: ${detail}` : ''}`,
+      )
+    }
+
+    const payload: unknown = await response.json()
+    if (!isRecord(payload) || !Array.isArray(payload.data)) {
+      throw new AiProviderError('A resposta de embeddings do provedor não é válida.')
+    }
+
+    const vectors = payload.data
+      .slice()
+      .sort((left, right) => {
+        const leftIndex = isRecord(left) && typeof left.index === 'number' ? left.index : 0
+        const rightIndex = isRecord(right) && typeof right.index === 'number' ? right.index : 0
+        return leftIndex - rightIndex
+      })
+      .map((entry) => {
+        if (!isRecord(entry) || !Array.isArray(entry.embedding)) return null
+        const vector = entry.embedding.filter(
+          (value): value is number => typeof value === 'number' && Number.isFinite(value),
+        )
+        return vector.length === entry.embedding.length ? vector : null
+      })
+
+    if (vectors.length !== texts.length || vectors.some((vector) => vector === null)) {
+      throw new AiProviderError('O provedor não retornou todos os vetores esperados.')
+    }
+    return vectors as number[][]
   }
 
   async sendStream(

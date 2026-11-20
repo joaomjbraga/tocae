@@ -46,6 +46,7 @@ export const ptBRMessages = {
   'settings.aiProviderDescription': 'Use um serviço compatível com o formato OpenAI Chat Completions.',
   'settings.aiBaseUrl': 'URL base',
   'settings.aiModel': 'Modelo',
+  'settings.aiEmbeddingModel': 'Modelo de embeddings',
   'settings.aiCredential': 'Credencial',
   'settings.aiCredentialStored': 'Uma chave foi armazenada pelo sistema operacional.',
   'settings.aiCredentialMissing': 'Nenhuma chave configurada.',
@@ -111,7 +112,7 @@ export const ptBRMessages = {
   'assistant.processing': 'Processando...',
   'assistant.emptyTitle': 'Como posso ajudar?',
   'assistant.emptyDescription':
-    'Comece uma conversa. O Teco pode consultar a biblioteca e a fila, mas não controla o reprodutor.',
+    'Comece uma conversa. O Teco pode consultar a biblioteca e controlar a reprodução por ações autorizadas.',
   'assistant.you': 'Você',
   'assistant.unknownError': 'Não foi possível concluir a solicitação.',
 

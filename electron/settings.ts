@@ -38,6 +38,10 @@ export async function readSettings(): Promise<Settings> {
               provider: 'openai-compatible',
               baseUrl: ai.baseUrl,
               model: ai.model,
+              embeddingModel:
+                typeof ai.embeddingModel === 'string' && ai.embeddingModel.trim()
+                  ? ai.embeddingModel
+                  : undefined,
             }
           : { ...DEFAULT_SETTINGS.ai },
     }

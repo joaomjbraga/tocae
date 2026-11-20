@@ -56,6 +56,10 @@ function PlayerScreen({
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const [playerControlsVisible, setPlayerControlsVisible] = useState(true)
   const [playbackPreferences, setPlaybackPreferences] = useState(readPlaybackPreferences)
+  const [playbackAction, setPlaybackAction] = useState<{
+    action: 'play' | 'pause' | 'toggle'
+    id: number
+  } | null>(null)
   const announcedIdRef = useRef<string | null>(null)
   const currentMediaPath = playlist.current?.path ?? null
   const [mediaMetadataState, setMediaMetadataState] = useState<{
@@ -99,6 +103,9 @@ function PlayerScreen({
     (playing: boolean) => {
       void api.youtubeMusic.setLocalPlaybackActive(playing).catch((error: unknown) => {
         console.error('Could not update YouTube Music audio focus', error)
+      })
+      void api.ai.setPlayerState({ playing, updatedAt: Date.now() }).catch((error: unknown) => {
+        console.error('Could not update Teco playback state', error)
       })
     },
     [api],
@@ -192,6 +199,15 @@ function PlayerScreen({
           break
         case 'clear-playlist':
           handleClear()
+          break
+        case 'playback-play':
+          setPlaybackAction({ action: 'play', id: Date.now() })
+          break
+        case 'playback-pause':
+          setPlaybackAction({ action: 'pause', id: Date.now() })
+          break
+        case 'playback-toggle':
+          setPlaybackAction({ action: 'toggle', id: Date.now() })
           break
       }
     })
@@ -385,6 +401,7 @@ function PlayerScreen({
                   onFailed={playlist.failCurrent}
                   onFilesSelected={playlist.addFiles}
                   onControlsVisibilityChange={setPlayerControlsVisible}
+                  playbackAction={playbackAction}
                 />
                 {toast && (
                   <Toast

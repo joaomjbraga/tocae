@@ -3,7 +3,7 @@ import type { IpcMainInvokeEvent } from 'electron'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { IPC_CHANNELS } from '@shared/ipc'
-import type { AiProviderConfig, AiStatus } from '@shared/ai'
+import type { AiPlayerState, AiProviderConfig, AiStatus } from '@shared/ai'
 import { DEFAULT_AI_PROVIDER_CONFIG } from '@shared/ai'
 import { readSettings, writeSettings } from '../settings'
 import { AiCore, AiRequestError } from './core'
@@ -13,9 +13,19 @@ import { getLibrarySnapshot } from '../library'
 import { readPlaylist } from '../playlist'
 import { AI_TOOL_DEFINITIONS, executeReadOnlyTool } from './tools'
 import { getMediaMetadata } from '../media/metadata'
+import { sendCommand } from '../commands'
+import {
+  cosineSimilarity,
+  libraryFingerprint,
+  readSemanticIndex,
+  writeSemanticIndex,
+  type SemanticIndexEntry,
+} from './semanticIndex'
 
 const CREDENTIAL_FILE_NAME = 'ai-credentials.json'
 const HISTORY_FILE_NAME = 'ai-history.json'
+const SEMANTIC_INDEX_FILE_NAME = 'ai-library-index.json'
+const EMBEDDING_BATCH_SIZE = 64
 let historyWriteQueue: Promise<void> = Promise.resolve()
 const core = new AiCore(
   (config) => {
@@ -24,6 +34,98 @@ const core = new AiCore(
   },
   AI_TOOL_DEFINITIONS,
   async (name, args) => {
+    if (name === 'get_player_state') {
+      const playlist = await readPlaylist()
+      const current = playlist.currentIndex >= 0 ? playlist.items[playlist.currentIndex] : null
+      return {
+        ...playerState,
+        current: current ? { name: current.name } : null,
+      }
+    }
+    if (name === 'player_play') {
+      sendCommand({ type: 'playback-play' })
+      return { accepted: true, action: 'play' }
+    }
+    if (name === 'player_pause') {
+      sendCommand({ type: 'playback-pause' })
+      return { accepted: true, action: 'pause' }
+    }
+    if (name === 'player_toggle') {
+      sendCommand({ type: 'playback-toggle' })
+      return { accepted: true, action: 'toggle' }
+    }
+    if (name === 'player_next') {
+      sendCommand({ type: 'next-video' })
+      return { accepted: true, action: 'next' }
+    }
+    if (name === 'player_previous') {
+      sendCommand({ type: 'previous-video' })
+      return { accepted: true, action: 'previous' }
+    }
+
+    if (name === 'search_library_semantic') {
+      if (!isRecord(args) || typeof args.query !== 'string' || !args.query.trim()) {
+        throw new Error('A busca semântica exige uma descrição.')
+      }
+      if (!credentialCache) {
+        throw new Error('Configure uma chave de API antes de usar a busca semântica.')
+      }
+
+      const library = await getLibrarySnapshot()
+      const fingerprint = libraryFingerprint(library)
+      let index = await readSemanticIndex(semanticIndexPath())
+      if (!index || index.fingerprint !== fingerprint) {
+        const provider = new OpenAiCompatibleProvider(config, credentialCache)
+        const entries: SemanticIndexEntry[] = []
+
+        for (let start = 0; start < library.items.length; start += EMBEDDING_BATCH_SIZE) {
+          const batch = library.items.slice(start, start + EMBEDDING_BATCH_SIZE)
+          const texts = batch.map((item) =>
+            [item.name, item.relativePath, item.type].filter(Boolean).join(' | '),
+          )
+          const vectors = await provider.embed(texts, new AbortController().signal)
+          for (let indexValue = 0; indexValue < batch.length; indexValue += 1) {
+            const item = batch[indexValue]
+            entries.push({
+              path: item.path,
+              name: item.name,
+              relativePath: item.relativePath,
+              type: item.type,
+              text: texts[indexValue],
+              vector: vectors[indexValue],
+            })
+          }
+        }
+
+        await writeSemanticIndex(semanticIndexPath(), fingerprint, entries)
+        index = { version: 1, fingerprint, entries }
+      }
+
+      const provider = new OpenAiCompatibleProvider(config, credentialCache)
+      const [queryVector] = await provider.embed(
+        [String(args.query).trim()],
+        new AbortController().signal,
+      )
+      const type = typeof args.type === 'string' ? args.type : null
+      const limit =
+        typeof args.limit === 'number' && Number.isInteger(args.limit)
+          ? Math.min(50, Math.max(1, args.limit))
+          : 20
+
+      return {
+        matches: index.entries
+          .filter((entry) => !type || entry.type === type)
+          .map((entry) => ({
+            name: entry.name,
+            relativePath: entry.relativePath,
+            type: entry.type,
+            score: cosineSimilarity(queryVector, entry.vector),
+          }))
+          .sort((left, right) => right.score - left.score)
+          .slice(0, limit),
+      }
+    }
+
     if (name === 'get_current_media') {
       const playlist = await readPlaylist()
       const current = playlist.currentIndex >= 0 ? playlist.items[playlist.currentIndex] : null
@@ -62,6 +164,7 @@ const core = new AiCore(
 )
 let config: AiProviderConfig = { ...DEFAULT_AI_PROVIDER_CONFIG }
 let initialized = false
+let playerState: AiPlayerState = { playing: false, updatedAt: 0 }
 
 function credentialsPath(): string {
   return path.join(app.getPath('userData'), CREDENTIAL_FILE_NAME)
@@ -69,6 +172,10 @@ function credentialsPath(): string {
 
 function historyPath(): string {
   return path.join(app.getPath('userData'), HISTORY_FILE_NAME)
+}
+
+function semanticIndexPath(): string {
+  return path.join(app.getPath('userData'), SEMANTIC_INDEX_FILE_NAME)
 }
 
 let credentialCache: string | null = null
@@ -165,7 +272,15 @@ function validateConfig(value: unknown): AiProviderConfig {
     throw new TypeError('Use uma URL HTTP ou HTTPS.')
   }
   if (!model) throw new TypeError('Informe o modelo.')
-  return { provider: 'openai-compatible', baseUrl: url.toString().replace(/\/+$/, ''), model }
+  return {
+    provider: 'openai-compatible',
+    baseUrl: url.toString().replace(/\/+$/, ''),
+    model,
+    embeddingModel:
+      typeof value.embeddingModel === 'string' && value.embeddingModel.trim()
+        ? value.embeddingModel.trim()
+        : 'text-embedding-3-small',
+  }
 }
 
 function status(): AiStatus {
@@ -205,6 +320,25 @@ export function registerAiIpc(): void {
     validateSender(event)
     await initialize()
     return status()
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_PLAYER_STATE_SET, (event, value: unknown) => {
+    validateSender(event)
+    if (
+      !isRecord(value) ||
+      typeof value.playing !== 'boolean' ||
+      typeof value.updatedAt !== 'number'
+    ) {
+      throw new TypeError('Estado do player inválido.')
+    }
+    playerState = {
+      playing: value.playing,
+      updatedAt: value.updatedAt,
+    }
+    return { ...playerState }
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_PLAYER_STATE_GET, (event) => {
+    validateSender(event)
+    return { ...playerState }
   })
   ipcMain.handle(IPC_CHANNELS.AI_CONFIG_GET, async (event) => {
     validateSender(event)

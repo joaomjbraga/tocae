@@ -40,6 +40,7 @@ export const enMessages: Messages = {
   'settings.aiProviderDescription': 'Use a service compatible with the OpenAI Chat Completions format.',
   'settings.aiBaseUrl': 'Base URL',
   'settings.aiModel': 'Model',
+  'settings.aiEmbeddingModel': 'Embedding model',
   'settings.aiCredential': 'Credential',
   'settings.aiCredentialStored': 'A key is stored by the operating system.',
   'settings.aiCredentialMissing': 'No API key configured.',
@@ -105,7 +106,7 @@ export const enMessages: Messages = {
   'assistant.processing': 'Processing...',
   'assistant.emptyTitle': 'How can I help?',
   'assistant.emptyDescription':
-    'Start a conversation. Teco can consult the library and queue, but cannot control the player.',
+    'Start a conversation. Teco can consult the library and control playback through authorized actions.',
   'assistant.you': 'You',
   'assistant.unknownError': 'Could not complete the request.',
 

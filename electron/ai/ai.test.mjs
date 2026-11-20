@@ -11,6 +11,12 @@ import {
   writeAiHistoryFile,
 } from './historyStore.ts'
 import { executeReadOnlyTool } from './tools.ts'
+import {
+  cosineSimilarity,
+  libraryFingerprint,
+  readSemanticIndex,
+  writeSemanticIndex,
+} from './semanticIndex.ts'
 
 const config = {
   provider: 'openai-compatible',
@@ -177,4 +183,63 @@ test('AI read-only tools search the library and report the current playlist', ()
     () => executeReadOnlyTool('remove_library', {}, library, playlist),
     /não autorizada/,
   )
+})
+
+test('semantic index persists and cosine similarity ranks vectors', async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'tocae-semantic-index-'))
+  t.after(() => rm(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'ai-library-index.json')
+  const library = {
+    folders: [],
+    unavailableFolderIds: [],
+    items: [{
+      path: '/music/Blue.mp3',
+      name: 'Blue.mp3',
+      relativePath: 'Blue.mp3',
+      folderId: 'music',
+      type: 'audio',
+    }],
+  }
+
+  await writeSemanticIndex(file, libraryFingerprint(library), [{
+    path: '/music/Blue.mp3',
+    name: 'Blue.mp3',
+    relativePath: 'Blue.mp3',
+    type: 'audio',
+    text: 'Blue.mp3 | Blue.mp3 | audio',
+    vector: [1, 0],
+  }])
+
+  assert.equal(
+    cosineSimilarity([1, 0], [1, 0]),
+    1,
+  )
+  assert.equal(
+    (await readSemanticIndex(file)).fingerprint,
+    libraryFingerprint(library),
+  )
+})
+
+test('OpenAI-compatible provider creates embeddings through the embeddings endpoint', async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, 'https://api.example.test/v1/embeddings')
+    assert.equal(JSON.parse(options.body).model, 'text-embedding-3-small')
+    return new Response(JSON.stringify({
+      data: [
+        { index: 1, embedding: [0, 1] },
+        { index: 0, embedding: [1, 0] },
+      ],
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  }
+
+  try {
+    const provider = new OpenAiCompatibleProvider(config, 'test-key')
+    assert.deepEqual(
+      await provider.embed(['first', 'second'], new AbortController().signal),
+      [[1, 0], [0, 1]],
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })

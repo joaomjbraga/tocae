@@ -35,6 +35,71 @@ export const AI_TOOL_DEFINITIONS: readonly AiToolDefinition[] = [
       parameters: { type: 'object', properties: {} },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'search_library_semantic',
+      description:
+        'Busca mídias por significado usando o índice de embeddings da biblioteca.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Descrição ou conceito da mídia procurada.' },
+          type: { type: 'string', enum: ['audio', 'video', 'image'], description: 'Tipo opcional.' },
+          limit: { type: 'integer', minimum: 1, maximum: 50 },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_player_state',
+      description: 'Consulta se o reprodutor está reproduzindo e qual mídia está atual.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'player_play',
+      description: 'Inicia a reprodução da mídia atual.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'player_pause',
+      description: 'Pausa a reprodução da mídia atual.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'player_toggle',
+      description: 'Alterna entre reproduzir e pausar.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'player_next',
+      description: 'Avança para a próxima mídia da fila.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'player_previous',
+      description: 'Volta para a mídia anterior da fila.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
 ]
 
 export function executeReadOnlyTool(

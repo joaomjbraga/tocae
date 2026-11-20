@@ -6,7 +6,7 @@ import type { Locale } from '@shared/i18n'
 import type { MediaMetadata } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
 import type { PlaylistItem } from '@shared/playlist'
-import type { AiProviderConfig, AiStatus } from '@shared/ai'
+import type { AiPlayerState, AiProviderConfig, AiStatus } from '@shared/ai'
 
 const api: TocaeApi = {
   onCommand(callback) {
@@ -100,6 +100,10 @@ const api: TocaeApi = {
       ipcRenderer.on(IPC_CHANNELS.AI_STREAM_CHUNK, listener)
       return () => ipcRenderer.off(IPC_CHANNELS.AI_STREAM_CHUNK, listener)
     },
+    setPlayerState: (state) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_PLAYER_STATE_SET, state) as Promise<AiPlayerState>,
+    getPlayerState: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_PLAYER_STATE_GET) as Promise<AiPlayerState>,
   },
 }
 

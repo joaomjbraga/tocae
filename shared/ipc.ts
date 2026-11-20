@@ -3,7 +3,7 @@ import type { LibrarySnapshot } from './library'
 import type { MediaMetadata } from './media'
 import type { MediaTrack } from './mediaTracks'
 import type { PersistedPlaylist, PlaylistItem } from './playlist'
-import type { AiProviderConfig, AiStatus } from './ai'
+import type { AiPlayerState, AiProviderConfig, AiStatus } from './ai'
 
 export const IPC_CHANNELS = {
   COMMAND: 'app:command',
@@ -51,6 +51,8 @@ export const IPC_CHANNELS = {
   AI_CANCEL: 'ai:cancel',
   AI_CLEAR: 'ai:clear',
   AI_STREAM_CHUNK: 'ai:stream:chunk',
+  AI_PLAYER_STATE_SET: 'ai:player-state:set',
+  AI_PLAYER_STATE_GET: 'ai:player-state:get',
 } as const
 
 export type AppCommand =
@@ -61,6 +63,9 @@ export type AppCommand =
   | { type: 'previous-video' }
   | { type: 'toggle-playlist' }
   | { type: 'clear-playlist' }
+  | { type: 'playback-play' }
+  | { type: 'playback-pause' }
+  | { type: 'playback-toggle' }
   | { type: 'locale-changed'; locale: Locale; source: LocaleSource }
 
 /** De onde veio o idioma em uso. */
@@ -148,5 +153,7 @@ export interface TocaeApi {
     cancel(): Promise<AiStatus>
     clear(): Promise<AiStatus>
     onStreamChunk(callback: (chunk: string) => void): () => void
+    setPlayerState(state: AiPlayerState): Promise<AiPlayerState>
+    getPlayerState(): Promise<AiPlayerState>
   }
 }

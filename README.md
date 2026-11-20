@@ -58,6 +58,11 @@ Renderer, no diretório de dados do usuário. A configuração do provedor fica 
 arquivo de preferências da aplicação. Não coloque credenciais no código-fonte,
 em variáveis expostas ao Renderer ou em arquivos versionados.
 
+A busca semântica usa o endpoint `/embeddings` do mesmo provedor. Configure um
+modelo compatível com embeddings nas configurações do assistente. O índice é
+gravado localmente em `ai-library-index.json` e atualizado quando a biblioteca
+mudar. A primeira busca pode levar mais tempo enquanto o índice é criado.
+
 Exemplo para o provedor oficial da OpenAI:
 
 - URL base: `https://api.openai.com/v1`
@@ -70,8 +75,9 @@ arquivo de distribuição.
 O assistente suporta envio de mensagens, streaming de respostas, histórico
 persistido localmente, cancelamento, timeout de 60 segundos e tratamento de
 falhas. Nesta versão ele pode consultar a biblioteca e a fila por meio de
-ferramentas somente leitura, incluindo metadados do item atual. Não controla
-a reprodução nem altera arquivos.
+ferramentas somente leitura, incluindo metadados do item atual. O Teco também
+pode iniciar, pausar, alternar ou avançar a reprodução por ferramentas
+explícitas. Não altera arquivos nem executa ações fora da lista autorizada.
 
 Entre as funcionalidades planejadas estão:
 
