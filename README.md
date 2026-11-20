@@ -1,4 +1,4 @@
-<img src="src/assets/tocae-wordmark.png" alt="Tocaê Reprodutor" width="320" />
+![Tocaê Reprodutor](.github/captura.png)
 
 # Tocaê Reprodutor
 
@@ -6,7 +6,7 @@
 
 Reprodutor multimídia minimalista construído com Electron, React e TypeScript. Reproduz vídeos e músicas e exibe imagens.
 
-![Demo](.github/demo.png)
+![Demo](.github/captura.png)
 
 ## Recursos
 
