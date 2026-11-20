@@ -26,13 +26,13 @@ type Announcement = { key: MessageKey; params?: TranslationParams }
 type PlayerScreenProps = {
   accentColor: string
   onAccentColorChange: (color: string) => void
-  onImmersiveVideoChange: (immersive: boolean) => void
+  onImmersiveMediaChange: (immersive: boolean) => void
 }
 
 function PlayerScreen({
   accentColor,
   onAccentColorChange,
-  onImmersiveVideoChange,
+  onImmersiveMediaChange,
 }: PlayerScreenProps) {
   const playlist = usePlaylist()
   const { t } = useI18n()
@@ -41,6 +41,7 @@ function PlayerScreen({
   const serviceViewHostRef = useRef<HTMLDivElement>(null)
   const activeStreamingService =
     activePage === 'netflix' || activePage === 'spotify' ? activePage : null
+  const [playlistVisible, setPlaylistVisible] = useState(false)
   // O painel fica montado durante a saída para poder animar; `panelLeaving`
   // marca o estado intermediário.
   const [panelLeaving, setPanelLeaving] = useState(false)
@@ -75,10 +76,14 @@ function PlayerScreen({
   const handlePlaylistItemPlay = useCallback(
     (index: number) => {
       playlist.playIndex(index)
-      playlist.togglePanel()
+      setPlaylistVisible(false)
     },
-    [playlist.playIndex, playlist.togglePanel],
+    [playlist.playIndex],
   )
+
+  const togglePlaylist = useCallback(() => {
+    setPlaylistVisible((visible) => !visible)
+  }, [])
 
   const handleAutoNextChange = useCallback(
     (autoNext: boolean) => {
@@ -164,14 +169,14 @@ function PlayerScreen({
           playlist.previous()
           break
         case 'toggle-playlist':
-          playlist.togglePanel()
+          togglePlaylist()
           break
         case 'clear-playlist':
           handleClear()
           break
       }
     })
-  }, [api, playlist, handleClear])
+  }, [api, playlist, handleClear, togglePlaylist])
 
   useEffect(() => {
     if (api && playlist.loaded) api.notifyRendererReady()
@@ -180,7 +185,7 @@ function PlayerScreen({
   // Mantém o painel montado durante a animação de saída e cancela a saída se
   // ele for reaberto no meio do caminho.
   useEffect(() => {
-    if (playlist.panelVisible) {
+    if (playlistVisible) {
       hasOpenedPanelRef.current = true
       setPanelLeaving(false)
       if (panelTimerRef.current !== null) {
@@ -197,7 +202,7 @@ function PlayerScreen({
     return () => {
       if (panelTimerRef.current !== null) window.clearTimeout(panelTimerRef.current)
     }
-  }, [playlist.panelVisible])
+  }, [playlistVisible])
 
   // Anuncia o item em reprodução uma vez por item (voltar para o anterior
   // anuncia de novo, porque o id muda).
@@ -252,13 +257,13 @@ function PlayerScreen({
         case 'l':
         case 'L':
           event.preventDefault()
-          playlist.togglePanel()
+          togglePlaylist()
           break
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [api, playlist])
+  }, [api, playlist, togglePlaylist])
 
   const announcementText = useMemo(
     () => (announcement ? t(announcement.key, announcement.params) : ''),
@@ -267,12 +272,14 @@ function PlayerScreen({
 
   const errorMessage = playlist.error ? t(playlist.error) : null
   const mediaType = playlist.current ? mediaTypeForPath(playlist.current.path) : null
-  const immersiveVideo = activePage === 'player' && mediaType === 'video'
+  const immersiveMedia =
+    activePage === 'player' &&
+    (mediaType === 'video' || mediaType === 'image' || mediaType === 'audio')
 
   useEffect(() => {
-    onImmersiveVideoChange(immersiveVideo)
-    return () => onImmersiveVideoChange(false)
-  }, [immersiveVideo, onImmersiveVideoChange])
+    onImmersiveMediaChange(immersiveMedia)
+    return () => onImmersiveMediaChange(false)
+  }, [immersiveMedia, onImmersiveMediaChange])
 
   function handleOpenReleases() {
     void api.openReleasesPage().catch((error: unknown) => {
@@ -297,7 +304,7 @@ function PlayerScreen({
         className={`${styles.workspace} ${
           activePage === 'player' ? styles.playerWorkspace : ''
         } ${activeStreamingService ? styles.serviceWorkspace : ''} ${
-          immersiveVideo ? styles.immersivePlayerWorkspace : ''
+          immersiveMedia ? styles.immersiveMediaWorkspace : ''
         }`}
       >
         {activeStreamingService ? (
@@ -333,20 +340,6 @@ function PlayerScreen({
                     {playlist.current?.name ?? t('player.sessionTitle')}
                   </h1>
                 </div>
-
-                {!(playlist.panelVisible || panelLeaving) && (
-                  <button
-                    type="button"
-                    className={styles.queueButton}
-                    onClick={playlist.togglePanel}
-                    aria-label={t('appbar.togglePlaylist')}
-                    aria-pressed={playlist.panelVisible}
-                  >
-                    <ListVideo size={15} aria-hidden="true" />
-                    <span>{t('playlist.title')}</span>
-                    <span className={styles.queueCount}>{playlist.items.length}</span>
-                  </button>
-                )}
               </header>
 
               <div className={styles.layout}>
@@ -358,7 +351,7 @@ function PlayerScreen({
                     source={playlist.source}
                     mediaType={mediaType}
                     title={playlist.current?.name ?? ''}
-                    immersive={immersiveVideo}
+                    immersive={immersiveMedia}
                     autoNext={playbackPreferences.autoNext}
                     onAutoNextChange={handleAutoNextChange}
                     loopCurrent={playbackPreferences.repeatCurrent}
@@ -383,22 +376,53 @@ function PlayerScreen({
                   )}
                 </div>
 
-                {(playlist.panelVisible || panelLeaving) && (
-                  <PlaylistPanel
-                    items={playlist.items}
-                    currentIndex={playlist.currentIndex}
-                    closing={!playlist.panelVisible}
-                    loading={!playlist.loaded}
-                    pulseIds={playlist.pulseIds}
-                    onPlay={handlePlaylistItemPlay}
-                    onMove={playlist.move}
-                    onRemove={playlist.remove}
-                    onClear={handleClear}
-                    onClose={playlist.togglePanel}
-                    onFilesSelected={playlist.addFiles}
-                    onAnnounce={announce}
-                  />
-                )}
+                <div
+                  className={`${styles.playlistHoverRegion} ${
+                    playlistVisible || panelLeaving ? styles.playlistHoverRegionOpen : ''
+                  } ${immersiveMedia ? styles.playlistHoverRegionImmersive : ''}`}
+                  onMouseEnter={() => setPlaylistVisible(true)}
+                  onMouseLeave={(event) => {
+                    if (!event.currentTarget.matches(':focus-within')) {
+                      setPlaylistVisible(false)
+                    }
+                  }}
+                  onFocusCapture={() => setPlaylistVisible(true)}
+                  onBlurCapture={(event) => {
+                    const next = event.relatedTarget
+                    if (next instanceof Node && event.currentTarget.contains(next)) return
+                    setPlaylistVisible(false)
+                  }}
+                >
+                  <button
+                    type="button"
+                    className={styles.queueButton}
+                    onClick={() => setPlaylistVisible(true)}
+                    aria-label={t('playlist.label')}
+                    aria-expanded={playlistVisible}
+                    aria-controls="playlist-panel"
+                  >
+                    <ListVideo size={15} aria-hidden="true" />
+                    <span>{t('playlist.title')}</span>
+                    <span className={styles.queueCount}>{playlist.items.length}</span>
+                  </button>
+
+                  {(playlistVisible || panelLeaving) && (
+                    <PlaylistPanel
+                      items={playlist.items}
+                      currentIndex={playlist.currentIndex}
+                      immersive={immersiveMedia}
+                      closing={!playlistVisible}
+                      loading={!playlist.loaded}
+                      pulseIds={playlist.pulseIds}
+                      onPlay={handlePlaylistItemPlay}
+                      onMove={playlist.move}
+                      onRemove={playlist.remove}
+                      onClear={handleClear}
+                      onFilesSelected={playlist.addFiles}
+                      onAnnounce={announce}
+                    />
+                  )}
+                </div>
               </div>
             </div>
 

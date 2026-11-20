@@ -13,7 +13,6 @@ interface PlaylistState {
   items: PlaylistItem[]
   currentIndex: number
   error: MessageKey | null
-  panelVisible: boolean
   loaded: boolean
   /** Ids duplicados recém-detectados, para o realce temporário das linhas. */
   pulseIds: string[]
@@ -26,7 +25,6 @@ const INITIAL_STATE: PlaylistState = {
   items: [],
   currentIndex: -1,
   error: null,
-  panelVisible: true,
   loaded: false,
   pulseIds: [],
 }
@@ -266,10 +264,6 @@ export function usePlaylist() {
     })
   }, [])
 
-  const togglePanel = useCallback(() => {
-    setState((prev) => ({ ...prev, panelVisible: !prev.panelVisible }))
-  }, [])
-
   const pulseIds = useMemo(() => new Set(state.pulseIds), [state.pulseIds])
 
   return useMemo(
@@ -283,7 +277,6 @@ export function usePlaylist() {
           ? toMediaUrl(state.items[state.currentIndex].path)
           : null,
       error: state.error,
-      panelVisible: state.panelVisible,
       loaded: state.loaded,
       hasNext: state.currentIndex >= 0 && state.currentIndex + 1 < state.items.length,
       hasPrevious: state.currentIndex > 0,
@@ -297,7 +290,6 @@ export function usePlaylist() {
       remove,
       clear,
       restore,
-      togglePanel,
       failCurrent,
     }),
     [
@@ -305,7 +297,6 @@ export function usePlaylist() {
       pulseIds,
       state.currentIndex,
       state.error,
-      state.panelVisible,
       state.loaded,
       addPaths,
       openPaths,
@@ -317,7 +308,6 @@ export function usePlaylist() {
       remove,
       clear,
       restore,
-      togglePanel,
       failCurrent,
     ],
   )

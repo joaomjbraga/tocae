@@ -6,7 +6,6 @@ export const enMessages: Messages = {
   'appbar.openMediaFile': 'Open a media file',
   'appbar.openMediaFolder': 'Open media folder',
   'appbar.navigation': 'Tocaê navigation',
-  'appbar.togglePlaylist': 'Show or hide the playlist',
   'appbar.windowControls': 'Window controls',
   'appbar.minimizeWindow': 'Minimize window',
   'appbar.maximizeWindow': 'Maximize window',
@@ -104,7 +103,6 @@ export const enMessages: Messages = {
   // Playlist
   'playlist.label': 'Playlist',
   'playlist.title': 'Up Next',
-  'playlist.hide': 'Hide playlist',
   'playlist.loading': 'Loading playlist',
   'playlist.empty': 'The playlist is empty. Open media to play it in sequence.',
   'playlist.clear': 'Clear playlist',

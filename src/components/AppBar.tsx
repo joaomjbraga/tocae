@@ -30,7 +30,10 @@ function AppBar({
         onClick={onOpenMedia}
         aria-label={t('appbar.openMediaFile')}
       >
-        <File size={16} />
+        <span className={styles.icon} aria-hidden="true">
+          <File size={16} />
+        </span>
+        <span className={styles.label}>{t('appbar.openMediaFile')}</span>
       </button>
 
       <button
@@ -39,7 +42,10 @@ function AppBar({
         onClick={onOpenMediaFolder}
         aria-label={t('appbar.openMediaFolder')}
       >
-        <FolderOpen size={16} />
+        <span className={styles.icon} aria-hidden="true">
+          <FolderOpen size={16} />
+        </span>
+        <span className={styles.label}>{t('appbar.openMediaFolder')}</span>
       </button>
 
       <span className={styles.separator} aria-hidden="true" />
@@ -50,9 +56,10 @@ function AppBar({
         onClick={() => onOpenStreamingService('netflix')}
         aria-label={t('services.netflix')}
       >
-        <span className={styles.netflixMark} aria-hidden="true">
-          N
+        <span className={styles.icon} aria-hidden="true">
+          <span className={styles.netflixMark}>N</span>
         </span>
+        <span className={styles.label}>{t('services.netflix')}</span>
       </button>
 
       <button
@@ -61,7 +68,10 @@ function AppBar({
         onClick={() => onOpenStreamingService('spotify')}
         aria-label={t('services.spotify')}
       >
-        <AudioLines className={styles.spotifyMark} size={18} aria-hidden="true" />
+        <span className={styles.icon} aria-hidden="true">
+          <AudioLines className={styles.spotifyMark} size={18} />
+        </span>
+        <span className={styles.label}>{t('services.spotify')}</span>
       </button>
 
       <span className={styles.separator} aria-hidden="true" />
@@ -75,7 +85,10 @@ function AppBar({
         aria-label={t('settings.title')}
         aria-pressed={activePage === 'settings'}
       >
-        <Settings size={16} />
+        <span className={styles.icon} aria-hidden="true">
+          <Settings size={16} />
+        </span>
+        <span className={styles.label}>{t('settings.title')}</span>
       </button>
     </aside>
   )

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, DragEvent, KeyboardEvent } from 'react'
-import { GripVertical, ListVideo, Play, Trash2, X } from 'lucide-react'
+import { GripVertical, ListVideo, Play, Trash2 } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
 import { useI18n } from '../../i18n'
 import styles from './PlaylistPanel.module.css'
@@ -11,6 +11,7 @@ type RowStyle = CSSProperties & { '--i': number }
 type PlaylistPanelProps = {
   items: { id: string; name: string }[]
   currentIndex: number
+  immersive: boolean
   /** `closing` marca a saída animada (o painel segue montado). */
   closing: boolean
   loading: boolean
@@ -20,7 +21,6 @@ type PlaylistPanelProps = {
   onMove: (from: number, to: number) => void
   onRemove: (id: string) => void
   onClear: () => void
-  onClose: () => void
   onFilesSelected: (files: File[]) => void
   onAnnounce: (key: MessageKey, params?: TranslationParams) => void
 }
@@ -28,6 +28,7 @@ type PlaylistPanelProps = {
 function PlaylistPanel({
   items,
   currentIndex,
+  immersive,
   closing,
   loading,
   pulseIds,
@@ -35,7 +36,6 @@ function PlaylistPanel({
   onMove,
   onRemove,
   onClear,
-  onClose,
   onFilesSelected,
   onAnnounce,
 }: PlaylistPanelProps) {
@@ -140,7 +140,8 @@ function PlaylistPanel({
 
   return (
     <aside
-      className={`${styles.panel} ${closing ? styles.closing : ''} ${droppingFiles ? styles.dropping : ''}`}
+      className={`${styles.panel} ${immersive ? styles.immersive : ''} ${closing ? styles.closing : ''} ${droppingFiles ? styles.dropping : ''}`}
+      id="playlist-panel"
       aria-label={t('playlist.label')}
       inert={closing ? true : undefined}
       onDragEnter={handleFileDragEnter}
@@ -154,14 +155,6 @@ function PlaylistPanel({
           {t('playlist.title')}
           {items.length > 0 && <span className={styles.count}>{items.length}</span>}
         </h2>
-        <button
-          type="button"
-          className={styles.iconButton}
-          onClick={onClose}
-          aria-label={t('playlist.hide')}
-        >
-          <X size={14} />
-        </button>
       </header>
 
       {loading ? (

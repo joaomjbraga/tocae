@@ -39,7 +39,8 @@
   transition: transform var(--duration-fast) var(--ease-standard);
 }
 
-.videoArea.immersive:not(.portrait) .video {
+.videoArea.immersive:not(.portrait) .video,
+.videoArea.immersive:not(.portrait) .image {
   object-fit: cover;
 }
 

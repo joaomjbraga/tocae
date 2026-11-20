@@ -11,7 +11,6 @@ export const ptBRMessages = {
   'appbar.openMediaFile': 'Abrir um arquivo de mídia',
   'appbar.openMediaFolder': 'Abrir pasta de mídia',
   'appbar.navigation': 'Navegação do Tocaê',
-  'appbar.togglePlaylist': 'Mostrar ou ocultar a lista de reprodução',
   'appbar.windowControls': 'Controles da janela',
   'appbar.minimizeWindow': 'Minimizar janela',
   'appbar.maximizeWindow': 'Maximizar janela',
@@ -109,7 +108,6 @@ export const ptBRMessages = {
   // Lista de reprodução
   'playlist.label': 'Lista de reprodução',
   'playlist.title': 'A seguir',
-  'playlist.hide': 'Ocultar lista',
   'playlist.loading': 'Carregando lista',
   'playlist.empty': 'A lista está vazia. Abra mídias para reproduzi-las em sequência.',
   'playlist.clear': 'Limpar lista',

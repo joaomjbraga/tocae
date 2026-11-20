@@ -159,15 +159,7 @@
   pointer-events: none;
 }
 
-.playerWorkspace .queueButton {
-  pointer-events: auto;
-}
-
-.playerWorkspace .workspaceHeaderHidden .queueButton {
-  pointer-events: none;
-}
-
-.playerWorkspace.immersivePlayerWorkspace .workspaceHeader {
+.playerWorkspace.immersiveMediaWorkspace .workspaceHeader {
   top: 36px;
   background: none;
 }
@@ -217,6 +209,30 @@
   background: transparent;
   color: var(--accent);
   transform: translateY(-1px);
+}
+
+.playlistHoverRegion {
+  position: absolute;
+  top: 0;
+  right: 16px;
+  z-index: 4;
+  width: max-content;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.playlistHoverRegionOpen {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(250px, 72vw);
+  height: auto;
+}
+
+.playerWorkspace.immersiveMediaWorkspace .playlistHoverRegionImmersive:not(.playlistHoverRegionOpen) {
+  top: 36px;
 }
 
 .queueButton svg {
@@ -301,6 +317,10 @@
   .playerWorkspace .workspaceHeader {
     height: 52px;
     min-height: 52px;
+  }
+
+  .playlistHoverRegion {
+    height: 52px;
   }
 }
 

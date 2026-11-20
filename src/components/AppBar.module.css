@@ -7,24 +7,80 @@
   gap: 8px;
   min-height: 0;
   padding: 12px 6px;
+  overflow: hidden;
+  transition:
+    width var(--duration-panel) var(--ease-inout),
+    flex-basis var(--duration-panel) var(--ease-inout);
+}
+
+.appBar:hover,
+.appBar:focus-within {
+  width: 204px;
+  flex-basis: 204px;
 }
 
 .button {
   width: 34px;
   height: 34px;
-  display: grid;
+  display: flex;
   flex: 0 0 auto;
-  place-items: center;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 0 6px;
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
   color: var(--text-toolbar);
   cursor: pointer;
   transition:
+    width var(--duration-panel) var(--ease-inout),
+    gap var(--duration-panel) var(--ease-inout),
+    padding var(--duration-panel) var(--ease-inout),
     background-color var(--duration-fast),
     color var(--duration-fast),
     border-color var(--duration-fast),
     transform var(--duration-fast);
+}
+
+.appBar:hover .button,
+.appBar:focus-within .button {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 8px;
+  text-align: left;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  flex: 0 0 20px;
+  place-items: center;
+}
+
+.label {
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  color: inherit;
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: translateX(-4px);
+  transition:
+    max-width var(--duration-panel) var(--ease-inout),
+    opacity var(--duration-base) var(--ease-standard),
+    transform var(--duration-panel) var(--ease-inout);
+}
+
+.appBar:hover .label,
+.appBar:focus-within .label {
+  max-width: 148px;
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .button:active:not(:disabled) {
@@ -71,6 +127,11 @@
   flex: 0 0 auto;
   margin: 2px 0;
   background: var(--border-surface);
+}
+
+.appBar:hover .separator,
+.appBar:focus-within .separator {
+  width: calc(100% - 12px);
 }
 
 .spacer {

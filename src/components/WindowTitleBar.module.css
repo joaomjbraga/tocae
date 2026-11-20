@@ -107,6 +107,11 @@
   margin-left: 48px;
 }
 
+.titleBar.overlay:has(+ main aside:hover) .dragRegion,
+.titleBar.overlay:has(+ main aside:focus-within) .dragRegion {
+  margin-left: 204px;
+}
+
 .titleBar.overlay .control {
   color: var(--text-primary);
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.75));
