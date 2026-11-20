@@ -60,6 +60,12 @@
   place-items: center;
 }
 
+.youtubeIcon {
+  border-radius: 50%;
+  background: #ff0033;
+  color: #fff;
+}
+
 .label {
   max-width: 0;
   overflow: hidden;

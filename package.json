@@ -10,7 +10,7 @@
     "type": "git",
     "url": "https://github.com/joaomjbraga/tocae-reprodutor.git"
   },
-  "desktopName": "io.github.joaomjbraga.tocae-reprodutor.desktop",
+  "desktopName": "Tocae",
   "type": "module",
   "scripts": {
     "dev": "vite",

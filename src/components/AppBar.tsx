@@ -1,13 +1,16 @@
-import { CirclePlay, File, FolderOpen, House, Settings } from 'lucide-react'
+import { CirclePlay, File, FolderOpen, House, Music2, Settings } from 'lucide-react'
 import { useI18n } from '../i18n'
 import styles from './AppBar.module.css'
 
+export type AppPage = 'library' | 'player' | 'settings' | 'youtube-music'
+
 type AppBarProps = {
-  activePage: 'library' | 'player' | 'settings'
+  activePage: AppPage
   onOpenMedia: () => void
   onOpenMediaFolder: () => void
   onOpenLibrary: () => void
   onOpenPlayer: () => void
+  onOpenYouTubeMusic: () => void
   onOpenSettings: () => void
 }
 
@@ -17,6 +20,7 @@ function AppBar({
   onOpenMediaFolder,
   onOpenLibrary,
   onOpenPlayer,
+  onOpenYouTubeMusic,
   onOpenSettings,
 }: AppBarProps) {
   const { t } = useI18n()
@@ -75,6 +79,19 @@ function AppBar({
           <CirclePlay size={16} />
         </span>
         <span className={styles.label}>{t('navigation.backToPlayer')}</span>
+      </button>
+
+      <button
+        type="button"
+        className={`${styles.button} ${activePage === 'youtube-music' ? styles.active : ''}`}
+        onClick={onOpenYouTubeMusic}
+        aria-label={t('youtubeMusic.title')}
+        aria-pressed={activePage === 'youtube-music'}
+      >
+        <span className={`${styles.icon} ${styles.youtubeIcon}`} aria-hidden="true">
+          <Music2 size={13} />
+        </span>
+        <span className={styles.label}>{t('youtubeMusic.title')}</span>
       </button>
 
       <button

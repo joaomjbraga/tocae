@@ -11,6 +11,19 @@ export const enMessages: Messages = {
   'appbar.maximizeWindow': 'Maximize window',
   'appbar.restoreWindow': 'Restore window',
   'appbar.closeWindow': 'Close window',
+  'youtubeMusic.title': 'YouTube Music',
+  'youtubeMusic.controls': 'YouTube Music controls',
+  'youtubeMusic.back': 'Back',
+  'youtubeMusic.forward': 'Forward',
+  'youtubeMusic.reload': 'Reload',
+  'youtubeMusic.stop': 'Stop playback',
+  'youtubeMusic.stopped':
+    'The page was closed to stop playback. Your sign-in is saved; open YouTube Music to start again.',
+  'youtubeMusic.open': 'Open YouTube Music',
+  'youtubeMusic.returnToLibrary': 'Back to library',
+  'youtubeMusic.loading': 'Loading YouTube Music...',
+  'youtubeMusic.loadError': 'Could not load YouTube Music. Check your connection and try again.',
+  'youtubeMusic.retry': 'Try again',
 
   // Language switching
   'language.button': 'Language',

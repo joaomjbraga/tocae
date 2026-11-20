@@ -16,6 +16,7 @@ Reprodutor multimídia minimalista construído com Electron, React e TypeScript.
 - Consulte metadados de áudio, vídeo e imagem, além do tamanho e da data dos arquivos
 - Reproduza vídeos e músicas e navegue por imagens em uma única lista
 - Selecione faixas de áudio e legendas embutidas em vídeos compatíveis
+- Acesse o YouTube Music em uma sessão persistente isolada do reprodutor local
 - Avance automaticamente ao fim ou repita a mídia atual, com opções nas configurações
 - Reordene a lista arrastando os itens ou pelo teclado
 - Pule entre mídias com atalhos de uma tecla
@@ -43,6 +44,8 @@ Formatos aceitos: vídeos MP4, WebM, MKV, AVI, MOV e OGV; músicas MP3, M4A, AAC
 O player preserva a proporção original de vídeos e imagens, inclusive em retrato. O zoom pode ser movido com o mouse ou toque e é limitado às bordas visíveis da mídia. Músicas usam os mesmos controles de reprodução e linha do tempo, com um disco animado e um visualizador de barras enquanto tocam. A interface usa controles compactos e translúcidos, com adaptação para janelas estreitas.
 
 Os metadados incluem tags e capas de áudio, duração e codec de mídia, dimensões de vídeo e imagem, dados EXIF básicos e informações do arquivo. A biblioteca os carrega conforme os itens são explorados. No Linux, o pacote instala Perl como dependência do ExifTool. A seleção de faixas usa FFmpeg e FFprobe; os binários GPL e as informações de licença e origem estão em [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+
+O YouTube Music usa a interface oficial em uma visualização Electron criada somente quando aberta, em um layout imersivo alinhado ao player. O login fica em uma sessão persistente isolada da biblioteca e do player local; o Tocaê não lê nem manipula cookies, nem controla ou extrai a reprodução do serviço. O botão **Parar reprodução** encerra a visualização incorporada e interrompe o áudio, preservando o login; ao reabrir, a página começa novamente.
 
 ## Idiomas
 

@@ -18,5 +18,5 @@ export const ICON_PATH = path.join(
 export const PRELOAD_PATH = path.join(__dirname, 'preload.mjs')
 
 export const APP_TITLE = 'Tocaê Reprodutor'
-/** Mesmo valor de `desktopName` no package.json e do .desktop instalado pelo .deb. */
-export const DESKTOP_FILE_NAME = 'io.github.joaomjbraga.tocae-reprodutor.desktop'
+/** Mesmo nome do arquivo `.desktop` gerado a partir de `desktopName` no package.json. */
+export const DESKTOP_FILE_NAME = 'Tocae.desktop'

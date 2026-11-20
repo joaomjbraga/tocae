@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { IpcRendererEvent } from 'electron'
 import { IPC_CHANNELS } from '@shared/ipc'
-import type { AppCommand, TocaeApi } from '@shared/ipc'
+import type { AppCommand, TocaeApi, YouTubeMusicStatus } from '@shared/ipc'
 import type { Locale } from '@shared/i18n'
 import type { MediaMetadata } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
@@ -37,6 +37,22 @@ const api: TocaeApi = {
     ) as Promise<string>,
   releaseMediaTrackOutput: (outputPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MEDIA_TRACK_OUTPUT_RELEASE, outputPath),
+  youtubeMusic: {
+    open: () => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_OPEN),
+    close: () => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_CLOSE),
+    stop: () => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_STOP),
+    setBounds: (bounds) => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_SET_BOUNDS, bounds),
+    reload: () => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_RELOAD),
+    goBack: () => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_GO_BACK),
+    goForward: () => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_GO_FORWARD),
+    getStatus: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_GET_STATUS) as Promise<YouTubeMusicStatus>,
+    onStatus(callback) {
+      const listener = (_event: IpcRendererEvent, status: YouTubeMusicStatus) => callback(status)
+      ipcRenderer.on(IPC_CHANNELS.YOUTUBE_MUSIC_STATUS, listener)
+      return () => ipcRenderer.off(IPC_CHANNELS.YOUTUBE_MUSIC_STATUS, listener)
+    },
+  },
   getMediaMetadata: (filePath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MEDIA_METADATA_GET, filePath) as Promise<MediaMetadata>,
   getLibrary: () => ipcRenderer.invoke(IPC_CHANNELS.LIBRARY_GET),

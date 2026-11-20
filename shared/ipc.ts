@@ -16,6 +16,15 @@ export const IPC_CHANNELS = {
   MEDIA_TRACK_AUDIO_CREATE: 'media:track-audio:create',
   MEDIA_TRACK_SUBTITLE_EXTRACT: 'media:track-subtitle:extract',
   MEDIA_TRACK_OUTPUT_RELEASE: 'media:track-output:release',
+  YOUTUBE_MUSIC_OPEN: 'youtube-music:open',
+  YOUTUBE_MUSIC_CLOSE: 'youtube-music:close',
+  YOUTUBE_MUSIC_STOP: 'youtube-music:stop',
+  YOUTUBE_MUSIC_SET_BOUNDS: 'youtube-music:set-bounds',
+  YOUTUBE_MUSIC_RELOAD: 'youtube-music:reload',
+  YOUTUBE_MUSIC_GO_BACK: 'youtube-music:go-back',
+  YOUTUBE_MUSIC_GO_FORWARD: 'youtube-music:go-forward',
+  YOUTUBE_MUSIC_GET_STATUS: 'youtube-music:get-status',
+  YOUTUBE_MUSIC_STATUS: 'youtube-music:status',
   LIBRARY_GET: 'library:get',
   LIBRARY_ADD_FOLDER: 'library:add-folder',
   LIBRARY_REMOVE_FOLDER: 'library:remove-folder',
@@ -60,6 +69,19 @@ export interface DefaultPlayerStatus {
   isDefault: boolean
 }
 
+export interface YouTubeMusicBounds {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface YouTubeMusicStatus {
+  state: 'idle' | 'loading' | 'ready' | 'error'
+  canGoBack: boolean
+  canGoForward: boolean
+}
+
 export interface TocaeApi {
   onCommand(callback: (command: AppCommand) => void): () => void
   notifyRendererReady(): void
@@ -72,6 +94,17 @@ export interface TocaeApi {
   createAudioTrackPlayback(filePath: string, streamIndex: number): Promise<string>
   extractSubtitleTrack(filePath: string, streamIndex: number): Promise<string>
   releaseMediaTrackOutput(outputPath: string): Promise<void>
+  youtubeMusic: {
+    open(): Promise<void>
+    close(): Promise<void>
+    stop(): Promise<void>
+    setBounds(bounds: YouTubeMusicBounds): Promise<void>
+    reload(): Promise<void>
+    goBack(): Promise<void>
+    goForward(): Promise<void>
+    getStatus(): Promise<YouTubeMusicStatus>
+    onStatus(callback: (status: YouTubeMusicStatus) => void): () => void
+  }
   getLibrary(): Promise<LibrarySnapshot>
   addLibraryFolder(): Promise<LibrarySnapshot | null>
   removeLibraryFolder(folderId: string): Promise<LibrarySnapshot>

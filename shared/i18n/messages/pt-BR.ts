@@ -16,6 +16,20 @@ export const ptBRMessages = {
   'appbar.maximizeWindow': 'Maximizar janela',
   'appbar.restoreWindow': 'Restaurar janela',
   'appbar.closeWindow': 'Fechar janela',
+  'youtubeMusic.title': 'YouTube Music',
+  'youtubeMusic.controls': 'Controles do YouTube Music',
+  'youtubeMusic.back': 'Voltar',
+  'youtubeMusic.forward': 'Avançar',
+  'youtubeMusic.reload': 'Recarregar',
+  'youtubeMusic.stop': 'Parar reprodução',
+  'youtubeMusic.stopped':
+    'A página foi fechada para interromper a reprodução. Seu login continua salvo; abra o YouTube Music para começar novamente.',
+  'youtubeMusic.open': 'Abrir YouTube Music',
+  'youtubeMusic.returnToLibrary': 'Voltar à biblioteca',
+  'youtubeMusic.loading': 'Carregando o YouTube Music...',
+  'youtubeMusic.loadError':
+    'Não foi possível carregar o YouTube Music. Verifique sua conexão e tente novamente.',
+  'youtubeMusic.retry': 'Tentar novamente',
 
   // Troca de idioma
   'language.button': 'Idioma',

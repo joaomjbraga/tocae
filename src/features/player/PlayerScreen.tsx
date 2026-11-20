@@ -3,13 +3,14 @@ import { ListVideo } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
 import { mediaTypeForPath } from '@shared/media'
 import type { MediaMetadata } from '@shared/media'
-import AppBar from '../../components/AppBar'
+import AppBar, { type AppPage } from '../../components/AppBar'
 import Toast from '../../components/Toast'
 import PlaylistPanel from '../playlist/PlaylistPanel'
 import Library from '../library/Library'
 import VideoPlayer from './VideoPlayer'
 import { readPlaybackPreferences, savePlaybackPreferences } from './playbackPreferences'
 import SettingsPage from '../settings/SettingsPage'
+import YouTubeMusicPage from '../integrations/youtube-music/YouTubeMusicPage'
 import { usePlaylist } from '../playlist/usePlaylist'
 import type { PlaylistSnapshot } from '../playlist/usePlaylist'
 import { useI18n } from '../../i18n'
@@ -39,7 +40,7 @@ function PlayerScreen({
   const playlist = usePlaylist()
   const { locale, t } = useI18n()
   const api = window.tocae
-  const [activePage, setActivePage] = useState<'library' | 'player' | 'settings'>('library')
+  const [activePage, setActivePage] = useState<AppPage>('library')
   const [playlistVisible, setPlaylistVisible] = useState(false)
   const [playlistView, setPlaylistView] = useState<'queue' | 'folders'>('folders')
   // O painel fica montado durante a saída para poder animar; `panelLeaving`
@@ -291,10 +292,12 @@ function PlayerScreen({
   const immersiveMedia =
     activePage === 'player' &&
     (mediaType === 'video' || mediaType === 'image' || mediaType === 'audio')
+  const youtubeMusicImmersive = activePage === 'youtube-music'
+  const immersiveMode = immersiveMedia || youtubeMusicImmersive
   useEffect(() => {
-    onImmersiveModeChange(immersiveMedia)
+    onImmersiveModeChange(immersiveMode)
     return () => onImmersiveModeChange(false)
-  }, [immersiveMedia, onImmersiveModeChange])
+  }, [immersiveMode, onImmersiveModeChange])
 
   function handleOpenReleases() {
     void api.openReleasesPage().catch((error: unknown) => {
@@ -304,7 +307,9 @@ function PlayerScreen({
 
   return (
     <div
-      className={`${styles.screen} ${activePage === 'player' ? styles.playerMode : styles.settingsMode}`}
+      className={`${styles.screen} ${
+        activePage === 'player' || youtubeMusicImmersive ? styles.playerMode : styles.settingsMode
+      }`}
     >
       <AppBar
         activePage={activePage}
@@ -312,13 +317,14 @@ function PlayerScreen({
         onOpenMediaFolder={() => void api?.openMediaFolderDialog()}
         onOpenLibrary={() => setActivePage('library')}
         onOpenPlayer={() => setActivePage('player')}
+        onOpenYouTubeMusic={() => setActivePage('youtube-music')}
         onOpenSettings={() => setActivePage('settings')}
       />
 
       <section
         className={`${styles.workspace} ${
-          activePage === 'player' ? styles.playerWorkspace : ''
-        } ${immersiveMedia ? styles.immersiveMediaWorkspace : ''}`}
+          activePage === 'player' || youtubeMusicImmersive ? styles.playerWorkspace : ''
+        } ${immersiveMode ? styles.immersiveMediaWorkspace : ''}`}
       >
         <div className={styles.pageStack}>
           <div
@@ -441,6 +447,13 @@ function PlayerScreen({
               repeatCurrent={playbackPreferences.repeatCurrent}
               onAutoNextChange={handleAutoNextChange}
               onRepeatCurrentChange={handleRepeatCurrentChange}
+            />
+          )}
+
+          {activePage === 'youtube-music' && (
+            <YouTubeMusicPage
+              immersive={youtubeMusicImmersive}
+              onReturnToLibrary={() => setActivePage('library')}
             />
           )}
         </div>
