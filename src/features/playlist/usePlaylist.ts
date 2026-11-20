@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PersistedPlaylist, PlaylistItem } from '@shared/playlist'
+import {
+  mergePersistedPlaylist,
+  movePlaylistItem,
+  removePlaylistItem,
+} from '@shared/playlistState'
 import type { MessageKey } from '@shared/i18n'
 import { baseNameFor } from '../../lib/format'
 import { isMediaFile, toMediaUrl } from '../../lib/media'
@@ -71,26 +76,11 @@ export function usePlaylist() {
       .readPlaylist()
       .then(({ items, currentIndex }) => {
         if (active) {
-          setState((prev) => {
-            if (prev.items.length === 0) return { ...prev, items, currentIndex, loaded: true }
-
-            const knownPaths = new Set(items.map((item) => item.path))
-            const mergedItems = [
-              ...items,
-              ...prev.items.filter((item) => !knownPaths.has(item.path)),
-            ]
-            const pendingCurrentPath = prev.items[prev.currentIndex]?.path
-            const pendingCurrentIndex = pendingCurrentPath
-              ? mergedItems.findIndex((item) => item.path === pendingCurrentPath)
-              : -1
-
-            return {
-              ...prev,
-              items: mergedItems,
-              currentIndex: pendingCurrentIndex >= 0 ? pendingCurrentIndex : currentIndex,
-              loaded: true,
-            }
-          })
+          setState((prev) => ({
+            ...prev,
+            ...mergePersistedPlaylist({ items, currentIndex }, prev),
+            loaded: true,
+          }))
         }
       })
       .catch((error: unknown) => {
@@ -245,36 +235,15 @@ export function usePlaylist() {
 
   const move = useCallback((from: number, to: number) => {
     setState((prev) => {
-      if (from === to) return prev
-      if (from < 0 || from >= prev.items.length) return prev
-      if (to < 0 || to >= prev.items.length) return prev
-
-      const currentId = prev.items[prev.currentIndex]?.id
-      const items = [...prev.items]
-      const [moved] = items.splice(from, 1)
-      items.splice(to, 0, moved)
-
-      return {
-        ...prev,
-        items,
-        currentIndex: currentId ? items.findIndex((item) => item.id === currentId) : -1,
-      }
+      const next = movePlaylistItem(prev, from, to)
+      return next === prev ? prev : { ...prev, ...next }
     })
   }, [])
 
   const remove = useCallback((id: string) => {
     setState((prev) => {
-      const index = prev.items.findIndex((item) => item.id === id)
-      if (index === -1) return prev
-
-      const items = prev.items.filter((item) => item.id !== id)
-      if (items.length === 0) return { ...prev, items, currentIndex: -1, error: null }
-
-      let currentIndex = prev.currentIndex
-      if (index < prev.currentIndex) currentIndex = prev.currentIndex - 1
-      else if (index === prev.currentIndex) currentIndex = Math.min(prev.currentIndex, items.length - 1)
-
-      return { ...prev, items, currentIndex, error: null }
+      const next = removePlaylistItem(prev, id)
+      return next ? { ...prev, ...next, error: null } : prev
     })
   }, [])
 

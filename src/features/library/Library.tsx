@@ -21,7 +21,7 @@ import type { MediaMetadata, MediaType } from '@shared/media'
 import { useI18n } from '../../i18n'
 import { toMediaUrl } from '../../lib/media'
 import { summarizeMediaMetadata } from '../../lib/mediaMetadata'
-import { readFavoritePaths, saveFavoritePaths } from './favorites'
+import { readFavoritePaths, saveFavoritePaths, toggleFavoritePath } from './favorites'
 import styles from './Library.module.css'
 
 type MediaFilter = 'all' | MediaType
@@ -383,9 +383,7 @@ function Library({ onPlay }: LibraryProps) {
 
   const handleToggleFavorite = useCallback(
     (filePath: string) => {
-      const nextFavorites = new Set(favorites)
-      if (nextFavorites.has(filePath)) nextFavorites.delete(filePath)
-      else nextFavorites.add(filePath)
+      const nextFavorites = toggleFavoritePath(favorites, filePath)
 
       try {
         saveFavoritePaths(nextFavorites)

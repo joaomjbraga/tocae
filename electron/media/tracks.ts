@@ -5,15 +5,19 @@ import { spawn } from 'node:child_process'
 import { mkdtemp, rm, stat } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { IPC_CHANNELS } from '@shared/ipc'
 import { mediaTypeForPath } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
+import { registerTrackIpcHandlers } from './trackIpcHandlers'
+import { assertTrackAvailable, parseTrackIndex } from './trackSelection'
+import { TemporaryTrackOutputs } from './temporaryTrackOutputs'
 
 const MAX_PROBE_OUTPUT = 4 * 1024 * 1024
 const PROBE_TIMEOUT_MS = 30_000
 const EXTRACTION_TIMEOUT_MS = 30 * 60 * 1000
-const temporaryDirectories = new Set<string>()
-const temporaryOutputs = new Map<string, string>()
+const temporaryTrackOutputs = new TemporaryTrackOutputs({
+  createDirectory: () => mkdtemp(path.join(os.tmpdir(), 'tocae-media-track-')),
+  removeDirectory: (directory) => rm(directory, { recursive: true, force: true }),
+})
 
 type ProcessResult = {
   stdout: string
@@ -164,22 +168,10 @@ async function validateStream(
   rawStreamIndex: unknown,
   kind: MediaTrack['kind'],
 ): Promise<{ filePath: string; streamIndex: number }> {
-  if (!Number.isSafeInteger(rawStreamIndex) || (rawStreamIndex as number) < 0) {
-    throw new TypeError('A valid media stream index is required.')
-  }
+  const streamIndex = parseTrackIndex(rawStreamIndex)
   const resolvedPath = await mediaFilePath(filePath)
-  const streamIndex = rawStreamIndex as number
-  const track = (await getMediaTracks(resolvedPath)).find(
-    (candidate) => candidate.streamIndex === streamIndex && candidate.kind === kind,
-  )
-  if (!track) throw new TypeError(`The requested ${kind} stream was not found.`)
+  assertTrackAvailable(await getMediaTracks(resolvedPath), streamIndex, kind)
   return { filePath: resolvedPath, streamIndex }
-}
-
-async function createTemporaryDirectory(): Promise<string> {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'tocae-media-track-'))
-  temporaryDirectories.add(directory)
-  return directory
 }
 
 async function createAudioTrackPlayback(
@@ -191,10 +183,7 @@ async function createAudioTrackPlayback(
     rawStreamIndex,
     'audio',
   )
-  const directory = await createTemporaryDirectory()
-  const outputPath = path.join(directory, 'selected-audio.mkv')
-
-  try {
+  return temporaryTrackOutputs.create('selected-audio.mkv', async (outputPath) => {
     await runProcess(
       executablePath(ffmpegPath, 'FFmpeg'),
       [
@@ -219,13 +208,7 @@ async function createAudioTrackPlayback(
       ],
       EXTRACTION_TIMEOUT_MS,
     )
-    temporaryOutputs.set(outputPath, directory)
-    return outputPath
-  } catch (error) {
-    await rm(directory, { recursive: true, force: true })
-    temporaryDirectories.delete(directory)
-    throw error
-  }
+  })
 }
 
 async function extractSubtitleTrack(
@@ -237,10 +220,7 @@ async function extractSubtitleTrack(
     rawStreamIndex,
     'subtitle',
   )
-  const directory = await createTemporaryDirectory()
-  const outputPath = path.join(directory, 'selected-subtitle.vtt')
-
-  try {
+  return temporaryTrackOutputs.create('selected-subtitle.vtt', async (outputPath) => {
     await runProcess(
       executablePath(ffmpegPath, 'FFmpeg'),
       [
@@ -261,50 +241,29 @@ async function extractSubtitleTrack(
       ],
       EXTRACTION_TIMEOUT_MS,
     )
-    temporaryOutputs.set(outputPath, directory)
-    return outputPath
-  } catch (error) {
-    await rm(directory, { recursive: true, force: true })
-    temporaryDirectories.delete(directory)
-    throw error
-  }
+  })
 }
 
 async function releaseMediaTrackOutput(outputPath: unknown): Promise<void> {
   if (typeof outputPath !== 'string') throw new TypeError('A temporary track path is required.')
-  const resolvedPath = path.resolve(outputPath)
-  const directory = temporaryOutputs.get(resolvedPath)
-  if (!directory) throw new TypeError('The temporary track path is not owned by this session.')
-
-  await rm(directory, { recursive: true, force: true })
-  temporaryOutputs.delete(resolvedPath)
-  temporaryDirectories.delete(directory)
+  await temporaryTrackOutputs.release(outputPath)
 }
 
 export function registerMediaTracksIpc(): void {
-  ipcMain.handle(IPC_CHANNELS.MEDIA_TRACKS_GET, (_event, filePath: unknown) =>
-    getMediaTracks(filePath),
-  )
-  ipcMain.handle(
-    IPC_CHANNELS.MEDIA_TRACK_AUDIO_CREATE,
-    (_event, filePath: unknown, streamIndex: unknown) =>
-      createAudioTrackPlayback(filePath, streamIndex),
-  )
-  ipcMain.handle(
-    IPC_CHANNELS.MEDIA_TRACK_SUBTITLE_EXTRACT,
-    (_event, filePath: unknown, streamIndex: unknown) =>
-      extractSubtitleTrack(filePath, streamIndex),
-  )
-  ipcMain.handle(
-    IPC_CHANNELS.MEDIA_TRACK_OUTPUT_RELEASE,
-    (_event, outputPath: unknown) => releaseMediaTrackOutput(outputPath),
+  registerTrackIpcHandlers(
+    (channel, handler) => {
+      ipcMain.handle(channel, (event, ...args) => handler(event, ...args))
+    },
+    {
+      getMediaTracks,
+      createAudioTrackPlayback,
+      extractSubtitleTrack,
+      releaseMediaTrackOutput,
+    },
   )
   app.once('will-quit', () => {
-    for (const directory of temporaryDirectories) {
-      void rm(directory, { recursive: true, force: true }).catch((error: unknown) => {
-        console.error(`Could not remove temporary media tracks in "${directory}"`, error)
-      })
-    }
-    temporaryDirectories.clear()
+    void temporaryTrackOutputs.cleanup((directory, error) => {
+      console.error(`Could not remove temporary media tracks in "${directory}"`, error)
+    })
   })
 }

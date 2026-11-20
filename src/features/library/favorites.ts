@@ -1,8 +1,10 @@
 const STORAGE_KEY = 'tocae.library-favorites.v1'
 
-export function readFavoritePaths(): Set<string> {
+type FavoriteStorage = Pick<Storage, 'getItem' | 'setItem'>
+
+export function readFavoritePaths(storage?: FavoriteStorage): Set<string> {
   try {
-    const serialized = window.localStorage.getItem(STORAGE_KEY)
+    const serialized = (storage ?? window.localStorage).getItem(STORAGE_KEY)
     if (!serialized) return new Set()
 
     const parsed: unknown = JSON.parse(serialized)
@@ -18,6 +20,17 @@ export function readFavoritePaths(): Set<string> {
   }
 }
 
-export function saveFavoritePaths(paths: ReadonlySet<string>): void {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...paths]))
+export function saveFavoritePaths(
+  paths: ReadonlySet<string>,
+  storage?: FavoriteStorage,
+): void {
+  const target = storage ?? window.localStorage
+  target.setItem(STORAGE_KEY, JSON.stringify([...paths]))
+}
+
+export function toggleFavoritePath(paths: ReadonlySet<string>, filePath: string): Set<string> {
+  const next = new Set(paths)
+  if (next.has(filePath)) next.delete(filePath)
+  else next.add(filePath)
+  return next
 }

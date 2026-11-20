@@ -35,6 +35,8 @@ import { useI18n } from '../../i18n'
 import { toMediaUrl } from '../../lib/media'
 import { getPlaybackPosition, savePlaybackPosition } from './playbackProgress'
 import { useMediaViewport } from './useMediaViewport'
+import { findMediaTrack, preferredMediaTrack } from './trackSelection'
+import { releaseStaleTrackOutput } from './trackOutput'
 import styles from './VideoPlayer.module.css'
 
 /** Tempo parado até os controles do player se esconderem. */
@@ -157,8 +159,7 @@ function VideoPlayer({
   const tracks = trackState?.filePath === filePath ? trackState.tracks : []
   const audioTracks = tracks.filter((track) => track.kind === 'audio')
   const subtitleTracks = tracks.filter((track) => track.kind === 'subtitle')
-  const defaultAudioTrack =
-    audioTracks.find((track) => track.isDefault) ?? audioTracks[0] ?? null
+  const defaultAudioTrack = preferredMediaTrack(tracks, 'audio')
   const playbackSource =
     audioTrackOutput?.filePath === filePath
       ? toMediaUrl(audioTrackOutput.outputPath)
@@ -394,7 +395,7 @@ function VideoPlayer({
     const streamIndex = Number(event.currentTarget.value)
     if (!Number.isSafeInteger(streamIndex) || !filePath) return
 
-    const selectedTrack = audioTracks.find((track) => track.streamIndex === streamIndex)
+    const selectedTrack = findMediaTrack(tracks, 'audio', streamIndex)
     if (!selectedTrack) return
     const previousIndex = selectedAudioTrackIndex
     setSelectedAudioTrackIndex(streamIndex)
@@ -431,12 +432,16 @@ function VideoPlayer({
         requestedFilePath,
         selectedTrack.streamIndex,
       )
-      if (activeFilePathRef.current !== requestedFilePath) {
-        await api.releaseMediaTrackOutput(outputPath).catch((error: unknown) => {
-          console.error('Could not release a stale temporary audio track', error)
-        })
-        return
-      }
+      const staleOutputReleased = await releaseStaleTrackOutput(
+        requestedFilePath,
+        () => activeFilePathRef.current,
+        outputPath,
+        (staleOutputPath) =>
+          api.releaseMediaTrackOutput(staleOutputPath).catch((error: unknown) => {
+            console.error('Could not release a stale temporary audio track', error)
+          }),
+      )
+      if (staleOutputReleased) return
 
       const media = getMediaElement()
       const time = media?.currentTime ?? currentTime
@@ -470,7 +475,7 @@ function VideoPlayer({
     }
     if (!Number.isSafeInteger(streamIndex) || !filePath) return
 
-    const selectedTrack = subtitleTracks.find((track) => track.streamIndex === streamIndex)
+    const selectedTrack = findMediaTrack(tracks, 'subtitle', streamIndex)
     if (!selectedTrack) return
     const previousIndex = selectedSubtitleTrackIndex
     setSelectedSubtitleTrackIndex(streamIndex)
@@ -496,12 +501,16 @@ function VideoPlayer({
         requestedFilePath,
         selectedTrack.streamIndex,
       )
-      if (activeFilePathRef.current !== requestedFilePath) {
-        await api.releaseMediaTrackOutput(outputPath).catch((error: unknown) => {
-          console.error('Could not release a stale temporary subtitle track', error)
-        })
-        return
-      }
+      const staleOutputReleased = await releaseStaleTrackOutput(
+        requestedFilePath,
+        () => activeFilePathRef.current,
+        outputPath,
+        (staleOutputPath) =>
+          api.releaseMediaTrackOutput(staleOutputPath).catch((error: unknown) => {
+            console.error('Could not release a stale temporary subtitle track', error)
+          }),
+      )
+      if (staleOutputReleased) return
       setSubtitleTrackOutput({
         filePath: requestedFilePath,
         streamIndex: selectedTrack.streamIndex,
