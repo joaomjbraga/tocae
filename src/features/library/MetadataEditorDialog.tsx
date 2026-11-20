@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { X } from 'lucide-react'
+import { AudioLines, Film, Image as ImageIcon, Info, X } from 'lucide-react'
 import type {
   MediaMetadata,
   MediaMetadataUpdate,
@@ -59,6 +59,13 @@ function MetadataEditorDialog({
   onClose,
 }: MetadataEditorDialogProps) {
   const { t } = useI18n()
+  const MediaIcon = mediaType === 'audio' ? AudioLines : mediaType === 'video' ? Film : ImageIcon
+  const mediaTypeLabel =
+    mediaType === 'audio'
+      ? t('library.typeAudio')
+      : mediaType === 'video'
+        ? t('library.typeVideo')
+        : t('library.typeImage')
   const titleRef = useRef<HTMLInputElement>(null)
   const dialogRef = useRef<HTMLElement>(null)
   const [draft, setDraft] = useState(() => draftFromMetadata(metadata))
@@ -154,8 +161,14 @@ function MetadataEditorDialog({
         onKeyDown={handleKeyDown}
       >
         <header className={styles.metadataDialogHeader}>
+          <span className={styles.metadataTypeIcon} aria-hidden="true">
+            <MediaIcon size={18} />
+          </span>
           <div className={styles.metadataDialogHeading}>
-            <h2 id="metadata-dialog-title">{t('metadata.editTitle')}</h2>
+            <div className={styles.metadataTitleRow}>
+              <h2 id="metadata-dialog-title">{t('metadata.editTitle')}</h2>
+              <span className={styles.metadataTypeBadge}>{mediaTypeLabel}</span>
+            </div>
             <p title={path}>{path}</p>
           </div>
           <button
@@ -246,8 +259,13 @@ function MetadataEditorDialog({
             </>
           )}
 
-          <p className={styles.metadataNote}>{t('metadata.formatNote')}</p>
-          <p className={styles.metadataNote}>{t('metadata.backupNote')}</p>
+          <div className={styles.metadataNotes}>
+            <Info size={14} aria-hidden="true" />
+            <div>
+              <p className={styles.metadataNote}>{t('metadata.formatNote')}</p>
+              <p className={styles.metadataNote}>{t('metadata.backupNote')}</p>
+            </div>
+          </div>
           {error && (
             <p className={styles.metadataError} role="alert">
               {t('metadata.saveError')} {error}

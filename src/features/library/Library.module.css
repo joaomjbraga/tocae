@@ -725,66 +725,110 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.62);
-  backdrop-filter: blur(8px);
+  background: rgba(7, 7, 10, 0.48);
+  backdrop-filter: blur(12px) saturate(115%);
 }
 
 .metadataDialog {
-  width: min(520px, 100%);
+  width: min(540px, 100%);
   max-height: min(90vh, 760px);
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 20px;
+  padding: 22px;
   overflow: auto;
-  border: 1px solid var(--border-surface);
-  border-radius: var(--radius-lg);
-  background: var(--bg-glass-strong);
-  box-shadow: var(--shadow-material);
+  border: 1px solid color-mix(in srgb, var(--border-surface) 88%, white 12%);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 34%),
+    color-mix(in srgb, var(--bg-glass-strong) 94%, #101014);
+  box-shadow:
+    0 24px 72px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  backdrop-filter: blur(28px) saturate(135%);
+  animation: metadataDialogEnter 180ms var(--ease-standard);
 }
 
 .metadataDialogHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.metadataTypeIcon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+  border-radius: 12px;
+  background: var(--accent-tint);
+  color: var(--accent);
 }
 
 .metadataDialogHeading {
   min-width: 0;
 }
 
+.metadataTitleRow {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .metadataDialogHeading h2 {
   margin: 0;
   color: var(--text-primary);
-  font-size: var(--text-lg);
+  font-size: 17px;
   font-weight: 650;
+  letter-spacing: -0.25px;
+}
+
+.metadataTypeBadge {
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: var(--radius-pill);
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.2;
 }
 
 .metadataDialogHeading p {
+  display: block;
   overflow: hidden;
   margin: 5px 0 0;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 10px;
+  line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .metadataClose {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
   border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-sm);
-  background: transparent;
+  border-radius: 50%;
+  background: var(--bg-chip);
   color: var(--text-secondary);
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast),
+    border-color var(--duration-fast);
 }
 
-.metadataClose:hover,
-.metadataCancel:hover {
+.metadataClose:hover {
+  border-color: var(--border-control);
   background: var(--bg-hover);
   color: var(--text-primary);
 }
@@ -792,61 +836,102 @@
 .metadataForm {
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: 14px;
+  padding-top: 16px;
 }
 
 .metadataField {
   min-width: 0;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: 94px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
   color: var(--text-secondary);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .metadataField input,
 .metadataField textarea {
   width: 100%;
-  min-height: 36px;
-  padding: 8px 10px;
-  border: 1px solid var(--border-control);
-  border-radius: var(--radius-sm);
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 1px solid color-mix(in srgb, var(--border-control) 88%, white 12%);
+  border-radius: 9px;
   outline: none;
-  background: var(--bg-glass);
+  background: rgba(255, 255, 255, 0.045);
   color: var(--text-primary);
   font: inherit;
   font-size: 12px;
   font-weight: 400;
+  transition:
+    background-color var(--duration-fast),
+    border-color var(--duration-fast),
+    box-shadow var(--duration-fast);
 }
 
 .metadataField textarea {
-  min-height: 80px;
+  min-height: 88px;
   resize: vertical;
+  line-height: 1.45;
 }
 
-.metadataField input:focus,
-.metadataField textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-tint);
+.metadataField input[type='date'] {
+  color-scheme: dark;
+}
+
+.metadataField input:focus-visible,
+.metadataField textarea:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 72%, white 28%);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .metadataFieldRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
   gap: 12px;
+}
+
+.metadataFieldRow .metadataField {
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.metadataNotes {
+  display: grid;
+  grid-template-columns: 15px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  padding: 10px 11px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.metadataNotes > svg {
+  margin-top: 1px;
+  color: var(--accent);
 }
 
 .metadataNote {
   margin: 0;
   color: var(--text-muted);
   font-size: 10px;
-  line-height: 1.4;
+  line-height: 1.45;
+}
+
+.metadataNote + .metadataNote {
+  margin-top: 5px;
 }
 
 .metadataError,
 .metadataWarning {
   margin: 0;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--text-danger) 28%, transparent);
+  border-radius: 9px;
+  background: rgba(232, 142, 142, 0.075);
   color: var(--text-danger);
   font-size: 11px;
   line-height: 1.45;
@@ -862,34 +947,67 @@
   display: flex;
   justify-content: flex-end;
   gap: 9px;
-  margin-top: 4px;
+  margin-top: 2px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-hairline);
 }
 
 .metadataCancel,
 .metadataSave {
-  min-height: 36px;
-  padding: 0 13px;
-  border: 1px solid var(--border-control);
-  border-radius: var(--radius-sm);
+  min-height: 37px;
+  padding: 0 15px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 9px;
   color: var(--text-primary);
   font: inherit;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast),
+    border-color var(--duration-fast),
+    box-shadow var(--duration-fast),
+    transform var(--duration-fast);
 }
 
 .metadataCancel {
-  background: transparent;
+  background: var(--bg-chip);
   color: var(--text-secondary);
 }
 
+.metadataCancel:hover {
+  border-color: var(--border-control);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
 .metadataSave {
-  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
-  background: var(--accent-tint);
+  border-color: color-mix(in srgb, var(--accent) 76%, transparent);
+  background: var(--accent-strong);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 3px 10px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .metadataSave:hover {
-  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 4px 14px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.metadataCancel:active,
+.metadataSave:active {
+  transform: scale(0.98);
+}
+
+.metadataCancel:focus-visible,
+.metadataSave:focus-visible,
+.metadataClose:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .metadataCancel:disabled,
@@ -897,6 +1015,24 @@
 .metadataClose:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+@keyframes metadataDialogEnter {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metadataDialog {
+    animation: none;
+  }
 }
 
 .spinning {
@@ -995,10 +1131,14 @@
   }
 
   .metadataDialog {
-    padding: 16px;
+    padding: 18px;
   }
 
   .metadataFieldRow {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
+  .metadataFieldRow .metadataField {
+    grid-template-columns: 94px minmax(0, 1fr);
   }
 }
