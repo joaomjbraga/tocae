@@ -94,6 +94,14 @@ function PlayerScreen({
     },
     [currentMediaPath],
   )
+  const handleLocalPlaybackStateChange = useCallback(
+    (playing: boolean) => {
+      void api.youtubeMusic.setLocalPlaybackActive(playing).catch((error: unknown) => {
+        console.error('Could not update YouTube Music audio focus', error)
+      })
+    },
+    [api],
+  )
   const announce = useCallback(
     (key: MessageKey, params?: TranslationParams) => setAnnouncement({ key, params }),
     [],
@@ -356,7 +364,9 @@ function PlayerScreen({
                   title={mediaTitle}
                   audioArtwork={mediaMetadata?.coverArt ?? null}
                   onMediaMetadata={handleMediaElementMetadata}
+                  onPlaybackStateChange={handleLocalPlaybackStateChange}
                   immersive={immersiveMedia}
+                  pauseForYouTubeMusic={youtubeMusicImmersive}
                   autoNext={playbackPreferences.autoNext}
                   onAutoNextChange={handleAutoNextChange}
                   loopCurrent={playbackPreferences.repeatCurrent}

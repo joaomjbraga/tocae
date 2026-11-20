@@ -19,6 +19,7 @@ export const IPC_CHANNELS = {
   YOUTUBE_MUSIC_OPEN: 'youtube-music:open',
   YOUTUBE_MUSIC_CLOSE: 'youtube-music:close',
   YOUTUBE_MUSIC_STOP: 'youtube-music:stop',
+  YOUTUBE_MUSIC_SET_LOCAL_PLAYBACK: 'youtube-music:set-local-playback',
   YOUTUBE_MUSIC_SET_BOUNDS: 'youtube-music:set-bounds',
   YOUTUBE_MUSIC_RELOAD: 'youtube-music:reload',
   YOUTUBE_MUSIC_GO_BACK: 'youtube-music:go-back',
@@ -98,6 +99,7 @@ export interface TocaeApi {
     open(): Promise<void>
     close(): Promise<void>
     stop(): Promise<void>
+    setLocalPlaybackActive(active: boolean): Promise<void>
     setBounds(bounds: YouTubeMusicBounds): Promise<void>
     reload(): Promise<void>
     goBack(): Promise<void>

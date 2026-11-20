@@ -30,6 +30,7 @@ let serviceView: WebContentsView | null = null
 let ownerWindow: BrowserWindow | null = null
 let visibleRequested = false
 let hasLoadedServicePage = false
+let localPlaybackActive = false
 let loadTimeout: ReturnType<typeof setTimeout> | null = null
 let serviceBounds: Rectangle = { x: 0, y: 0, width: 0, height: 0 }
 let status: YouTubeMusicStatus = {
@@ -224,6 +225,7 @@ function secureWebContents(webContents: WebContents, onBlocked?: () => void): vo
   })
   webContents.on('did-create-window', (childWindow) => {
     authenticationWindows.add(childWindow)
+    childWindow.webContents.setAudioMuted(localPlaybackActive)
     secureWebContents(childWindow.webContents, () => childWindow.destroy())
     childWindow.once('closed', () => authenticationWindows.delete(childWindow))
   })
@@ -241,6 +243,7 @@ function attachWindow(window: BrowserWindow): void {
     closeAuthenticationWindows()
     ownerWindow = null
     visibleRequested = false
+    localPlaybackActive = false
     status = { state: 'idle', canGoBack: false, canGoForward: false }
   })
 }
@@ -260,6 +263,7 @@ function createServiceView(window: BrowserWindow): WebContentsView {
 
   serviceView = view
   hasLoadedServicePage = false
+  view.webContents.setAudioMuted(localPlaybackActive)
   window.contentView.addChildView(view)
   view.setBorderRadius(10)
   view.setVisible(false)
@@ -387,6 +391,18 @@ export function registerYouTubeMusicIpc(): void {
     hasLoadedServicePage = false
     closeAuthenticationWindows()
     setServiceState('idle')
+  })
+  ipcMain.handle(IPC_CHANNELS.YOUTUBE_MUSIC_SET_LOCAL_PLAYBACK, (event, value: unknown) => {
+    assertMainWindowSender(event)
+    if (typeof value !== 'boolean') {
+      throw new TypeError('Local playback state must be a boolean.')
+    }
+
+    localPlaybackActive = value
+    serviceView?.webContents.setAudioMuted(value)
+    for (const window of authenticationWindows) {
+      if (!window.isDestroyed()) window.webContents.setAudioMuted(value)
+    }
   })
   ipcMain.handle(IPC_CHANNELS.YOUTUBE_MUSIC_SET_BOUNDS, (event, value: unknown) => {
     assertMainWindowSender(event)

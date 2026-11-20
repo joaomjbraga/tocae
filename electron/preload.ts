@@ -41,6 +41,8 @@ const api: TocaeApi = {
     open: () => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_OPEN),
     close: () => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_CLOSE),
     stop: () => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_STOP),
+    setLocalPlaybackActive: (active) =>
+      ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_SET_LOCAL_PLAYBACK, active),
     setBounds: (bounds) => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_SET_BOUNDS, bounds),
     reload: () => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_RELOAD),
     goBack: () => ipcRenderer.invoke(IPC_CHANNELS.YOUTUBE_MUSIC_GO_BACK),

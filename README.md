@@ -45,7 +45,7 @@ O player preserva a proporção original de vídeos e imagens, inclusive em retr
 
 Os metadados incluem tags e capas de áudio, duração e codec de mídia, dimensões de vídeo e imagem, dados EXIF básicos e informações do arquivo. A biblioteca os carrega conforme os itens são explorados. No Linux, o pacote instala Perl como dependência do ExifTool. A seleção de faixas usa FFmpeg e FFprobe; os binários GPL e as informações de licença e origem estão em [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
 
-O YouTube Music usa a interface oficial em uma visualização Electron criada somente quando aberta, em um layout imersivo alinhado ao player. O login fica em uma sessão persistente isolada da biblioteca e do player local; o Tocaê não lê nem manipula cookies, nem controla ou extrai a reprodução do serviço. O botão **Parar reprodução** encerra a visualização incorporada e interrompe o áudio, preservando o login; ao reabrir, a página começa novamente.
+O YouTube Music usa a interface oficial em uma visualização Electron criada somente quando aberta, em um layout imersivo alinhado ao player. O login fica em uma sessão persistente isolada da biblioteca e do player local; o Tocaê não lê nem manipula cookies, nem controla ou extrai a reprodução do serviço. O player local tem prioridade de áudio: ele pausa ao abrir o YouTube Music e, se uma mídia local for iniciada depois, o serviço fica silenciado enquanto ela toca. O botão **Parar reprodução** encerra a visualização incorporada e interrompe o áudio, preservando o login; ao reabrir, a página começa novamente.
 
 ## Idiomas
 

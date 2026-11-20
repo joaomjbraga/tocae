@@ -53,7 +53,9 @@ type VideoPlayerProps = {
   title: string
   audioArtwork: string | null
   onMediaMetadata: (metadata: Pick<MediaMetadata, 'duration' | 'width' | 'height'>) => void
+  onPlaybackStateChange: (playing: boolean) => void
   immersive: boolean
+  pauseForYouTubeMusic: boolean
   autoNext: boolean
   onAutoNextChange: (enabled: boolean) => void
   loopCurrent: boolean
@@ -76,7 +78,9 @@ function VideoPlayer({
   title,
   audioArtwork,
   onMediaMetadata,
+  onPlaybackStateChange,
   immersive,
+  pauseForYouTubeMusic,
   autoNext,
   onAutoNextChange,
   loopCurrent,
@@ -243,6 +247,7 @@ function VideoPlayer({
     setCurrentTime(0)
     setDuration(0)
     setPlaying(false)
+    onPlaybackStateChange(false)
     setBuffering(false)
     setIdle(false)
     lastSavedPositionRef.current = 0
@@ -262,7 +267,11 @@ function VideoPlayer({
         previewSeekTimerRef.current = null
       }
     }
-  }, [source])
+  }, [onPlaybackStateChange, source])
+
+  useEffect(() => {
+    if (pauseForYouTubeMusic) getMediaElement()?.pause()
+  }, [pauseForYouTubeMusic, playbackSource])
 
   useEffect(() => {
     function saveCurrentPosition() {
@@ -511,6 +520,7 @@ function VideoPlayer({
 
   function handleEnded() {
     setPlaying(false)
+    onPlaybackStateChange(false)
     if (source) savePlaybackPosition(source, 0)
     lastSavedPositionRef.current = 0
     setCurrentTime(0)
@@ -526,6 +536,7 @@ function VideoPlayer({
     if (failedSourceRef.current === source) return
     failedSourceRef.current = source
     setPlaying(false)
+    onPlaybackStateChange(false)
     onFailed()
   }
 
@@ -628,12 +639,14 @@ function VideoPlayer({
 
   function handleMediaPlay() {
     setPlaying(true)
+    onPlaybackStateChange(true)
     setBuffering(false)
   }
 
   function handleMediaPause(event: SyntheticEvent<HTMLMediaElement>) {
     const media = event.currentTarget
     setPlaying(false)
+    onPlaybackStateChange(false)
     if (!media.ended) persistPlaybackPosition(media.currentTime, true)
   }
 
