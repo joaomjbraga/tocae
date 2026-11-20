@@ -12,14 +12,16 @@ Reprodutor multimídia minimalista construído com Electron, React e TypeScript.
 
 - Organize uma biblioteca de mídias com as pastas padrão do sistema ou adicione locais monitorados
 - Pesquise vídeos, imagens e músicas e filtre os resultados pelo tipo de mídia
-- Marque mídias como favoritas e filtre a biblioteca por favoritos
+- Marque mídias como favoritas e filtre a biblioteca por favoritos; as escolhas ficam salvas no perfil do aplicativo
 - Consulte metadados de áudio, vídeo e imagem, além do tamanho e da data dos arquivos
 - Reproduza vídeos e músicas e navegue por imagens em uma única lista
 - Selecione faixas de áudio e legendas embutidas em vídeos compatíveis
 - Acesse o YouTube Music em uma sessão persistente isolada do reprodutor local
-- Avance automaticamente ao fim ou repita a mídia atual, com opções nas configurações
+- Ative o avanço automático ou a repetição da mídia atual diretamente nos controles do player
 - Reordene a lista arrastando os itens ou pelo teclado
 - Pule entre mídias com atalhos de uma tecla
+- Navegue entre Biblioteca, Player, YouTube Music e Configurações pela barra lateral
+- Personalize a cor de destaque, escolha o idioma e consulte os atalhos em Configurações
 - Use a janela principal sem moldura, com controles próprios e cantos arredondados
 - Assista a vídeos verticais sem cortar a imagem; amplie e mova vídeos e imagens
 - Ouça músicas com um visualizador animado que reage ao estado da reprodução
@@ -36,10 +38,14 @@ Formatos aceitos: vídeos MP4, WebM, MKV, AVI, MOV e OGV; músicas MP3, M4A, AAC
 - `src/features/player/`: reprodução, controles, zoom, prévia e navegação pela timeline
 - `src/features/library/`: biblioteca, pesquisa e filtros de mídia
 - `src/features/playlist/`: estado e interface da lista de reprodução
+- `src/features/integrations/youtube-music/`: interface da integração com o YouTube Music
+- `src/features/settings/`: idioma, aparência, atalhos, reprodutor padrão e informações do app
 - `src/components/`: componentes reutilizáveis da aplicação
 - `src/lib/`: utilitários do renderer
-- `shared/`: tipos, contratos IPC e traduções compartilhados com o Electron
-- `electron/`: processo principal, preload e integração com o sistema
+- `shared/`: tipos, contratos IPC, estado compartilhado e traduções
+- `electron/`: processo principal, preload, biblioteca monitorada, metadados e integração com o sistema
+- `electron/integrations/`: sessão isolada e gerenciamento de áudio do YouTube Music
+- `electron/media/`: leitura de metadados, seleção de faixas e geração de faixas temporárias
 
 O player preserva a proporção original de vídeos e imagens, inclusive em retrato. O zoom pode ser movido com o mouse ou toque e é limitado às bordas visíveis da mídia. Músicas usam os mesmos controles de reprodução e linha do tempo, com um disco animado e um visualizador de barras enquanto tocam. A interface usa controles compactos e translúcidos, com adaptação para janelas estreitas.
 
@@ -57,12 +63,24 @@ Os textos ficam em `shared/i18n/messages/`, com o catálogo em português como f
 
 ## Executando a partir do código
 
+Use Node.js 24 e npm. Para desenvolver, instalar dependências e iniciar a interface junto com o aplicativo Electron:
+
 ```sh
 npm install
-npm run dev      # servidor de desenvolvimento do Vite
-npm run build          # verificação de tipos + bundle + instaladores .deb e .rpm
-npm run build:windows  # verificação de tipos + bundle + instalador Windows .exe (em Windows)
+npm run dev
 ```
+
+Comandos de validação e empacotamento:
+
+```sh
+npm run lint          # verifica os estilos CSS
+npm test              # executa os testes automatizados
+npm run typecheck     # verifica os tipos TypeScript
+npm run build         # tipos + bundles + instaladores Linux (.deb e .rpm)
+npm run build:windows # tipos + bundles + instalador Windows (.exe), em Windows
+```
+
+O workflow de CI executa lint, testes e build para Windows e Linux em Node.js 24.
 
 ## Instaladores Linux
 
