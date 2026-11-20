@@ -1,8 +1,9 @@
-export const DEFAULT_ACCENT_COLOR = '#a777ff'
+export const DEFAULT_ACCENT_COLOR = '#fbbf24'
 export const ACCENT_COLOR_STORAGE_KEY = 'tocae.player.accent-color'
 
 export const ACCENT_COLOR_PRESETS = [
-  { color: DEFAULT_ACCENT_COLOR, label: 'appearance.colorViolet' },
+  { color: DEFAULT_ACCENT_COLOR, label: 'appearance.colorGold' },
+  { color: '#a777ff', label: 'appearance.colorViolet' },
   { color: '#8b5cf6', label: 'appearance.colorLavender' },
   { color: '#6366f1', label: 'appearance.colorIndigo' },
   { color: '#5687ff', label: 'appearance.colorBlue' },
@@ -19,7 +20,6 @@ export const ACCENT_COLOR_PRESETS = [
   { color: '#a6c84f', label: 'appearance.colorLime' },
   { color: '#84cc16', label: 'appearance.colorChartreuse' },
   { color: '#e3b341', label: 'appearance.colorYellow' },
-  { color: '#fbbf24', label: 'appearance.colorGold' },
   { color: '#f5a044', label: 'appearance.colorOrange' },
   { color: '#f59e0b', label: 'appearance.colorAmber' },
   { color: '#f07862', label: 'appearance.colorCoral' },

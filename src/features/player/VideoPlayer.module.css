@@ -719,8 +719,8 @@
   padding: 9px 13px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
-  background: #8757df;
-  box-shadow: 0 7px 18px rgba(90, 54, 160, 0.22);
+  background: var(--accent);
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--accent) 22%, transparent);
   color: #fff;
   font-size: var(--text-2xs);
   font-weight: 650;
@@ -730,7 +730,7 @@
 }
 
 .placeholder:hover .placeholderAction {
-  background: #9669ec;
+  background: color-mix(in srgb, var(--accent) 86%, black);
 }
 
 .placeholder:active .placeholderAction {
