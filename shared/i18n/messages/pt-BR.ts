@@ -25,7 +25,6 @@ export const ptBRMessages = {
   'settings.title': 'Configurações',
   'settings.description': 'Preferências do reprodutor',
   'settings.languageDescription': 'Escolha o idioma da interface.',
-  'settings.languageLabel': 'Idioma da interface',
   'settings.shortcutsDescription': 'Consulte os comandos do reprodutor e da lista.',
   'settings.defaultPlayerDescription': 'Defina o aplicativo padrão para abrir mídias.',
   'settings.playbackTitle': 'Reprodução',
@@ -67,8 +66,6 @@ export const ptBRMessages = {
   'player.nowPlaying': 'Tocando {current} de {total}: {name}',
   'player.listCleared': 'Lista limpa',
   'player.undo': 'Desfazer',
-  'player.showList': 'Mostrar lista',
-  'player.showListTitle': 'Mostrar lista (L)',
 
   // Aparência
   'navigation.backToPlayer': 'Voltar ao reprodutor',

@@ -68,7 +68,28 @@ export function usePlaylist() {
     api
       .readPlaylist()
       .then(({ items, currentIndex }) => {
-        if (active) setState((prev) => ({ ...prev, items, currentIndex, loaded: true }))
+        if (active) {
+          setState((prev) => {
+            if (prev.items.length === 0) return { ...prev, items, currentIndex, loaded: true }
+
+            const knownPaths = new Set(items.map((item) => item.path))
+            const mergedItems = [
+              ...items,
+              ...prev.items.filter((item) => !knownPaths.has(item.path)),
+            ]
+            const pendingCurrentPath = prev.items[prev.currentIndex]?.path
+            const pendingCurrentIndex = pendingCurrentPath
+              ? mergedItems.findIndex((item) => item.path === pendingCurrentPath)
+              : -1
+
+            return {
+              ...prev,
+              items: mergedItems,
+              currentIndex: pendingCurrentIndex >= 0 ? pendingCurrentIndex : currentIndex,
+              loaded: true,
+            }
+          })
+        }
       })
       .catch((error: unknown) => {
         console.error('Could not load the saved playlist', error)

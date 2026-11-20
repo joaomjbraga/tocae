@@ -20,7 +20,6 @@ export const enMessages: Messages = {
   'settings.title': 'Settings',
   'settings.description': 'Player preferences',
   'settings.languageDescription': 'Choose the interface language.',
-  'settings.languageLabel': 'Interface language',
   'settings.shortcutsDescription': 'View player and playlist commands.',
   'settings.defaultPlayerDescription': 'Choose the default app for opening media.',
   'settings.playbackTitle': 'Playback',
@@ -62,8 +61,6 @@ export const enMessages: Messages = {
   'player.nowPlaying': 'Playing {current} of {total}: {name}',
   'player.listCleared': 'Playlist cleared',
   'player.undo': 'Undo',
-  'player.showList': 'Show playlist',
-  'player.showListTitle': 'Show playlist (L)',
 
   // Appearance
   'navigation.backToPlayer': 'Back to player',

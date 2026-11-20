@@ -5,6 +5,7 @@ import { IPC_CHANNELS } from '@shared/ipc'
 import type { PersistedPlaylist, PlaylistItem } from '@shared/playlist'
 
 const STORE_FILE_NAME = 'playlist.json'
+let writeQueue: Promise<void> = Promise.resolve()
 
 interface StoredPlaylist extends PersistedPlaylist {
   version: number
@@ -54,15 +55,25 @@ export async function readPlaylist(): Promise<PersistedPlaylist> {
     const parsed: unknown = JSON.parse(raw)
     const stored = parsed as Partial<StoredPlaylist> | null
     if (!stored || !Array.isArray(stored.items)) return { items: [], currentIndex: -1 }
-    const items = withoutDuplicates(stored.items.filter(isPlaylistItem))
-    return { items, currentIndex: normalizedIndex(stored.currentIndex, items.length) }
+    const validItems = stored.items.filter(isPlaylistItem)
+    const selectedIndex = normalizedIndex(stored.currentIndex, validItems.length)
+    const selectedPath = selectedIndex >= 0 ? validItems[selectedIndex].path : null
+    const items = withoutDuplicates(validItems)
+    const currentIndex = selectedPath ? items.findIndex((item) => item.path === selectedPath) : -1
+    return { items, currentIndex }
   } catch (error) {
     console.warn('Could not parse the saved playlist; using an empty list', error)
     return { items: [], currentIndex: -1 }
   }
 }
 
-export async function writePlaylist(items: PlaylistItem[], currentIndex: number): Promise<void> {
+export function writePlaylist(items: PlaylistItem[], currentIndex: number): Promise<void> {
+  const write = writeQueue.then(() => persistPlaylist(items, currentIndex))
+  writeQueue = write.catch(() => {})
+  return write
+}
+
+async function persistPlaylist(items: PlaylistItem[], currentIndex: number): Promise<void> {
   const file = storeFilePath()
   const tempFile = `${file}.tmp`
   const cleanItems = withoutDuplicates(items)

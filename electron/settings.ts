@@ -6,6 +6,7 @@ import type { Settings } from '@shared/settings'
 import { isLocale } from '@shared/i18n'
 
 const STORE_FILE_NAME = 'settings.json'
+let writeQueue: Promise<void> = Promise.resolve()
 
 function storeFilePath(): string {
   return path.join(app.getPath('userData'), STORE_FILE_NAME)
@@ -37,7 +38,13 @@ function isMissingFile(error: unknown): boolean {
 }
 
 /** Grava as preferências de forma atômica (arquivo temporário + rename). */
-export async function writeSettings(settings: Settings): Promise<void> {
+export function writeSettings(settings: Settings): Promise<void> {
+  const write = writeQueue.then(() => persistSettings(settings))
+  writeQueue = write.catch(() => {})
+  return write
+}
+
+async function persistSettings(settings: Settings): Promise<void> {
   const file = storeFilePath()
   const tempFile = `${file}.tmp`
 
