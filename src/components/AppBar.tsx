@@ -1,11 +1,12 @@
-import { CirclePlay, File, FolderOpen, Settings } from 'lucide-react'
+import { CirclePlay, File, FolderOpen, House, Settings } from 'lucide-react'
 import { useI18n } from '../i18n'
 import styles from './AppBar.module.css'
 
 type AppBarProps = {
-  activePage: 'player' | 'settings'
+  activePage: 'library' | 'player' | 'settings'
   onOpenMedia: () => void
   onOpenMediaFolder: () => void
+  onOpenLibrary: () => void
   onOpenPlayer: () => void
   onOpenSettings: () => void
 }
@@ -14,6 +15,7 @@ function AppBar({
   activePage,
   onOpenMedia,
   onOpenMediaFolder,
+  onOpenLibrary,
   onOpenPlayer,
   onOpenSettings,
 }: AppBarProps) {
@@ -48,6 +50,19 @@ function AppBar({
       <span className={styles.separator} aria-hidden="true" />
 
       <span className={styles.spacer} />
+
+      <button
+        type="button"
+        className={`${styles.button} ${activePage === 'library' ? styles.active : ''}`}
+        onClick={onOpenLibrary}
+        aria-label={t('library.home')}
+        aria-pressed={activePage === 'library'}
+      >
+        <span className={styles.icon} aria-hidden="true">
+          <House size={16} />
+        </span>
+        <span className={styles.label}>{t('library.home')}</span>
+      </button>
 
       <button
         type="button"

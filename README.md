@@ -10,6 +10,8 @@ Reprodutor multimídia minimalista construído com Electron, React e TypeScript.
 
 ## Recursos
 
+- Organize uma biblioteca de mídias com as pastas padrão do sistema ou adicione locais monitorados
+- Pesquise vídeos, imagens e músicas e filtre os resultados pelo tipo de mídia
 - Reproduza vídeos e músicas e navegue por imagens em uma única lista
 - Avance automaticamente ao fim ou repita a mídia atual, com opções nas configurações
 - Reordene a lista arrastando os itens ou pelo teclado
@@ -28,6 +30,7 @@ Formatos aceitos: vídeos MP4, WebM, MKV, AVI, MOV e OGV; músicas MP3, M4A, AAC
 ## Estrutura do projeto
 
 - `src/features/player/`: reprodução, controles, zoom, prévia e navegação pela timeline
+- `src/features/library/`: biblioteca, pesquisa e filtros de mídia
 - `src/features/playlist/`: estado e interface da lista de reprodução
 - `src/components/`: componentes reutilizáveis da aplicação
 - `src/lib/`: utilitários do renderer

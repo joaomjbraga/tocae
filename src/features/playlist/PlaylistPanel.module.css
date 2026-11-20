@@ -48,12 +48,48 @@
 
 .title {
   margin: 0;
+  min-width: 0;
+  flex: 1;
   display: flex;
   align-items: center;
   gap: var(--space-2);
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.viewToggle {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-md);
+  background: var(--bg-chip);
+}
+
+.viewButton {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast),
+    color var(--duration-fast);
+}
+
+.viewButton:hover {
+  color: var(--text-primary);
+}
+
+.viewButtonActive {
+  background: var(--bg-active);
+  color: var(--accent);
 }
 
 .count {
@@ -66,7 +102,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-.list {
+.list,
+.folderTree {
   flex: 1;
   min-height: 0;
   margin: 0;
@@ -77,25 +114,95 @@
   scrollbar-color: var(--border-strong) transparent;
 }
 
+.folderTree,
+.folderContents {
+  list-style: none;
+}
+
+.folderTree {
+  padding-left: 0;
+}
+
+.folderContents {
+  margin: 0;
+  padding: 0;
+}
+
 /* Firefox usa scrollbar-color; o Chromium precisa dos pseudo-elementos. */
-.list::-webkit-scrollbar {
+.list::-webkit-scrollbar,
+.folderTree::-webkit-scrollbar {
   width: 8px;
 }
 
-.list::-webkit-scrollbar-track {
+.list::-webkit-scrollbar-track,
+.folderTree::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.list::-webkit-scrollbar-thumb {
+.list::-webkit-scrollbar-thumb,
+.folderTree::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: var(--radius-pill);
   background: var(--border-strong);
   background-clip: content-box;
 }
 
-.list::-webkit-scrollbar-thumb:hover {
+.list::-webkit-scrollbar-thumb:hover,
+.folderTree::-webkit-scrollbar-thumb:hover {
   background: var(--text-disabled);
   background-clip: content-box;
+}
+
+.folderHeading {
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px var(--space-2) 4px calc(var(--space-2) + var(--depth, 0px));
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-body);
+  font: inherit;
+  font-size: var(--text-2xs);
+  text-align: left;
+  cursor: pointer;
+}
+
+.folderHeading:hover {
+  background: var(--bg-row-hover);
+  color: var(--text-primary);
+}
+
+.folderChevron {
+  flex-shrink: 0;
+  color: var(--text-subtle);
+  transition: transform var(--duration-fast);
+}
+
+.folderChevronOpen {
+  transform: rotate(90deg);
+}
+
+.folderHeading > svg:nth-of-type(2) {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.folderName {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.folderCount {
+  flex-shrink: 0;
+  color: var(--text-subtle);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
 }
 
 .row {
@@ -161,6 +268,10 @@
 
 .row.dropAfter::after {
   bottom: -1px;
+}
+
+.folderItemRow {
+  padding-left: calc(2px + var(--depth, 0px));
 }
 
 /* A linha de inserção pisca enquanto o item está sendo posicionado */

@@ -1,16 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, DragEvent, KeyboardEvent } from 'react'
-import { GripVertical, ListVideo, Play, Trash2 } from 'lucide-react'
+import {
+  ChevronRight,
+  Folder,
+  FolderOpen,
+  GripVertical,
+  List,
+  ListVideo,
+  Play,
+  Trash2,
+} from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
 import { useI18n } from '../../i18n'
 import styles from './PlaylistPanel.module.css'
 
 /** `--i` alimenta o atraso em cascata da animação de entrada das linhas. */
 type RowStyle = CSSProperties & { '--i': number }
+type DepthStyle = CSSProperties & { '--depth': string }
 
 type PlaylistPanelProps = {
-  items: { id: string; name: string }[]
+  items: { id: string; name: string; path: string }[]
   currentIndex: number
+  view: 'queue' | 'folders'
+  onViewChange: (view: 'queue' | 'folders') => void
   immersive: boolean
   /** `closing` marca a saída animada (o painel segue montado). */
   closing: boolean
@@ -25,9 +37,86 @@ type PlaylistPanelProps = {
   onAnnounce: (key: MessageKey, params?: TranslationParams) => void
 }
 
+type FolderItem = { item: PlaylistPanelProps['items'][number]; index: number }
+
+interface FolderNode {
+  key: string
+  name: string
+  children: Map<string, FolderNode>
+  items: FolderItem[]
+  count: number
+}
+
+function createFolderTree(
+  items: PlaylistPanelProps['items'],
+  rootLabel: string,
+): FolderNode[] {
+  const directories = items.map(({ path }) => {
+    const segments = path.replace(/\\/g, '/').split('/').filter(Boolean)
+    segments.pop()
+    return segments
+  })
+
+  const commonLength = directories.length
+    ? directories.slice(1).reduce((common, segments) => {
+        let length = 0
+        while (
+          length < common &&
+          length < segments.length &&
+          directories[0][length] === segments[length]
+        ) {
+          length += 1
+        }
+        return length
+      }, directories[0].length)
+    : 0
+  const trimLength = Math.max(0, commonLength - 1)
+  const roots = new Map<string, FolderNode>()
+
+  for (const [index, item] of items.entries()) {
+    const segments = directories[index].slice(trimLength)
+    const visibleSegments =
+      segments.length > 0
+        ? segments.map((name) => ({ key: name, name }))
+        : [{ key: '\0root', name: rootLabel }]
+    let children = roots
+    let parentKey = ''
+    let node: FolderNode | undefined
+
+    for (const segment of visibleSegments) {
+      const key = `${parentKey}/${segment.key}`
+      node = children.get(key)
+      if (!node) {
+        node = { key, name: segment.name, children: new Map(), items: [], count: 0 }
+        children.set(key, node)
+      }
+      parentKey = key
+      children = node.children
+    }
+
+    if (node) node.items.push({ item, index })
+  }
+
+  function countItems(node: FolderNode): number {
+    node.count = node.items.length
+    for (const child of node.children.values()) node.count += countItems(child)
+    return node.count
+  }
+
+  const sortedRoots = [...roots.values()].sort(compareFolders)
+  for (const root of sortedRoots) countItems(root)
+  return sortedRoots
+}
+
+function compareFolders(left: FolderNode, right: FolderNode): number {
+  return left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' })
+}
+
 function PlaylistPanel({
   items,
   currentIndex,
+  view,
+  onViewChange,
   immersive,
   closing,
   loading,
@@ -40,6 +129,7 @@ function PlaylistPanel({
   onAnnounce,
 }: PlaylistPanelProps) {
   const { t } = useI18n()
+  const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set())
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dropIndex, setDropIndex] = useState<number | null>(null)
   const [droppingFiles, setDroppingFiles] = useState(false)
@@ -138,6 +228,94 @@ function PlaylistPanel({
     onAnnounce('playlist.moved', { position: target + 1, total: items.length })
   }
 
+  function toggleFolder(key: string) {
+    setCollapsedFolders((previous) => {
+      const next = new Set(previous)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  function renderFolder(node: FolderNode, depth: number) {
+    const collapsed = collapsedFolders.has(node.key)
+    const children = [...node.children.values()].sort(compareFolders)
+
+    return (
+      <li className={styles.folderGroup} key={node.key}>
+        <button
+          type="button"
+          className={styles.folderHeading}
+          style={{ '--depth': `${depth * 12}px` } as DepthStyle}
+          onClick={() => toggleFolder(node.key)}
+          aria-expanded={!collapsed}
+          aria-label={t(
+            node.count === 1 ? 'playlist.folderOneItem' : 'playlist.folderItems',
+            { name: node.name, count: node.count },
+          )}
+        >
+          <ChevronRight
+            size={13}
+            className={`${styles.folderChevron} ${collapsed ? '' : styles.folderChevronOpen}`}
+            aria-hidden="true"
+          />
+          {collapsed ? (
+            <Folder size={14} aria-hidden="true" />
+          ) : (
+            <FolderOpen size={14} aria-hidden="true" />
+          )}
+          <span className={styles.folderName}>{node.name}</span>
+          <span className={styles.folderCount}>{node.count}</span>
+        </button>
+        {!collapsed && (
+          <ul className={styles.folderContents}>
+            {node.items.map(({ item, index }) => {
+              const isActive = index === currentIndex
+              return (
+                <li
+                  key={item.id}
+                  className={`${styles.row} ${styles.folderItemRow} ${isActive ? styles.active : ''} ${pulseIds.has(item.id) ? styles.pulse : ''}`}
+                  style={
+                    {
+                      '--i': index,
+                      '--depth': `${(depth + 1) * 12}px`,
+                    } as RowStyle & DepthStyle
+                  }
+                >
+                  <button
+                    type="button"
+                    className={styles.item}
+                    onClick={() => onPlay(index)}
+                    aria-description={item.path}
+                    aria-current={isActive ? 'true' : undefined}
+                  >
+                    {isActive ? (
+                      <Play size={12} className={styles.playingIcon} aria-hidden="true" />
+                    ) : (
+                      <span className={styles.index} aria-hidden="true">
+                        {index + 1}
+                      </span>
+                    )}
+                    <span className={styles.name}>{item.name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.remove}
+                    onClick={() => onRemove(item.id)}
+                    aria-label={t('playlist.remove', { name: item.name })}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </li>
+              )
+            })}
+            {children.map((child) => renderFolder(child, depth + 1))}
+          </ul>
+        )}
+      </li>
+    )
+  }
+
   return (
     <aside
       className={`${styles.panel} ${immersive ? styles.immersive : ''} ${closing ? styles.closing : ''} ${droppingFiles ? styles.dropping : ''}`}
@@ -155,6 +333,28 @@ function PlaylistPanel({
           {t('playlist.title')}
           {items.length > 0 && <span className={styles.count}>{items.length}</span>}
         </h2>
+        <div className={styles.viewToggle} role="group" aria-label={t('playlist.viewMode')}>
+          <button
+            type="button"
+            className={`${styles.viewButton} ${view === 'queue' ? styles.viewButtonActive : ''}`}
+            onClick={() => onViewChange('queue')}
+            aria-label={t('playlist.queueView')}
+            aria-pressed={view === 'queue'}
+            title={t('playlist.queueView')}
+          >
+            <List size={14} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={`${styles.viewButton} ${view === 'folders' ? styles.viewButtonActive : ''}`}
+            onClick={() => onViewChange('folders')}
+            aria-label={t('playlist.folderView')}
+            aria-pressed={view === 'folders'}
+            title={t('playlist.folderView')}
+          >
+            <Folder size={14} aria-hidden="true" />
+          </button>
+        </div>
       </header>
 
       {loading ? (
@@ -170,6 +370,12 @@ function PlaylistPanel({
           <ListVideo size={28} className={styles.emptyIcon} aria-hidden="true" />
           {t('playlist.empty')}
         </p>
+      ) : view === 'folders' ? (
+        <ul className={styles.folderTree}>
+          {createFolderTree(items, t('playlist.rootFolder')).map((folder) =>
+            renderFolder(folder, 0),
+          )}
+        </ul>
       ) : (
         <ol
           className={styles.list}

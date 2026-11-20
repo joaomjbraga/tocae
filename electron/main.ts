@@ -4,6 +4,7 @@ import { isMediaPath } from '@shared/media'
 import { registerMediaSchemes, registerMediaProtocol } from './media/protocol'
 import { registerDialogIpc } from './dialogs'
 import { registerPlaylistIpc } from './playlist'
+import { initializeLibrary, registerLibraryIpc } from './library'
 import { createMainWindow, focusMainWindow, registerWindowIpc } from './windows'
 import { initLocale, registerLocaleIpc } from './locale'
 import {
@@ -62,6 +63,7 @@ if (!gotTheLock) {
     registerMediaProtocol()
     registerCommandIpc()
     registerPlaylistIpc()
+    registerLibraryIpc()
     registerDialogIpc()
     registerDefaultPlayerIpc()
     registerUpdateIpc()
@@ -70,6 +72,7 @@ if (!gotTheLock) {
     // O idioma precisa estar resolvido antes da primeira janela para a
     // interface começar no idioma escolhido.
     await initLocale()
+    await initializeLibrary()
     const window = createMainWindow()
     window.webContents.on('did-start-loading', markRendererNotReady)
     openMediaPaths(process.argv.slice(1))

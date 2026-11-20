@@ -34,7 +34,7 @@
   overflow: hidden;
   border: 1px solid var(--border-hairline);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.028);
+  background: var(--bg-surface);
   list-style: none;
 }
 

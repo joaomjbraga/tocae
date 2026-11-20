@@ -43,7 +43,7 @@
   padding: 14px;
   border: 1px solid var(--border-hairline);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.028);
+  background: var(--bg-surface);
 }
 
 .statusCopy {
@@ -100,7 +100,7 @@
 
 .error {
   margin: 0;
-  color: var(--text-danger, #ff7777);
+  color: var(--text-danger);
   font-size: var(--text-xs);
   line-height: 1.5;
 }

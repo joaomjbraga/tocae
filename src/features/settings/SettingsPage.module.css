@@ -15,7 +15,6 @@
   gap: var(--space-3);
   flex: 0 0 auto;
   padding: 10px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
 }
 
 .categoryButton:focus-visible {
@@ -60,8 +59,7 @@
   gap: 4px;
   overflow-y: auto;
   padding: 12px 8px;
-  border-right: 1px solid rgba(255, 255, 255, 0.055);
-  background: rgba(255, 255, 255, 0.018);
+  background: var(--bg-surface);
 }
 
 .categoryButton {
@@ -90,7 +88,7 @@
 }
 
 .categoryActive {
-  background: color-mix(in srgb, var(--accent) 20%, rgba(255, 255, 255, 0.06));
+  background: var(--accent-tint);
   color: var(--text-primary);
 }
 
@@ -109,7 +107,7 @@
 }
 
 .categoryButton.categoryActive:hover {
-  background: color-mix(in srgb, var(--accent) 24%, rgba(255, 255, 255, 0.065));
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .categoryCopy {
@@ -144,9 +142,7 @@
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
   padding: 20px 24px 28px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 160px),
-    rgba(18, 18, 22, 0.34);
+  background: transparent;
 }
 
 .detailPane::-webkit-scrollbar,
@@ -225,9 +221,8 @@
   gap: 0;
   overflow: hidden;
   margin-top: 14px;
-  border: 1px solid var(--border-hairline);
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.028);
+  background: var(--bg-surface);
 }
 
 .languageChoice {
@@ -238,7 +233,6 @@
   gap: var(--space-3);
   padding: 9px 12px;
   border: 0;
-  border-bottom: 1px solid var(--border-hairline);
   border-radius: 0;
   background: transparent;
   color: var(--text-secondary);
@@ -256,17 +250,13 @@
   color: var(--text-primary);
 }
 
-.languageChoice:last-child {
-  border-bottom: 0;
-}
-
 .languageChoice:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 .languageChoiceActive {
-  background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.02));
+  background: var(--accent-tint);
   color: var(--text-primary);
 }
 
@@ -277,7 +267,7 @@
   flex: 0 0 auto;
   place-items: center;
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.045);
+  background: var(--bg-chip);
   color: var(--text-muted);
 }
 
@@ -326,7 +316,6 @@
     overflow: visible;
     padding: 8px;
     border-right: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.055);
   }
 
   .categoryButton {

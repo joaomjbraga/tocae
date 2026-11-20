@@ -1,4 +1,5 @@
 import type { Locale } from './i18n'
+import type { LibrarySnapshot } from './library'
 import type { PersistedPlaylist, PlaylistItem } from './playlist'
 
 export const IPC_CHANNELS = {
@@ -7,6 +8,10 @@ export const IPC_CHANNELS = {
   PLAYLIST_WRITE: 'playlist:write',
   MEDIA_PICK: 'media:pick',
   MEDIA_FOLDER_PICK: 'media-folder:pick',
+  LIBRARY_GET: 'library:get',
+  LIBRARY_ADD_FOLDER: 'library:add-folder',
+  LIBRARY_REMOVE_FOLDER: 'library:remove-folder',
+  LIBRARY_CHANGED: 'library:changed',
   DEFAULT_PLAYER_STATUS: 'default-player:status',
   DEFAULT_PLAYER_SET: 'default-player:set',
   RELEASES_OPEN: 'releases:open',
@@ -54,6 +59,10 @@ export interface TocaeApi {
   writePlaylist(items: PlaylistItem[], currentIndex: number): Promise<void>
   openMediaDialog(): Promise<void>
   openMediaFolderDialog(): Promise<void>
+  getLibrary(): Promise<LibrarySnapshot>
+  addLibraryFolder(): Promise<LibrarySnapshot | null>
+  removeLibraryFolder(folderId: string): Promise<LibrarySnapshot>
+  onLibraryChanged(callback: () => void): () => void
   getDefaultPlayerStatus(): Promise<DefaultPlayerStatus>
   setDefaultPlayer(): Promise<void>
   openReleasesPage(): Promise<void>

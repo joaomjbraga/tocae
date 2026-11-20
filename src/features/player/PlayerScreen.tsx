@@ -5,6 +5,7 @@ import { mediaTypeForPath } from '@shared/media'
 import AppBar from '../../components/AppBar'
 import Toast from '../../components/Toast'
 import PlaylistPanel from '../playlist/PlaylistPanel'
+import Library from '../library/Library'
 import VideoPlayer from './VideoPlayer'
 import { readPlaybackPreferences, savePlaybackPreferences } from './playbackPreferences'
 import SettingsPage from '../settings/SettingsPage'
@@ -36,8 +37,9 @@ function PlayerScreen({
   const playlist = usePlaylist()
   const { t } = useI18n()
   const api = window.tocae
-  const [activePage, setActivePage] = useState<'player' | 'settings'>('player')
+  const [activePage, setActivePage] = useState<'library' | 'player' | 'settings'>('library')
   const [playlistVisible, setPlaylistVisible] = useState(false)
+  const [playlistView, setPlaylistView] = useState<'queue' | 'folders'>('folders')
   // O painel fica montado durante a saída para poder animar; `panelLeaving`
   // marca o estado intermediário.
   const [panelLeaving, setPanelLeaving] = useState(false)
@@ -75,6 +77,14 @@ function PlayerScreen({
       setPlaylistVisible(false)
     },
     [playlist.playIndex],
+  )
+
+  const handleLibraryItemPlay = useCallback(
+    (filePath: string) => {
+      playlist.playDirect(filePath)
+      setActivePage('player')
+    },
+    [playlist.playDirect],
   )
 
   const togglePlaylist = useCallback(() => {
@@ -172,8 +182,8 @@ function PlayerScreen({
     if (announcedIdRef.current === current.id) return
     announcedIdRef.current = current.id
     announce('player.nowPlaying', {
-      current: playlist.currentIndex + 1,
-      total: playlist.items.length,
+      current: playlist.currentIndex >= 0 ? playlist.currentIndex + 1 : 1,
+      total: playlist.currentIndex >= 0 ? playlist.items.length : 1,
       name: current.name,
     })
   }, [announce, playlist.current, playlist.currentIndex, playlist.items.length])
@@ -251,6 +261,7 @@ function PlayerScreen({
         activePage={activePage}
         onOpenMedia={() => void api?.openMediaDialog()}
         onOpenMediaFolder={() => void api?.openMediaFolderDialog()}
+        onOpenLibrary={() => setActivePage('library')}
         onOpenPlayer={() => setActivePage('player')}
         onOpenSettings={() => setActivePage('settings')}
       />
@@ -347,6 +358,8 @@ function PlayerScreen({
                   <PlaylistPanel
                     items={playlist.items}
                     currentIndex={playlist.currentIndex}
+                    view={playlistView}
+                    onViewChange={setPlaylistView}
                     immersive={immersiveMedia}
                     closing={!playlistVisible}
                     loading={!playlist.loaded}
@@ -362,6 +375,8 @@ function PlayerScreen({
               </div>
             </div>
           </div>
+
+          {activePage === 'library' && <Library onPlay={handleLibraryItemPlay} />}
 
           {activePage === 'settings' && (
             <SettingsPage

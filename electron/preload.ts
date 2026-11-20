@@ -17,6 +17,15 @@ const api: TocaeApi = {
     ipcRenderer.invoke(IPC_CHANNELS.PLAYLIST_WRITE, items, currentIndex),
   openMediaDialog: () => ipcRenderer.invoke(IPC_CHANNELS.MEDIA_PICK),
   openMediaFolderDialog: () => ipcRenderer.invoke(IPC_CHANNELS.MEDIA_FOLDER_PICK),
+  getLibrary: () => ipcRenderer.invoke(IPC_CHANNELS.LIBRARY_GET),
+  addLibraryFolder: () => ipcRenderer.invoke(IPC_CHANNELS.LIBRARY_ADD_FOLDER),
+  removeLibraryFolder: (folderId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.LIBRARY_REMOVE_FOLDER, folderId),
+  onLibraryChanged(callback) {
+    const listener = () => callback()
+    ipcRenderer.on(IPC_CHANNELS.LIBRARY_CHANGED, listener)
+    return () => ipcRenderer.off(IPC_CHANNELS.LIBRARY_CHANGED, listener)
+  },
   getDefaultPlayerStatus: () => ipcRenderer.invoke(IPC_CHANNELS.DEFAULT_PLAYER_STATUS),
   setDefaultPlayer: () => ipcRenderer.invoke(IPC_CHANNELS.DEFAULT_PLAYER_SET),
   openReleasesPage: () => ipcRenderer.invoke(IPC_CHANNELS.RELEASES_OPEN),

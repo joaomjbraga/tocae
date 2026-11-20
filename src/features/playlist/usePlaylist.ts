@@ -12,6 +12,7 @@ const PLAYBACK_ERROR: MessageKey = 'error.playback'
 interface PlaylistState {
   items: PlaylistItem[]
   currentIndex: number
+  directItem: PlaylistItem | null
   error: MessageKey | null
   loaded: boolean
   /** Ids duplicados recém-detectados, para o realce temporário das linhas. */
@@ -24,6 +25,7 @@ export type PlaylistSnapshot = PersistedPlaylist
 const INITIAL_STATE: PlaylistState = {
   items: [],
   currentIndex: -1,
+  directItem: null,
   error: null,
   loaded: false,
   pulseIds: [],
@@ -146,6 +148,7 @@ export function usePlaylist() {
               : prev.currentIndex === -1
                 ? prev.items.length
                 : prev.currentIndex,
+        directItem: activatedIndex >= 0 ? null : prev.directItem,
         error: fresh.length > 0 || activatedIndex >= 0 ? null : prev.error,
         pulseIds,
       }
@@ -172,6 +175,15 @@ export function usePlaylist() {
     },
     [addEntries],
   )
+
+  const playDirect = useCallback((filePath: string) => {
+    if (!filePath) return
+    setState((prev) => ({
+      ...prev,
+      directItem: createEntry(filePath, filePath),
+      error: null,
+    }))
+  }, [])
 
   const addFiles = useCallback(
     (files: File[]) => {
@@ -204,12 +216,15 @@ export function usePlaylist() {
 
   const playIndex = useCallback((index: number) => {
     setState((prev) =>
-      index >= 0 && index < prev.items.length ? { ...prev, currentIndex: index, error: null } : prev,
+      index >= 0 && index < prev.items.length
+        ? { ...prev, currentIndex: index, directItem: null, error: null }
+        : prev,
     )
   }, [])
 
   const step = useCallback((delta: number) => {
     setState((prev) => {
+      if (prev.directItem) return prev
       const target = prev.currentIndex + delta
       if (target < 0 || target >= prev.items.length) return prev
       return { ...prev, currentIndex: target, error: null }
@@ -221,6 +236,7 @@ export function usePlaylist() {
 
   const failCurrent = useCallback(() => {
     setState((prev) => {
+      if (prev.directItem) return { ...prev, error: PLAYBACK_ERROR }
       const hasNextItem = prev.currentIndex >= 0 && prev.currentIndex + 1 < prev.items.length
       if (hasNextItem) return { ...prev, currentIndex: prev.currentIndex + 1 }
       return { ...prev, currentIndex: -1, error: PLAYBACK_ERROR }
@@ -291,18 +307,24 @@ export function usePlaylist() {
     () => ({
       items: state.items,
       pulseIds,
-      currentIndex: state.currentIndex,
-      current: state.currentIndex >= 0 ? (state.items[state.currentIndex] ?? null) : null,
+      current:
+        state.directItem ??
+        (state.currentIndex >= 0 ? (state.items[state.currentIndex] ?? null) : null),
+      currentIndex: state.directItem ? -1 : state.currentIndex,
       source:
-        state.currentIndex >= 0 && state.items[state.currentIndex]
-          ? toMediaUrl(state.items[state.currentIndex].path)
-          : null,
+        state.directItem
+          ? toMediaUrl(state.directItem.path)
+          : state.currentIndex >= 0 && state.items[state.currentIndex]
+            ? toMediaUrl(state.items[state.currentIndex].path)
+            : null,
       error: state.error,
       loaded: state.loaded,
-      hasNext: state.currentIndex >= 0 && state.currentIndex + 1 < state.items.length,
-      hasPrevious: state.currentIndex > 0,
+      hasNext:
+        !state.directItem && state.currentIndex >= 0 && state.currentIndex + 1 < state.items.length,
+      hasPrevious: !state.directItem && state.currentIndex > 0,
       addPaths,
       openPaths,
+      playDirect,
       addFiles,
       playIndex,
       next,
@@ -317,10 +339,12 @@ export function usePlaylist() {
       state.items,
       pulseIds,
       state.currentIndex,
+      state.directItem,
       state.error,
       state.loaded,
       addPaths,
       openPaths,
+      playDirect,
       addFiles,
       playIndex,
       next,
