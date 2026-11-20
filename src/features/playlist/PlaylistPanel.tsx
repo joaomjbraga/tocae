@@ -242,7 +242,7 @@ function PlaylistPanel({
     const children = [...node.children.values()].sort(compareFolders)
 
     return (
-      <li className={styles.folderGroup} key={node.key}>
+      <li key={node.key}>
         <button
           type="button"
           className={styles.folderHeading}

@@ -152,11 +152,7 @@ function YouTubeMusicPage({ immersive, onReturnToLibrary }: YouTubeMusicPageProp
           >
             <Square size={14} aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            className={styles.returnButton}
-            onClick={onReturnToLibrary}
-          >
+          <button type="button" className={styles.returnButton} onClick={onReturnToLibrary}>
             <House size={15} aria-hidden="true" />
             {t('youtubeMusic.returnToLibrary')}
           </button>
@@ -195,7 +191,11 @@ function YouTubeMusicPage({ immersive, onReturnToLibrary }: YouTubeMusicPageProp
               </>
             ) : (
               <>
-                <LoaderCircle className={`${styles.statusIcon} ${styles.spinner}`} size={24} aria-hidden="true" />
+                <LoaderCircle
+                  className={`${styles.statusIcon} ${styles.spinner}`}
+                  size={24}
+                  aria-hidden="true"
+                />
                 <p>{t('youtubeMusic.loading')}</p>
               </>
             )}

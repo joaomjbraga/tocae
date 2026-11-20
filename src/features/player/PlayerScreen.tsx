@@ -102,6 +102,9 @@ function PlayerScreen({
     },
     [api],
   )
+  const handleOpenYouTubeMusic = useCallback(() => {
+    setActivePage('youtube-music')
+  }, [])
   const announce = useCallback(
     (key: MessageKey, params?: TranslationParams) => setAnnouncement({ key, params }),
     [],
@@ -325,7 +328,7 @@ function PlayerScreen({
         onOpenMediaFolder={() => void api?.openMediaFolderDialog()}
         onOpenLibrary={() => setActivePage('library')}
         onOpenPlayer={() => setActivePage('player')}
-        onOpenYouTubeMusic={() => setActivePage('youtube-music')}
+        onOpenYouTubeMusic={handleOpenYouTubeMusic}
         onOpenSettings={() => setActivePage('settings')}
       />
 
@@ -364,8 +367,8 @@ function PlayerScreen({
                   title={mediaTitle}
                   audioArtwork={mediaMetadata?.coverArt ?? null}
                   onMediaMetadata={handleMediaElementMetadata}
-                  onPlaybackStateChange={handleLocalPlaybackStateChange}
                   immersive={immersiveMedia}
+                  onPlaybackStateChange={handleLocalPlaybackStateChange}
                   pauseForYouTubeMusic={youtubeMusicImmersive}
                   autoNext={playbackPreferences.autoNext}
                   onAutoNextChange={handleAutoNextChange}
@@ -453,10 +456,6 @@ function PlayerScreen({
             <SettingsPage
               accentColor={accentColor}
               onAccentColorChange={onAccentColorChange}
-              autoNext={playbackPreferences.autoNext}
-              repeatCurrent={playbackPreferences.repeatCurrent}
-              onAutoNextChange={handleAutoNextChange}
-              onRepeatCurrentChange={handleRepeatCurrentChange}
             />
           )}
 

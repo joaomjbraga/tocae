@@ -244,7 +244,7 @@ function LibraryMediaCard({
         <div className={styles.mediaCardActions}>
           <button
             type="button"
-            className={`${styles.mediaCardActionButton} ${styles.favoriteButton} ${favorite ? styles.favoriteButtonActive : ''}`}
+            className={`${styles.mediaCardActionButton} ${favorite ? styles.favoriteButtonActive : ''}`}
             aria-label={t(favorite ? 'library.removeFavorite' : 'library.addFavorite')}
             aria-pressed={favorite}
             title={t(favorite ? 'library.removeFavorite' : 'library.addFavorite')}
@@ -254,7 +254,7 @@ function LibraryMediaCard({
           </button>
           <button
             type="button"
-            className={`${styles.mediaCardActionButton} ${styles.openFolderButton}`}
+            className={styles.mediaCardActionButton}
             aria-label={t('library.openFolder')}
             title={t('library.openFolder')}
             onClick={() => void window.tocae?.showMediaInFolder(item.path)}

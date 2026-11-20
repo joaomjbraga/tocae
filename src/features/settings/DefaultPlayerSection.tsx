@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Play } from 'lucide-react'
+import { Check } from 'lucide-react'
 import type { DefaultPlayerStatus } from '@shared/ipc'
 import { useI18n } from '../../i18n'
 import styles from './DefaultPlayerSection.module.css'
@@ -50,38 +50,45 @@ function DefaultPlayerSection() {
           ? t('defaultPlayer.isDefault')
           : t('defaultPlayer.notDefault')
 
+  const showDefaultCheck = Boolean(status?.isDefault) && !hasError
+
   return (
     <section className={styles.section} aria-labelledby="default-player-title">
       <header className={styles.header}>
-        <Play size={19} className={styles.headerIcon} aria-hidden="true" />
-        <div>
-          <h2 id="default-player-title" className={styles.title}>
-            {t('defaultPlayer.title')}
-          </h2>
-          <p className={styles.description}>{t('defaultPlayer.description')}</p>
-        </div>
+        <h2 id="default-player-title" className={styles.title}>
+          {t('defaultPlayer.title')}
+        </h2>
+        <p className={styles.description}>{t('defaultPlayer.description')}</p>
       </header>
 
-      <div className={styles.card}>
-        <div className={styles.statusCopy}>
-          <p className={styles.statusMessage} role="status" aria-live="polite">
-            {status?.isDefault && !hasError && (
-              <Check size={15} className={styles.statusIcon} aria-hidden="true" />
-            )}
-            {statusMessage}
-          </p>
-          <p className={styles.hint}>{t('defaultPlayer.hint')}</p>
+      <div className={styles.group}>
+        <div className={styles.row}>
+          <div className={styles.statusCopy}>
+            <p className={styles.statusMessage} role="status" aria-live="polite">
+              {showDefaultCheck && (
+                <Check
+                  size={15}
+                  strokeWidth={2.5}
+                  className={styles.statusIcon}
+                  aria-hidden="true"
+                />
+              )}
+              {statusMessage}
+            </p>
+            <p className={styles.hint}>{t('defaultPlayer.hint')}</p>
+          </div>
+
+          {status?.supported && !status.isDefault && (
+            <button
+              type="button"
+              className={styles.actionButton}
+              onClick={() => void handleSetDefault()}
+              disabled={isSettingDefault}
+            >
+              {isSettingDefault ? t('defaultPlayer.setting') : t('defaultPlayer.set')}
+            </button>
+          )}
         </div>
-        {status?.supported && !status.isDefault && (
-          <button
-            type="button"
-            className={styles.actionButton}
-            onClick={() => void handleSetDefault()}
-            disabled={isSettingDefault}
-          >
-            {isSettingDefault ? t('defaultPlayer.setting') : t('defaultPlayer.set')}
-          </button>
-        )}
       </div>
 
       {hasError && (

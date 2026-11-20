@@ -1,30 +1,23 @@
 import { useState } from 'react'
 import {
-  Check,
   Info,
   Keyboard,
   Languages,
-  Monitor,
   Palette,
   Play,
-  Repeat,
   Settings,
 } from 'lucide-react'
-import { LOCALE_NAMES, SUPPORTED_LOCALES } from '@shared/i18n'
 import { useI18n } from '../../i18n'
-import type { PlaybackPreferences } from '../player/playbackPreferences'
 import AboutSection from './AboutSection'
 import AppearanceSection from './AppearanceSection'
 import DefaultPlayerSection from './DefaultPlayerSection'
-import PlaybackSection from './PlaybackSection'
+import LanguageSection from './LanguageSection'
 import ShortcutsSection from './ShortcutsSection'
 import styles from './SettingsPage.module.css'
 
-type SettingsPageProps = PlaybackPreferences & {
+type SettingsPageProps = {
   accentColor: string
   onAccentColorChange: (color: string) => void
-  onAutoNextChange: (enabled: boolean) => void
-  onRepeatCurrentChange: (enabled: boolean) => void
 }
 
 const CATEGORIES = [
@@ -53,12 +46,6 @@ const CATEGORIES = [
     description: 'settings.defaultPlayerDescription',
   },
   {
-    id: 'playback',
-    icon: Repeat,
-    title: 'settings.playbackTitle',
-    description: 'settings.playbackDescription',
-  },
-  {
     id: 'about',
     icon: Info,
     title: 'about.title',
@@ -71,12 +58,8 @@ type SettingsCategory = (typeof CATEGORIES)[number]['id']
 function SettingsPage({
   accentColor,
   onAccentColorChange,
-  autoNext,
-  repeatCurrent,
-  onAutoNextChange,
-  onRepeatCurrentChange,
 }: SettingsPageProps) {
-  const { locale, systemLocale, source, setLocale, t } = useI18n()
+  const { t } = useI18n()
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('language')
 
   return (
@@ -119,66 +102,7 @@ function SettingsPage({
           aria-labelledby={`${activeCategory}-title`}
           tabIndex={0}
         >
-          {activeCategory === 'language' && (
-            <section aria-labelledby="language-title">
-              <header className={styles.detailHeader}>
-                <Languages size={18} className={styles.detailIcon} aria-hidden="true" />
-                <div>
-                  <h2 id="language-title" className={styles.detailTitle}>
-                    {t('language.button')}
-                  </h2>
-                  <p className={styles.detailDescription}>
-                    {t('settings.languageDescription')}
-                  </p>
-                </div>
-              </header>
-              <div className={styles.languageChoices} role="group" aria-label={t('language.menu')}>
-                <button
-                  type="button"
-                  className={`${styles.languageChoice} ${source === 'system' ? styles.languageChoiceActive : ''}`}
-                  onClick={() => setLocale(null)}
-                  aria-pressed={source === 'system'}
-                >
-                  <span className={styles.choiceIcon}>
-                    <Monitor size={17} aria-hidden="true" />
-                  </span>
-                  <span className={styles.choiceCopy}>
-                    <span className={styles.choiceTitle}>{t('language.system')}</span>
-                    <span className={styles.choiceDescription}>
-                      {t('language.systemHint', { locale: LOCALE_NAMES[systemLocale] })}
-                    </span>
-                  </span>
-                  {source === 'system' && (
-                    <Check size={16} className={styles.choiceCheck} aria-hidden="true" />
-                  )}
-                </button>
-
-                {SUPPORTED_LOCALES.map((option) => {
-                  const selected = source === 'user' && locale === option
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      className={`${styles.languageChoice} ${selected ? styles.languageChoiceActive : ''}`}
-                      onClick={() => setLocale(option)}
-                      aria-pressed={selected}
-                    >
-                      <span className={styles.choiceIcon}>
-                        <Languages size={17} aria-hidden="true" />
-                      </span>
-                      <span className={styles.choiceCopy}>
-                        <span className={styles.choiceTitle}>{LOCALE_NAMES[option]}</span>
-                        <span className={styles.choiceDescription}>{option}</span>
-                      </span>
-                      {selected && (
-                        <Check size={16} className={styles.choiceCheck} aria-hidden="true" />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </section>
-          )}
+          {activeCategory === 'language' && <LanguageSection />}
           {activeCategory === 'appearance' && (
             <AppearanceSection
               accentColor={accentColor}
@@ -187,14 +111,6 @@ function SettingsPage({
           )}
           {activeCategory === 'shortcuts' && <ShortcutsSection />}
           {activeCategory === 'default-player' && <DefaultPlayerSection />}
-          {activeCategory === 'playback' && (
-            <PlaybackSection
-              autoNext={autoNext}
-              repeatCurrent={repeatCurrent}
-              onAutoNextChange={onAutoNextChange}
-              onRepeatCurrentChange={onRepeatCurrentChange}
-            />
-          )}
           {activeCategory === 'about' && <AboutSection />}
         </div>
       </div>

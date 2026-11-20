@@ -260,6 +260,7 @@
   height: 2px;
   border-radius: var(--radius-xs);
   background: var(--accent);
+  animation: drop-pulse var(--duration-drop) var(--ease-inout) infinite;
 }
 
 .row.dropBefore::before {
@@ -272,12 +273,6 @@
 
 .folderItemRow {
   padding-left: calc(2px + var(--depth, 0px));
-}
-
-/* A linha de inserção pisca enquanto o item está sendo posicionado */
-.row.dropBefore::before,
-.row.dropAfter::after {
-  animation: drop-pulse var(--duration-drop) var(--ease-inout) infinite;
 }
 
 @keyframes drop-pulse {

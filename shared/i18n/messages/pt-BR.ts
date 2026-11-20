@@ -41,17 +41,11 @@ export const ptBRMessages = {
   'settings.languageDescription': 'Escolha o idioma da interface.',
   'settings.shortcutsDescription': 'Consulte os comandos do reprodutor e da lista.',
   'settings.defaultPlayerDescription': 'Defina o aplicativo padrão para abrir mídias.',
-  'settings.playbackTitle': 'Reprodução',
-  'settings.playbackDescription': 'Configure o avanço automático e a repetição de mídias.',
   'playbackSettings.title': 'Avanço e repetição',
-  'playbackSettings.description': 'Escolha o que acontece quando um vídeo ou música termina.',
   'playbackSettings.autoNextTitle': 'Avançar automaticamente',
   'playbackSettings.autoNextLabel': 'Próximo',
-  'playbackSettings.autoNextDescription': 'Inicia a próxima mídia da lista quando a atual termina.',
   'playbackSettings.repeatTitle': 'Repetir mídia atual',
   'playbackSettings.repeatLabel': 'Repetir',
-  'playbackSettings.repeatDescription':
-    'Recomeça a mídia atual ao terminar; esta opção tem prioridade sobre o avanço automático.',
 
   // Player
   'player.play': 'Reproduzir',

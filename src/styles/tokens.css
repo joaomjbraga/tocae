@@ -70,8 +70,7 @@
   --radius-window: 16px;
 
   /* Tipografia */
-  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI Variable',
-    Inter, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-ui: 'Inter', sans-serif;
   --text-2xs: 11px;
   --text-xs: 12px;
   --text-sm: 13px;

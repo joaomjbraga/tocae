@@ -35,17 +35,11 @@ export const enMessages: Messages = {
   'settings.languageDescription': 'Choose the interface language.',
   'settings.shortcutsDescription': 'View player and playlist commands.',
   'settings.defaultPlayerDescription': 'Choose the default app for opening media.',
-  'settings.playbackTitle': 'Playback',
-  'settings.playbackDescription': 'Configure automatic next and media repeat.',
   'playbackSettings.title': 'Next and repeat',
-  'playbackSettings.description': 'Choose what happens when a video or song ends.',
   'playbackSettings.autoNextTitle': 'Play next automatically',
   'playbackSettings.autoNextLabel': 'Next',
-  'playbackSettings.autoNextDescription': 'Start the next item in the playlist when the current one ends.',
   'playbackSettings.repeatTitle': 'Repeat current media',
   'playbackSettings.repeatLabel': 'Repeat',
-  'playbackSettings.repeatDescription':
-    'Restart the current media when it ends; this takes priority over automatic next.',
 
   // Player
   'player.play': 'Play',
