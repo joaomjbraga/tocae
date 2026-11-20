@@ -21,8 +21,10 @@
 }
 
 .immersive .header {
-  min-height: 56px;
-  padding: 0 16px;
+  height: 44px;
+  min-height: 44px;
+  flex: 0 0 44px;
+  padding: 0 12px;
   background: linear-gradient(to bottom, rgba(19, 17, 26, 0.88), transparent);
 }
 
@@ -179,6 +181,12 @@
     padding-top: 36px;
   }
 
+  .immersive .header {
+    flex-direction: row;
+    align-items: center;
+    padding: 0 8px;
+  }
+
   .header {
     align-items: flex-start;
     flex-direction: column;
@@ -191,5 +199,31 @@
 
   .returnButton {
     margin-left: auto;
+  }
+
+  .immersive .controls {
+    width: auto;
+    flex-wrap: nowrap;
+    gap: 3px;
+  }
+
+  .immersive .returnButton {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .immersive .heading {
+    display: none;
+  }
+
+  .immersive .controls {
+    margin-left: auto;
+  }
+
+  .immersive .returnButton {
+    width: 32px;
+    padding: 0;
+    font-size: 0;
   }
 }

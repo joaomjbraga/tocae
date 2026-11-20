@@ -152,7 +152,13 @@ function YouTubeMusicPage({ immersive, onReturnToLibrary }: YouTubeMusicPageProp
           >
             <Square size={14} aria-hidden="true" />
           </button>
-          <button type="button" className={styles.returnButton} onClick={onReturnToLibrary}>
+          <button
+            type="button"
+            className={styles.returnButton}
+            onClick={onReturnToLibrary}
+            aria-label={t('youtubeMusic.returnToLibrary')}
+            title={t('youtubeMusic.returnToLibrary')}
+          >
             <House size={15} aria-hidden="true" />
             {t('youtubeMusic.returnToLibrary')}
           </button>
