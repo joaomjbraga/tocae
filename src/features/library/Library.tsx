@@ -8,7 +8,6 @@ import {
   Image,
   LoaderCircle,
   Music2,
-  Pencil,
   Play,
   RefreshCw,
   Search,
@@ -21,14 +20,12 @@ import type { MediaMetadata, MediaType } from '@shared/media'
 import { useI18n } from '../../i18n'
 import { toMediaUrl } from '../../lib/media'
 import { summarizeMediaMetadata } from '../../lib/mediaMetadata'
-import MetadataEditorDialog from './MetadataEditorDialog'
 import styles from './Library.module.css'
 
 type MediaFilter = 'all' | MediaType
 
 type LibraryProps = {
   onPlay: (filePath: string) => void
-  onMetadataSaved?: (filePath: string, metadata: MediaMetadata) => void
 }
 
 const STANDARD_FOLDER_LABELS: Record<StandardLibraryFolderId, MessageKey> = {
@@ -123,16 +120,13 @@ function LibraryMediaCard({
   item,
   context,
   onPlay,
-  onMetadataSaved,
 }: {
   item: LibraryMediaItem
   context: string
   onPlay: (filePath: string) => void
-  onMetadataSaved?: (filePath: string, metadata: MediaMetadata) => void
 }) {
   const { locale, t } = useI18n()
   const [metadata, setMetadata] = useState<MediaMetadata | null>(null)
-  const [metadataEditorOpen, setMetadataEditorOpen] = useState(false)
   const [metadataLoadFailed, setMetadataLoadFailed] = useState(false)
   const [previewDetails, setPreviewDetails] = useState<{
     width: number
@@ -182,11 +176,6 @@ function LibraryMediaCard({
     return request
   }, [item.path, metadata])
 
-  const handleEditMetadata = useCallback(async () => {
-    const loadedMetadata = await loadMetadata()
-    if (loadedMetadata) setMetadataEditorOpen(true)
-  }, [loadMetadata])
-
   return (
     <>
       <div className={styles.mediaCardShell}>
@@ -198,7 +187,6 @@ function LibraryMediaCard({
           onFocus={() => void loadMetadata()}
           aria-label={t('library.playItem', { name: displayName })}
           aria-description={context}
-          title={summary ? `${item.path}\n${summary}` : item.path}
         >
           <span className={styles.artwork}>
             <Icon
@@ -249,31 +237,18 @@ function LibraryMediaCard({
         </button>
         <button
           type="button"
-          className={styles.editMetadataButton}
-          onClick={() => void handleEditMetadata()}
-          onFocus={() => void loadMetadata()}
-          aria-label={t('metadata.edit', { name: displayName })}
-          title={t('metadata.edit', { name: displayName })}
+          className={styles.openFolderButton}
+          aria-label={t('library.openFolder')}
+          title={t('library.openFolder')}
+          onClick={() => void window.tocae?.showMediaInFolder(item.path)}
         >
-          <Pencil size={14} aria-hidden="true" />
+          <FolderOpen size={15} aria-hidden="true" />
         </button>
       </div>
       {metadataLoadFailed && (
         <span className={styles.metadataLoadError} role="alert">
           {t('library.loadError')}
         </span>
-      )}
-      {metadataEditorOpen && metadata && (
-        <MetadataEditorDialog
-          path={item.path}
-          mediaType={item.type}
-          metadata={metadata}
-          onSaved={(updatedMetadata) => {
-            setMetadata(updatedMetadata)
-            onMetadataSaved?.(item.path, updatedMetadata)
-          }}
-          onClose={() => setMetadataEditorOpen(false)}
-        />
       )}
     </>
   )
@@ -372,7 +347,7 @@ function LibrarySelect({ label, value, options, onChange, disabled = false }: Li
   )
 }
 
-function Library({ onPlay, onMetadataSaved }: LibraryProps) {
+function Library({ onPlay }: LibraryProps) {
   const { t } = useI18n()
   const api = window.tocae
   const [snapshot, setSnapshot] = useState<LibrarySnapshot | null>(null)
@@ -766,7 +741,6 @@ function Library({ onPlay, onMetadataSaved }: LibraryProps) {
                         item={item}
                         context={context}
                         onPlay={onPlay}
-                        onMetadataSaved={onMetadataSaved}
                       />
                     </li>
                   )

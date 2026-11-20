@@ -93,10 +93,6 @@ function PlayerScreen({
     },
     [currentMediaPath],
   )
-  const handleMediaMetadataSaved = useCallback((path: string, metadata: MediaMetadata) => {
-    setMediaMetadataState({ path, metadata })
-  }, [])
-
   const announce = useCallback(
     (key: MessageKey, params?: TranslationParams) => setAnnouncement({ key, params }),
     [],
@@ -432,7 +428,7 @@ function PlayerScreen({
           </div>
 
           {activePage === 'library' && (
-            <Library onPlay={handleLibraryItemPlay} onMetadataSaved={handleMediaMetadataSaved} />
+            <Library onPlay={handleLibraryItemPlay} />
           )}
 
           {activePage === 'settings' && (

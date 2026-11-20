@@ -162,16 +162,40 @@ jobs:
           name: tocae-reprodutor-linux
           path: release-assets/linux
 
+      - name: Select installer assets
+        id: installers
+        run: |
+          set -euo pipefail
+          expected=( -name '*.exe' -o -name '*.deb' -o -name '*.rpm' )
+          mapfile -t assets < <(find release-assets -type f \( "${expected[@]}" \) -print | sort)
+
+          if [ ${#assets[@]} -eq 0 ]; then
+            echo "Nenhum instalador encontrado em release-assets." >&2
+            exit 1
+          fi
+
+          # Garante que arquivos acidentais (ex.: um .mp4 gerado por alguma
+          # dependência) não virem asset da release.
+          unexpected=$(find release-assets -type f ! \( "${expected[@]}" \) -print)
+          if [ -n "$unexpected" ]; then
+            echo "Arquivos que não são instaladores serão ignorados:" >&2
+            echo "$unexpected" >&2
+          fi
+
+          printf '%s\n' "${assets[@]}" > installer-files.txt
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.prepare-version.outputs.tag }}
         run: |
+          set -euo pipefail
+          mapfile -t assets < installer-files.txt
           if gh release view "$TAG" >/dev/null 2>&1; then
-            find release-assets -type f -print0 | xargs -0 -r gh release upload "$TAG" --clobber
+            gh release upload "$TAG" "${assets[@]}" --clobber
           else
             gh release create "$TAG" \
               --title "Tocaê Reprodutor $TAG" \
               --generate-notes
-            find release-assets -type f -print0 | xargs -0 -r gh release upload "$TAG"
+            gh release upload "$TAG" "${assets[@]}"
           fi

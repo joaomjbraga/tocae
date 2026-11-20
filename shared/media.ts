@@ -58,26 +58,6 @@ export interface MediaMetadata {
   coverArt?: string
 }
 
-export type MediaMetadataUpdate =
-  | {
-      mediaType: 'audio'
-      title: string
-      artist: string
-      album: string
-      year: number | null
-      genre: string
-    }
-  | {
-      mediaType: 'video' | 'image'
-      title: string
-      description: string
-      capturedAt: number | null
-    }
-
-export interface MediaMetadataUpdateResult {
-  metadata: MediaMetadata
-  warnings: string[]
-}
 
 function extensionFor(source: string): string {
   const isUrl = /^[a-z][a-z\d+.-]*:\/\//i.test(source)

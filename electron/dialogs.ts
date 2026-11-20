@@ -1,4 +1,5 @@
-import { dialog, ipcMain } from 'electron'
+import { dialog, ipcMain, shell } from 'electron'
+import path from 'node:path'
 import { IPC_CHANNELS } from '@shared/ipc'
 import { MEDIA_EXTENSIONS } from '@shared/media'
 import { translate } from '@shared/i18n'
@@ -69,4 +70,10 @@ export async function openMediaFolderDialog(): Promise<void> {
 export function registerDialogIpc(): void {
   ipcMain.handle(IPC_CHANNELS.MEDIA_PICK, () => openMediaDialog())
   ipcMain.handle(IPC_CHANNELS.MEDIA_FOLDER_PICK, () => openMediaFolderDialog())
+  ipcMain.handle(IPC_CHANNELS.MEDIA_SHOW_IN_FOLDER, (_event, filePath: unknown) => {
+    if (typeof filePath !== 'string' || !filePath.trim()) {
+      throw new TypeError('A media file path is required.')
+    }
+    shell.showItemInFolder(path.resolve(filePath))
+  })
 }

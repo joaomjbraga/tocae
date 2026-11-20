@@ -1,6 +1,6 @@
 import type { Locale } from './i18n'
 import type { LibrarySnapshot } from './library'
-import type { MediaMetadata, MediaMetadataUpdate, MediaMetadataUpdateResult } from './media'
+import type { MediaMetadata } from './media'
 import type { PersistedPlaylist, PlaylistItem } from './playlist'
 
 export const IPC_CHANNELS = {
@@ -10,7 +10,7 @@ export const IPC_CHANNELS = {
   MEDIA_PICK: 'media:pick',
   MEDIA_FOLDER_PICK: 'media-folder:pick',
   MEDIA_METADATA_GET: 'media:metadata:get',
-  MEDIA_METADATA_UPDATE: 'media:metadata:update',
+  MEDIA_SHOW_IN_FOLDER: 'media:show-in-folder',
   LIBRARY_GET: 'library:get',
   LIBRARY_ADD_FOLDER: 'library:add-folder',
   LIBRARY_REMOVE_FOLDER: 'library:remove-folder',
@@ -62,15 +62,12 @@ export interface TocaeApi {
   writePlaylist(items: PlaylistItem[], currentIndex: number): Promise<void>
   openMediaDialog(): Promise<void>
   openMediaFolderDialog(): Promise<void>
+  showMediaInFolder(filePath: string): Promise<void>
   getLibrary(): Promise<LibrarySnapshot>
   addLibraryFolder(): Promise<LibrarySnapshot | null>
   removeLibraryFolder(folderId: string): Promise<LibrarySnapshot>
   onLibraryChanged(callback: () => void): () => void
   getMediaMetadata(filePath: string): Promise<MediaMetadata>
-  updateMediaMetadata(
-    filePath: string,
-    updates: MediaMetadataUpdate,
-  ): Promise<MediaMetadataUpdateResult>
   getDefaultPlayerStatus(): Promise<DefaultPlayerStatus>
   setDefaultPlayer(): Promise<void>
   openReleasesPage(): Promise<void>

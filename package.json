@@ -24,7 +24,6 @@
     "exiftool-vendored": "^39.4.0",
     "lucide-react": "^1.52.0",
     "music-metadata": "^12.7.0",
-    "node-id3": "^0.2.9",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
