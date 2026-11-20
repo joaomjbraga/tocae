@@ -63,6 +63,24 @@ export const AI_TOOL_DEFINITIONS: readonly AiToolDefinition[] = [
   {
     type: 'function',
     function: {
+      name: 'propose_playlist',
+      description:
+        'Cria uma proposta de playlist baseada na biblioteca. Não altera a fila até o usuário confirmar.',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Nome da proposta.' },
+          query: { type: 'string', description: 'Tema, estilo, artista ou conceito.' },
+          type: { type: 'string', enum: ['audio', 'video', 'image'] },
+          limit: { type: 'integer', minimum: 1, maximum: 50 },
+        },
+        required: ['title', 'query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'player_play',
       description: 'Inicia a reprodução da mídia atual.',
       parameters: { type: 'object', properties: {} },

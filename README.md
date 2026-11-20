@@ -78,6 +78,8 @@ falhas. Nesta versão ele pode consultar a biblioteca e a fila por meio de
 ferramentas somente leitura, incluindo metadados do item atual. O Teco também
 pode iniciar, pausar, alternar ou avançar a reprodução por ferramentas
 explícitas. Não altera arquivos nem executa ações fora da lista autorizada.
+O Teco pode propor uma playlist a partir da biblioteca. A proposta aparece na
+conversa e só substitui a fila após o botão **Aplicar playlist** ser usado.
 
 Entre as funcionalidades planejadas estão:
 

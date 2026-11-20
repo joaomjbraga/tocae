@@ -115,6 +115,10 @@ export const ptBRMessages = {
     'Comece uma conversa. O Teco pode consultar a biblioteca e controlar a reprodução por ações autorizadas.',
   'assistant.you': 'Você',
   'assistant.unknownError': 'Não foi possível concluir a solicitação.',
+  'assistant.playlistProposal': 'Proposta de playlist',
+  'assistant.playlistProposalCount': '{count} mídias na proposta',
+  'assistant.playlistApply': 'Aplicar playlist',
+  'assistant.playlistDiscard': 'Descartar',
 
   // Aparência
   'navigation.backToPlayer': 'Voltar ao reprodutor',

@@ -2,15 +2,16 @@ import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
 import type { IpcMainInvokeEvent } from 'electron'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { IPC_CHANNELS } from '@shared/ipc'
-import type { AiPlayerState, AiProviderConfig, AiStatus } from '@shared/ai'
+import type { AiPlayerState, AiPlaylistProposal, AiProviderConfig, AiStatus } from '@shared/ai'
 import { DEFAULT_AI_PROVIDER_CONFIG } from '@shared/ai'
 import { readSettings, writeSettings } from '../settings'
 import { AiCore, AiRequestError } from './core'
 import { AiProviderError, OpenAiCompatibleProvider } from './provider'
 import { clearAiHistoryFile, readAiHistoryFile, writeAiHistoryFile } from './historyStore'
 import { getLibrarySnapshot } from '../library'
-import { readPlaylist } from '../playlist'
+import { readPlaylist, writePlaylist } from '../playlist'
 import { AI_TOOL_DEFINITIONS, executeReadOnlyTool } from './tools'
 import { getMediaMetadata } from '../media/metadata'
 import { sendCommand } from '../commands'
@@ -61,6 +62,52 @@ const core = new AiCore(
     if (name === 'player_previous') {
       sendCommand({ type: 'previous-video' })
       return { accepted: true, action: 'previous' }
+    }
+
+    if (name === 'propose_playlist') {
+      if (
+        !isRecord(args) ||
+        typeof args.title !== 'string' ||
+        typeof args.query !== 'string'
+      ) {
+        throw new Error('A proposta precisa de título e tema.')
+      }
+      const library = await getLibrarySnapshot()
+      const query = args.query.trim().toLowerCase()
+      const type = typeof args.type === 'string' ? args.type : null
+      const limit =
+        typeof args.limit === 'number' && Number.isInteger(args.limit)
+          ? Math.min(50, Math.max(1, args.limit))
+          : 20
+      const terms = query.split(/\s+/).filter(Boolean)
+      const matches = library.items
+        .filter((item) => !type || item.type === type)
+        .map((item) => {
+          const searchable = `${item.name} ${item.relativePath} ${item.type}`.toLowerCase()
+          const score = terms.reduce(
+            (total, term) => total + (searchable.includes(term) ? 1 : 0),
+            0,
+          )
+          return { item, score }
+        })
+        .filter(({ score }) => terms.length === 0 || score > 0)
+        .sort((left, right) => right.score - left.score)
+        .slice(0, limit)
+        .map(({ item }) => ({ path: item.path, name: item.name }))
+
+      playlistProposal = {
+        id: randomUUID(),
+        title: args.title.trim(),
+        items: matches,
+        createdAt: Date.now(),
+      }
+      publishPlaylistProposal()
+      return {
+        accepted: true,
+        title: playlistProposal.title,
+        itemCount: playlistProposal.items.length,
+        requiresUserConfirmation: true,
+      }
     }
 
     if (name === 'search_library_semantic') {
@@ -165,6 +212,7 @@ const core = new AiCore(
 let config: AiProviderConfig = { ...DEFAULT_AI_PROVIDER_CONFIG }
 let initialized = false
 let playerState: AiPlayerState = { playing: false, updatedAt: 0 }
+let playlistProposal: AiPlaylistProposal | null = null
 
 function credentialsPath(): string {
   return path.join(app.getPath('userData'), CREDENTIAL_FILE_NAME)
@@ -292,6 +340,17 @@ function status(): AiStatus {
   }
 }
 
+function publishPlaylistProposal(): void {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) {
+      window.webContents.send(
+        IPC_CHANNELS.AI_PLAYLIST_PROPOSAL_CHANGED,
+        playlistProposal ? { ...playlistProposal, items: [...playlistProposal.items] } : null,
+      )
+    }
+  }
+}
+
 function validateSender(event: IpcMainInvokeEvent): void {
   const window = BrowserWindow.fromWebContents(event.sender)
   if (!window || !BrowserWindow.getAllWindows().includes(window)) {
@@ -320,6 +379,30 @@ export function registerAiIpc(): void {
     validateSender(event)
     await initialize()
     return status()
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_PLAYLIST_PROPOSAL_GET, (event) => {
+    validateSender(event)
+    return playlistProposal
+      ? { ...playlistProposal, items: [...playlistProposal.items] }
+      : null
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_PLAYLIST_PROPOSAL_APPLY, async (event) => {
+    validateSender(event)
+    if (!playlistProposal) return false
+    const items = playlistProposal.items.map((item) => ({
+      id: randomUUID(),
+      path: item.path,
+      name: item.name,
+    }))
+    await writePlaylist(items, items.length > 0 ? 0 : -1)
+    playlistProposal = null
+    publishPlaylistProposal()
+    return true
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_PLAYLIST_PROPOSAL_CLEAR, (event) => {
+    validateSender(event)
+    playlistProposal = null
+    publishPlaylistProposal()
   })
   ipcMain.handle(IPC_CHANNELS.AI_PLAYER_STATE_SET, (event, value: unknown) => {
     validateSender(event)

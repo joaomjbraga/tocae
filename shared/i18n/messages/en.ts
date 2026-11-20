@@ -109,6 +109,10 @@ export const enMessages: Messages = {
     'Start a conversation. Teco can consult the library and control playback through authorized actions.',
   'assistant.you': 'You',
   'assistant.unknownError': 'Could not complete the request.',
+  'assistant.playlistProposal': 'Playlist proposal',
+  'assistant.playlistProposalCount': '{count} media items in proposal',
+  'assistant.playlistApply': 'Apply playlist',
+  'assistant.playlistDiscard': 'Discard',
 
   // Appearance
   'navigation.backToPlayer': 'Back to player',

@@ -26,6 +26,13 @@ export interface AiPlayerState {
   updatedAt: number
 }
 
+export interface AiPlaylistProposal {
+  id: string
+  title: string
+  items: { path: string; name: string }[]
+  createdAt: number
+}
+
 export const DEFAULT_AI_PROVIDER_CONFIG: AiProviderConfig = {
   provider: 'openai-compatible',
   baseUrl: 'https://api.openai.com/v1',

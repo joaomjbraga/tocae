@@ -6,7 +6,7 @@ import type { Locale } from '@shared/i18n'
 import type { MediaMetadata } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
 import type { PlaylistItem } from '@shared/playlist'
-import type { AiPlayerState, AiProviderConfig, AiStatus } from '@shared/ai'
+import type { AiPlayerState, AiPlaylistProposal, AiProviderConfig, AiStatus } from '@shared/ai'
 
 const api: TocaeApi = {
   onCommand(callback) {
@@ -104,6 +104,17 @@ const api: TocaeApi = {
       ipcRenderer.invoke(IPC_CHANNELS.AI_PLAYER_STATE_SET, state) as Promise<AiPlayerState>,
     getPlayerState: () =>
       ipcRenderer.invoke(IPC_CHANNELS.AI_PLAYER_STATE_GET) as Promise<AiPlayerState>,
+    getPlaylistProposal: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_PLAYLIST_PROPOSAL_GET) as Promise<AiPlaylistProposal | null>,
+    applyPlaylistProposal: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_PLAYLIST_PROPOSAL_APPLY) as Promise<boolean>,
+    clearPlaylistProposal: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_PLAYLIST_PROPOSAL_CLEAR),
+    onPlaylistProposalChanged(callback) {
+      const listener = (_event: IpcRendererEvent, proposal: AiPlaylistProposal | null) => callback(proposal)
+      ipcRenderer.on(IPC_CHANNELS.AI_PLAYLIST_PROPOSAL_CHANGED, listener)
+      return () => ipcRenderer.off(IPC_CHANNELS.AI_PLAYLIST_PROPOSAL_CHANGED, listener)
+    },
   },
 }
 

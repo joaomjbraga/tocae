@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Send, Square, Trash2 } from 'lucide-react'
-import type { AiMessage, AiStatus } from '@shared/ai'
+import type { AiMessage, AiPlaylistProposal, AiStatus } from '@shared/ai'
 import { useI18n } from '../../i18n'
 import styles from './AssistantPage.module.css'
 
@@ -58,6 +58,7 @@ function AssistantPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [streamingText, setStreamingText] = useState('')
+  const [playlistProposal, setPlaylistProposal] = useState<AiPlaylistProposal | null>(null)
   const endRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -75,6 +76,28 @@ function AssistantPage() {
       setStreamingText((current) => current + chunk)
     })
   }, [])
+
+  useEffect(() => {
+    void window.tocae.ai.getPlaylistProposal().then(setPlaylistProposal)
+    return window.tocae.ai.onPlaylistProposalChanged(setPlaylistProposal)
+  }, [])
+
+  async function applyProposal() {
+    setError(null)
+    try {
+      await window.tocae.ai.applyPlaylistProposal()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t('assistant.unknownError'))
+    }
+  }
+
+  async function clearProposal() {
+    try {
+      await window.tocae.ai.clearPlaylistProposal()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t('assistant.unknownError'))
+    }
+  }
 
   async function send(event: FormEvent) {
     event.preventDefault()
@@ -167,6 +190,23 @@ function AssistantPage() {
       </div>
 
       {error && <p className={styles.error} role="alert">{error}</p>}
+
+      {playlistProposal && (
+        <section className={styles.playlistProposal} aria-label={t('assistant.playlistProposal')}>
+          <div className={styles.proposalCopy}>
+            <strong>{playlistProposal.title}</strong>
+            <span>{t('assistant.playlistProposalCount', { count: playlistProposal.items.length })}</span>
+          </div>
+          <div className={styles.proposalActions}>
+            <button type="button" className={styles.applyProposal} onClick={() => void applyProposal()}>
+              {t('assistant.playlistApply')}
+            </button>
+            <button type="button" className={styles.clearProposal} onClick={() => void clearProposal()}>
+              {t('assistant.playlistDiscard')}
+            </button>
+          </div>
+        </section>
+      )}
 
       <form className={styles.composer} onSubmit={send}>
         <textarea

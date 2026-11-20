@@ -3,7 +3,7 @@ import type { LibrarySnapshot } from './library'
 import type { MediaMetadata } from './media'
 import type { MediaTrack } from './mediaTracks'
 import type { PersistedPlaylist, PlaylistItem } from './playlist'
-import type { AiPlayerState, AiProviderConfig, AiStatus } from './ai'
+import type { AiPlayerState, AiPlaylistProposal, AiProviderConfig, AiStatus } from './ai'
 
 export const IPC_CHANNELS = {
   COMMAND: 'app:command',
@@ -53,6 +53,10 @@ export const IPC_CHANNELS = {
   AI_STREAM_CHUNK: 'ai:stream:chunk',
   AI_PLAYER_STATE_SET: 'ai:player-state:set',
   AI_PLAYER_STATE_GET: 'ai:player-state:get',
+  AI_PLAYLIST_PROPOSAL_GET: 'ai:playlist-proposal:get',
+  AI_PLAYLIST_PROPOSAL_APPLY: 'ai:playlist-proposal:apply',
+  AI_PLAYLIST_PROPOSAL_CLEAR: 'ai:playlist-proposal:clear',
+  AI_PLAYLIST_PROPOSAL_CHANGED: 'ai:playlist-proposal:changed',
 } as const
 
 export type AppCommand =
@@ -155,5 +159,9 @@ export interface TocaeApi {
     onStreamChunk(callback: (chunk: string) => void): () => void
     setPlayerState(state: AiPlayerState): Promise<AiPlayerState>
     getPlayerState(): Promise<AiPlayerState>
+    getPlaylistProposal(): Promise<AiPlaylistProposal | null>
+    applyPlaylistProposal(): Promise<boolean>
+    clearPlaylistProposal(): Promise<void>
+    onPlaylistProposalChanged(callback: (proposal: AiPlaylistProposal | null) => void): () => void
   }
 }
