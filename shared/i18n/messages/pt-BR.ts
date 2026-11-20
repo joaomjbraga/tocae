@@ -79,7 +79,7 @@ export const ptBRMessages = {
   'player.trackSelectError': 'Não foi possível selecionar esta faixa.',
   'player.dropHint': 'Abra um arquivo de mídia ou arraste-o para aqui',
   'player.welcomeTitle': 'Sua próxima mídia começa aqui',
-  'player.sessionTitle': 'Tocaê Reprodutor',
+  'player.sessionTitle': 'Tocaê',
   'player.nowPlaying': 'Tocando {current} de {total}: {name}',
   'player.listCleared': 'Lista limpa',
   'player.undo': 'Desfazer',

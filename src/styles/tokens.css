@@ -1,5 +1,5 @@
 /**
- * Design tokens do Tocaê Reprodutor.
+ * Design tokens do Tocaê.
  *
  * Único arquivo do projeto onde cores, espaços, raios, elevação e durações
  * são declarados. Os CSS Modules consomem apenas `var()`.

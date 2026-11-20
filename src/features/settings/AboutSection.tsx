@@ -23,7 +23,7 @@ function AboutSection() {
           aria-hidden="true"
           draggable={false}
         />
-        <h3 className={styles.appName}>Tocaê Reprodutor</h3>
+        <h3 className={styles.appName}>Tocaê</h3>
         <p className={styles.version}>
           {t('about.version')} {pkg.version}
         </p>

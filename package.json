@@ -1,23 +1,24 @@
 {
-  "name": "tocae-reprodutor",
+  "name": "tocae",
   "private": true,
   "version": "1.0.0",
   "description": "Reprodutor multimídia minimalista",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "João M J Braga <joaomarcos.jbraga@gmail.com>",
-  "homepage": "https://github.com/joaomjbraga/tocae-reprodutor",
+  "homepage": "https://github.com/joaomjbraga/tocae",
   "repository": {
     "type": "git",
-    "url": "https://github.com/joaomjbraga/tocae-reprodutor.git"
+    "url": "https://github.com/joaomjbraga/tocae.git"
   },
-  "desktopName": "Tocae",
+  "desktopName": "tocae",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "lint": "stylelint \"src/**/*.css\"",
     "test": "node --test",
-    "build": "tsc && vite build && electron-builder --linux deb rpm --publish never",
-    "build:windows": "tsc && vite build && electron-builder --win nsis --publish never",
+    "audit:release": "node scripts/audit-release.mjs",
+    "build:linux": "node scripts/clean-build.mjs && tsc && vite build && electron-builder --linux deb rpm --publish never",
+    "build:windows": "node scripts/clean-build.mjs && tsc && vite build && electron-builder --win nsis --publish never",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
@@ -26,17 +27,18 @@
     "exifr": "^7.1.3",
     "exiftool-vendored": "^39.4.0",
     "ffmpeg-static": "^5.3.0",
-    "lucide-react": "^1.52.0",
-    "music-metadata": "^12.7.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "music-metadata": "^12.7.0"
   },
   "devDependencies": {
+    "@electron/asar": "^3.4.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "electron": "^41.1.1",
     "electron-builder": "^26.8.1",
+    "lucide-react": "^1.52.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "stylelint": "^16.25.0",
     "stylelint-config-recommended": "^17.0.0",
     "typescript": "^6.0.2",

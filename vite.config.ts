@@ -18,6 +18,7 @@ const electronMainExternals = [
 ]
 
 export default defineConfig({
+  build: { sourcemap: false },
   plugins: [
     react(),
     electron({
@@ -25,12 +26,18 @@ export default defineConfig({
         entry: 'electron/main.ts',
         vite: {
           resolve: { alias: aliases },
-          build: { rollupOptions: { external: electronMainExternals } },
+          build: {
+            sourcemap: false,
+            rollupOptions: { external: electronMainExternals },
+          },
         },
       },
       preload: {
         input: path.join(import.meta.dirname, 'electron/preload.ts'),
-        vite: { resolve: { alias: aliases } },
+        vite: {
+          resolve: { alias: aliases },
+          build: { sourcemap: false },
+        },
       },
     }),
   ],

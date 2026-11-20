@@ -1,111 +1,131 @@
-![Tocaê Reprodutor](.github/captura.png)
+# Tocaê
 
-# Tocaê Reprodutor
+Um espaço para reunir, organizar e aproveitar suas mídias.
 
-**Português (Brasil)**
+O **Tocaê** é um reprodutor multimídia para Windows e Linux que reúne músicas, vídeos e imagens em um só lugar. Com uma interface minimalista e personalizável, permite explorar sua coleção, criar listas de reprodução e acessar o YouTube Music sem precisar alternar entre diferentes aplicativos.
 
-Reprodutor multimídia minimalista construído com Electron, React e TypeScript. Reproduz vídeos e músicas e exibe imagens.
-
-![Demo](.github/captura.png)
+![Demonstração do Tocaê](.github/captura.png)
 
 ## Recursos
 
-- Organize uma biblioteca de mídias com as pastas padrão do sistema ou adicione locais monitorados
-- Pesquise vídeos, imagens e músicas e filtre os resultados pelo tipo de mídia
-- Marque mídias como favoritas e filtre a biblioteca por favoritos; as escolhas ficam salvas no perfil do aplicativo
-- Consulte metadados de áudio, vídeo e imagem, além do tamanho e da data dos arquivos
-- Reproduza vídeos e músicas e navegue por imagens em uma única lista
-- Selecione faixas de áudio e legendas embutidas em vídeos compatíveis
-- Acesse o YouTube Music em uma sessão persistente isolada do reprodutor local
-- Ative o avanço automático ou a repetição da mídia atual diretamente nos controles do player
-- Reordene a lista arrastando os itens ou pelo teclado
-- Pule entre mídias com atalhos de uma tecla
-- Navegue entre Biblioteca, Player, YouTube Music e Configurações pela barra lateral
-- Personalize a cor de destaque, escolha o idioma e consulte os atalhos em Configurações
-- Use a janela principal sem moldura, com controles próprios e cantos arredondados
-- Assista a vídeos verticais sem cortar a imagem; amplie e mova vídeos e imagens
-- Ouça músicas com um visualizador animado que reage ao estado da reprodução
-- Navegue pela timeline com prévia do quadro ou avance e volte em intervalos de 1 segundo
-- Continue a reprodução de vídeos e músicas de onde parou, inclusive depois de fechar o aplicativo
-- Defina o Tocaê como reprodutor padrão de mídias no Linux
-- Receba um aviso quando uma nova versão do Tocaê estiver disponível
-- Troque entre português (Brasil) e inglês a qualquer momento
+### Sua biblioteca, do seu jeito
 
-Formatos aceitos: vídeos MP4, WebM, MKV, AVI, MOV e OGV; músicas MP3, M4A, AAC, WAV, FLAC, OGG e Opus; imagens JPG, PNG, APNG, GIF, WebP, BMP e AVIF. Imagens ficam paradas até a navegação para outra mídia; músicas usam a linha do tempo e os controles de reprodução.
+- **Biblioteca unificada:** reúna músicas, vídeos e imagens em um só lugar.
+- **Pastas personalizadas:** utilize as pastas padrão do computador ou adicione outros locais para acompanhar suas mídias.
+- **Pesquisa rápida:** encontre arquivos pelo nome e filtre os resultados por categoria.
+- **Favoritos:** marque suas mídias preferidas e encontre-as facilmente quando quiser.
+- **Informações detalhadas:** consulte capas, artistas, duração, formatos, dimensões, tamanho e outras informações dos arquivos.
 
-## Estrutura do projeto
+### Mais controle sobre o que você assiste
 
-- `src/features/player/`: reprodução, controles, zoom, prévia e navegação pela timeline
-- `src/features/library/`: biblioteca, pesquisa e filtros de mídia
-- `src/features/playlist/`: estado e interface da lista de reprodução
-- `src/features/integrations/youtube-music/`: interface da integração com o YouTube Music
-- `src/features/settings/`: idioma, aparência, atalhos, reprodutor padrão e informações do app
-- `src/components/`: componentes reutilizáveis da aplicação
-- `src/lib/`: utilitários do renderer
-- `shared/`: tipos, contratos IPC, estado compartilhado e traduções
-- `electron/`: processo principal, preload, biblioteca monitorada, metadados e integração com o sistema
-- `electron/integrations/`: sessão isolada e gerenciamento de áudio do YouTube Music
-- `electron/media/`: leitura de metadados, seleção de faixas e geração de faixas temporárias
+- **Zoom e movimentação:** amplie vídeos e imagens e explore os detalhes sem perder o controle da visualização.
+- **Vídeos verticais:** assista a conteúdos em formato retrato sem cortes na imagem.
+- **Prévia na timeline:** visualize quadros do vídeo enquanto procura um momento específico.
+- **Navegação precisa:** avance ou retroceda em intervalos de um segundo.
+- **Visualizador musical:** acompanhe suas músicas com animações que reagem à reprodução.
 
-O player preserva a proporção original de vídeos e imagens, inclusive em retrato. O zoom pode ser movido com o mouse ou toque e é limitado às bordas visíveis da mídia. Músicas usam os mesmos controles de reprodução e linha do tempo, com um disco animado e um visualizador de barras enquanto tocam. A interface usa controles compactos e translúcidos, com adaptação para janelas estreitas.
+### YouTube Music integrado
 
-Os metadados incluem tags e capas de áudio, duração e codec de mídia, dimensões de vídeo e imagem, dados EXIF básicos e informações do arquivo. A biblioteca os carrega conforme os itens são explorados. No Linux, o pacote instala Perl como dependência do ExifTool. A seleção de faixas usa FFmpeg e FFprobe; os binários GPL e as informações de licença e origem estão em [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+Acesse o YouTube Music diretamente pelo Tocaê, em uma área dedicada e com sessão de login persistente.
 
-O YouTube Music usa a interface oficial em uma visualização Electron criada somente quando aberta, em um layout imersivo alinhado ao player. O login fica em uma sessão persistente isolada da biblioteca e do player local; o Tocaê não lê nem manipula cookies, nem controla ou extrai a reprodução do serviço. O player local tem prioridade de áudio: ele pausa ao abrir o YouTube Music e, se uma mídia local for iniciada depois, o serviço fica silenciado enquanto ela toca. O botão **Parar reprodução** encerra a visualização incorporada e interrompe o áudio, preservando o login; ao reabrir, a página começa novamente.
+- Acesse sua conta e suas músicas pelo serviço oficial.
+- Mantenha seu login salvo entre as sessões.
+- Utilize uma interface integrada à experiência do aplicativo.
+- Preserve a separação entre o serviço online e sua biblioteca local.
+- Controle a prioridade do áudio entre o reprodutor local e o YouTube Music.
 
-## Idiomas
+A integração utiliza a própria interface do YouTube Music. O Tocaê não extrai músicas, não manipula cookies e não controla internamente a reprodução do serviço.
 
-O app acompanha o idioma do sistema operacional na primeira execução e pode ser trocado a qualquer momento pelo seletor na barra superior (também disponível nas janelas *Sobre* e *Atalhos*).
+### Personalização e acessibilidade
 
-Idiomas disponíveis: **Português (Brasil)** e **Inglês**. A escolha é persistida em `settings.json` na pasta de dados do app; a opção *Seguir o sistema* volta ao comportamento automático.
+- **Aparência:** personalize a cor de destaque da interface.
+- **Idiomas:** escolha entre português (Brasil) e inglês.
+- **Atalhos:** consulte os comandos disponíveis para navegar e controlar o player.
+- **Interface adaptável:** utilize o aplicativo em diferentes tamanhos de janela.
+- **Janela personalizada:** aproveite uma interface sem moldura, com controles próprios e cantos arredondados.
 
-Os textos ficam em `shared/i18n/messages/`, com o catálogo em português como fonte de verdade das chaves: o catálogo em inglês é tipado a partir dele, então uma chave esquecida quebra a compilação.
+## Formatos compatíveis
 
-## Executando a partir do código
+| Categoria | Formatos |
+|---|---|
+| Vídeos | MP4, WebM, MKV, AVI, MOV e OGV |
+| Áudios | MP3, M4A, AAC, WAV, FLAC, OGG e Opus |
+| Imagens | JPG, PNG, APNG, GIF, WebP, BMP e AVIF |
 
-Use Node.js 24 e npm. Para desenvolver, instalar dependências e iniciar a interface junto com o aplicativo Electron:
+As imagens são exibidas individualmente, com navegação entre os arquivos. Músicas contam com controles de reprodução e linha do tempo.
 
-```sh
+
+## Executando o projeto
+
+### Requisitos
+
+- Node.js 24
+- npm
+
+### Instalação
+
+```bash
+git clone https://github.com/joaomjbraga/tocae.git
+
+cd tocae
+
 npm install
+
 npm run dev
 ```
 
-Comandos de validação e empacotamento:
+### Comandos disponíveis
 
-```sh
-npm run lint          # verifica os estilos CSS
-npm test              # executa os testes automatizados
-npm run typecheck     # verifica os tipos TypeScript
-npm run build         # tipos + bundles + instaladores Linux (.deb e .rpm)
-npm run build:windows # tipos + bundles + instalador Windows (.exe), em Windows
-```
+| Comando | Descrição |
+|---|---|
+| `npm run dev` | Inicia o aplicativo em desenvolvimento |
+| `npm run lint` | Verifica os estilos CSS |
+| `npm test` | Executa os testes automatizados |
+| `npm run typecheck` | Verifica os tipos TypeScript |
+| `npm run build:linux` | Gera os pacotes Linux |
+| `npm run build:windows` | Gera o instalador Windows |
+| `npm run audit:release` | Verifica o pacote gerado |
 
-O workflow de CI executa lint, testes e build para Windows e Linux em Node.js 24.
+## Instalação
 
-## Instaladores Linux
+O Tocaê possui suporte a Windows e Linux.
 
-O `npm run build` gera instaladores `.deb` (Debian/Ubuntu) e `.rpm` (Fedora/RHEL) em `release/<versão>/`; a arquitetura acompanha a máquina que fez o build.
+### Linux
 
-```sh
-# Debian/Ubuntu
-sudo apt install ./release/1.0.0/tocae-reprodutor_1.0.0_amd64.deb
+O processo de build gera pacotes para distribuições baseadas em Debian e Red Hat:
 
-# Fedora/RHEL
-sudo dnf install ./release/1.0.0/tocae-reprodutor-1.0.0.x86_64.rpm
-```
+- `.deb` — Debian e Ubuntu.
+- `.rpm` — Fedora e distribuições compatíveis.
 
-Para gerar o `.rpm` é preciso ter o `rpmbuild` instalado (pacote `rpm` no Debian/Ubuntu). Os pacotes registram o aplicativo no menu e os tipos MIME de vídeo, áudio e imagem compatíveis, instalam os ícones nos tamanhos usuais e declaram as dependências de runtime do Electron. Depois de instalar, escolha **Configurações → Reprodutor padrão** para associar as mídias ao Tocaê. Os metadados (categoria, mantenedor, descrição e nome do executável) ficam em `electron-builder.json5`.
+Os instaladores são disponibilizados no diretório `release/`.
 
-## Instalador Windows
+### Windows
 
-No Windows, execute `npm run build:windows` para gerar um instalador NSIS em `release/<versão>/`. O instalador permite escolher a pasta de instalação e cria atalhos no Menu Iniciar e na área de trabalho; não é gerada uma versão portátil.
+O instalador utiliza NSIS e permite escolher o diretório de instalação, além de criar atalhos no Menu Iniciar e na área de trabalho.
 
-## Versionamento
+## Atualizações
 
-Em um push para `main`, quando a versão estável de `package.json` ainda não tem uma release, o workflow cria primeiro a tag `v<versão>`, depois constrói os instaladores Windows e Linux em paralelo e publica a release do GitHub com os arquivos `.deb`, `.rpm` e `.exe` se os dois builds passarem. Pull requests validam os builds sem criar tags ou releases. O app verifica a release mais recente ao iniciar e a cada 24 horas, avisando quando encontra uma versão mais nova. O aviso leva à página da release; atualização e instalação continuam sendo manuais.
+O aplicativo verifica periodicamente a existência de novas versões e informa quando uma atualização está disponível.
+
+As atualizações são realizadas manualmente por meio dos instaladores publicados nas releases do GitHub.
+
+O projeto utiliza GitHub Actions para executar validações e gerar os pacotes de distribuição para Windows e Linux.
+
+## Idiomas
+
+O aplicativo identifica o idioma do sistema operacional na primeira execução.
+
+Idiomas disponíveis:
+
+- Português (Brasil).
+- Inglês.
+
+A preferência pode ser alterada a qualquer momento nas configurações e fica salva para as próximas execuções.
 
 ## Autor
 
-[![João M J Braga](https://github.com/joaomjbraga.png?size=100)](https://github.com/joaomjbraga)
+Desenvolvido por [João M J Braga](https://github.com/joaomjbraga).
 
-Se você gostou, considere deixar uma ⭐ no repositório!
+[GitHub](https://github.com/joaomjbraga) · [Repositório](https://github.com/joaomjbraga/tocae)
+
+Se o Tocaê for útil para você, considere deixar uma estrela no repositório!

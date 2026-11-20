@@ -3,7 +3,7 @@ import { IPC_CHANNELS } from '@shared/ipc'
 import { sendCommand } from './commands'
 import { getMainWindow } from './windows'
 
-const REPOSITORY = 'joaomjbraga/tocae-reprodutor'
+const REPOSITORY = 'joaomjbraga/tocae'
 const RELEASES_PAGE_URL = `https://github.com/${REPOSITORY}/releases/latest`
 const LATEST_RELEASE_API_URL = `https://api.github.com/repos/${REPOSITORY}/releases/latest`
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
@@ -33,7 +33,7 @@ async function fetchLatestVersion(): Promise<string | null> {
     const response = await fetch(LATEST_RELEASE_API_URL, {
       headers: {
         Accept: 'application/vnd.github+json',
-        'User-Agent': 'Tocae-Reprodutor',
+        'User-Agent': 'Tocae',
         'X-GitHub-Api-Version': '2022-11-28',
       },
       signal: controller.signal,

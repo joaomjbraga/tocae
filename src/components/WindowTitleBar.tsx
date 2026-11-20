@@ -56,7 +56,7 @@ function WindowTitleBar({ compact = false, overlay = false }: WindowTitleBarProp
       }`}
     >
       <div className={styles.brand}>
-        <span>Tocaê Reprodutor</span>
+        <span>Tocaê</span>
       </div>
       <div className={styles.dragRegion} onDoubleClick={toggleMaximize} aria-hidden="true" />
       <div className={styles.controls} role="group" aria-label={t('appbar.windowControls')}>

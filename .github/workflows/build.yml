@@ -87,10 +87,11 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build:windows
+      - run: npm run audit:release
 
       - uses: actions/upload-artifact@v4
         with:
-          name: tocae-reprodutor-windows
+          name: tocae-windows
           path: release/*/*.exe
           if-no-files-found: error
 
@@ -130,10 +131,11 @@ jobs:
 
       # O script já roda a verificação de tipos e o bundle antes do pacote.
       - run: npm run build
+      - run: npm run audit:release
 
       - uses: actions/upload-artifact@v4
         with:
-          name: tocae-reprodutor-linux
+          name: tocae-linux
           path: |
             release/*/*.deb
             release/*/*.rpm
@@ -159,12 +161,12 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: tocae-reprodutor-windows
+          name: tocae-windows
           path: release-assets/windows
 
       - uses: actions/download-artifact@v4
         with:
-          name: tocae-reprodutor-linux
+          name: tocae-linux
           path: release-assets/linux
 
       - name: Select installer assets
@@ -200,7 +202,7 @@ jobs:
             gh release upload "$TAG" "${assets[@]}" --clobber
           else
             gh release create "$TAG" \
-              --title "Tocaê Reprodutor $TAG" \
+              --title "Tocaê $TAG" \
               --generate-notes
             gh release upload "$TAG" "${assets[@]}"
           fi

@@ -1,24 +1,34 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   "$schema": "https://json.schemastore.org/electron-builder.json",
-  "appId": "io.github.joaomjbraga.tocae-reprodutor",
+  "appId": "io.github.joaomjbraga.tocae",
   // O projeto não usa auto-update: sem isso o electron-builder inferiria um
   // provedor GitHub a partir do repositório e incluiria app-update.yml no pacote.
   "publish": null,
   "asar": true,
   "asarUnpack": [
     "**/node_modules/exiftool-vendored.{pl,exe}/**",
-    "**/node_modules/ffmpeg-static/**",
-    "**/node_modules/@derhuerst/ffprobe-static/**"
+    "**/node_modules/ffmpeg-static/ffmpeg",
+    "**/node_modules/ffmpeg-static/ffmpeg.exe",
+    "**/node_modules/@derhuerst/ffprobe-static/ffprobe",
+    "**/node_modules/@derhuerst/ffprobe-static/ffprobe.exe"
   ],
-  "productName": "Tocaê Reprodutor",
+  "productName": "Tocaê",
   "directories": {
     "output": "release/${version}",
     "buildResources": "public"
   },
   "files": [
-    "dist",
-    "dist-electron"
+    "dist/**/*",
+    "dist-electron/**/*",
+    "!**/*.map",
+    "!**/*.d.ts",
+    "!**/*.ts",
+    "!**/.DS_Store",
+    "!**/.env",
+    "!**/.env.*",
+    "!**/.git",
+    "!**/.git/**"
   ],
   "extraResources": [
     {
@@ -30,7 +40,7 @@
     "target": ["deb", "rpm"],
     "icon": "public/tocae.png",
     "category": "AudioVideo;Player;",
-    "executableName": "tocae-reprodutor",
+    "executableName": "tocae",
     "mimeTypes": [
       "video/mp4",
       "video/x-m4v",
@@ -61,10 +71,10 @@
     "maintainer": "João M J Braga <joaomarcos.jbraga@gmail.com>",
     "vendor": "João M J Braga",
     "synopsis": "Reprodutor multimídia minimalista",
-    "description": "Reprodutor multimídia minimalista construído com Electron, React e TypeScript. Reproduz vídeos e músicas e exibe imagens.",
+    "description": "Reprodutor multimídia minimalista, com suporte a vídeo, áudio e imagens, que permite criar playlists e reproduzir arquivos locais.",
     "desktop": {
       "entry": {
-        "Name[pt_BR]": "Tocaê Reprodutor",
+        "Name[pt_BR]": "Tocaê",
         "Comment[pt_BR]": "Reprodutor multimídia minimalista",
         "Comment[en]": "Minimalist media player",
         "Keywords": "video;audio;image;player;playlist;media;vídeo;música;imagem;reprodutor;",
