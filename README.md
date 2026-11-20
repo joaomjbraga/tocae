@@ -2,130 +2,159 @@
 
 Um espaço para reunir, organizar e aproveitar suas mídias.
 
-O **Tocaê** é um reprodutor multimídia para Windows e Linux que reúne músicas, vídeos e imagens em um só lugar. Com uma interface minimalista e personalizável, permite explorar sua coleção, criar listas de reprodução e acessar o YouTube Music sem precisar alternar entre diferentes aplicativos.
+O **Tocaê** é um reprodutor multimídia para Windows e Linux, desenvolvido para reunir músicas, vídeos e imagens em uma única aplicação.
+
+Com uma interface minimalista e personalizável, permite explorar sua coleção, organizar arquivos, criar playlists e acessar serviços online, como o YouTube Music.
+
+O projeto está em constante desenvolvimento, com foco em aprimorar a experiência de reprodução, ampliar as possibilidades de integração e incorporar recursos de inteligência artificial.
 
 ![Demonstração do Tocaê](.github/captura.png)
 
 ## Recursos
 
-### Sua biblioteca, do seu jeito
+### Biblioteca multimídia
 
-- **Biblioteca unificada:** reúna músicas, vídeos e imagens em um só lugar.
-- **Pastas personalizadas:** utilize as pastas padrão do computador ou adicione outros locais para acompanhar suas mídias.
-- **Pesquisa rápida:** encontre arquivos pelo nome e filtre os resultados por categoria.
-- **Favoritos:** marque suas mídias preferidas e encontre-as facilmente quando quiser.
-- **Informações detalhadas:** consulte capas, artistas, duração, formatos, dimensões, tamanho e outras informações dos arquivos.
+- **Biblioteca unificada:** reúna músicas, vídeos e imagens em um único ambiente.
+- **Pastas personalizadas:** organize e navegue pelos diretórios de mídia.
+- **Pesquisa rápida:** localize arquivos na biblioteca.
+- **Favoritos:** marque e acesse seus conteúdos preferidos.
+- **Informações detalhadas:** consulte informações dos arquivos e suas propriedades.
 
-### Mais controle sobre o que você assiste
+### Reprodução de mídia
 
-- **Zoom e movimentação:** amplie vídeos e imagens e explore os detalhes sem perder o controle da visualização.
-- **Vídeos verticais:** assista a conteúdos em formato retrato sem cortes na imagem.
-- **Prévia na timeline:** visualize quadros do vídeo enquanto procura um momento específico.
+- **Reprodução de áudio e vídeo:** suporte a diferentes formatos multimídia.
+- **Vídeos verticais:** adaptação da reprodução para conteúdos em formato retrato.
+- **Prévia na timeline:** visualize trechos do vídeo ao navegar pela linha do tempo.
 - **Navegação precisa:** avance ou retroceda em intervalos de um segundo.
-- **Visualizador musical:** acompanhe suas músicas com animações que reagem à reprodução.
+- **Visualizador musical:** acompanhe a reprodução de músicas com recursos visuais.
+- **Visualização de imagens:** amplie, reduza e movimente imagens durante a visualização.
 
-### YouTube Music integrado
+### Integrações online
 
-Acesse o YouTube Music diretamente pelo Tocaê, em uma área dedicada e com sessão de login persistente.
+#### YouTube Music
 
-- Acesse sua conta e suas músicas pelo serviço oficial.
-- Mantenha seu login salvo entre as sessões.
-- Utilize uma interface integrada à experiência do aplicativo.
-- Preserve a separação entre o serviço online e sua biblioteca local.
-- Controle a prioridade do áudio entre o reprodutor local e o YouTube Music.
+- **Acesso integrado:** utilize o YouTube Music diretamente no Tocaê.
+- **Login persistente:** mantenha sua sessão entre utilizações.
+- **Interface integrada:** acesse o serviço sem precisar alternar constantemente entre aplicações.
+- **Separação de conteúdo:** mantenha os conteúdos do serviço independentes da biblioteca local.
+- **Prioridade do áudio:** preserve a experiência de reprodução musical dentro da aplicação.
 
-A integração utiliza a própria interface do YouTube Music. O Tocaê não extrai músicas, não manipula cookies e não controla internamente a reprodução do serviço.
+A integração utiliza a interface oficial do serviço. O Tocaê não extrai músicas, manipula cookies ou controla internamente a reprodução do YouTube Music.
 
-### Personalização e acessibilidade
+### Inteligência artificial
 
-- **Aparência:** personalize a cor de destaque da interface.
-- **Idiomas:** escolha entre português (Brasil) e inglês.
-- **Atalhos:** consulte os comandos disponíveis para navegar e controlar o player.
-- **Interface adaptável:** utilize o aplicativo em diferentes tamanhos de janela.
-- **Janela personalizada:** aproveite uma interface sem moldura, com controles próprios e cantos arredondados.
+<sub>Em desenvolvimento</sub>
 
-## Formatos compatíveis
+A inteligência artificial está entre as próximas etapas de evolução do Tocaê. A proposta é incorporar recursos inteligentes para facilitar a descoberta, a organização e a interação com a biblioteca multimídia.
 
-| Categoria | Formatos |
-|---|---|
-| Vídeos | MP4, WebM, MKV, AVI, MOV e OGV |
-| Áudios | MP3, M4A, AAC, WAV, FLAC, OGG e Opus |
-| Imagens | JPG, PNG, APNG, GIF, WebP, BMP e AVIF |
+Entre as funcionalidades planejadas estão:
 
-As imagens são exibidas individualmente, com navegação entre os arquivos. Músicas contam com controles de reprodução e linha do tempo.
+- **Assistente inteligente:** interaja com o Tocaê por meio de linguagem natural para encontrar e explorar conteúdos.
+- **Busca semântica:** localize músicas, vídeos e imagens a partir de descrições e características do conteúdo.
+- **Playlists inteligentes:** crie listas de reprodução considerando gêneros, estilos musicais, preferências e contexto.
+- **Organização assistida:** receba sugestões para organizar a biblioteca e identificar informações ausentes.
+- **Recomendações personalizadas:** descubra conteúdos relacionados às preferências e aos hábitos de reprodução.
 
+Essas funcionalidades ainda estão em desenvolvimento. A disponibilidade dependerá da implementação e da evolução do módulo de inteligência artificial.
 
-## Executando o projeto
+### Personalização
+
+- **Cor de destaque:** personalize a identidade visual da aplicação.
+- **Idiomas:** interface disponível em português (Brasil) e inglês.
+- **Atalhos de teclado:** utilize comandos para agilizar a navegação e a reprodução.
+- **Interface adaptável:** recursos organizados para diferentes necessidades de utilização.
+- **Janela personalizada:** experiência visual integrada ao ambiente da aplicação.
+
+## Formatos suportados
+
+### Vídeos
+
+`MP4` · `WebM` · `MKV` · `AVI` · `MOV` · `OGV`
+
+### Áudios
+
+`MP3` · `M4A` · `AAC` · `WAV` · `FLAC` · `OGG` · `Opus`
+
+### Imagens
+
+`JPG` · `PNG` · `APNG` · `GIF` · `WebP` · `BMP` · `AVIF`
+
+A reprodução e a compatibilidade podem variar conforme o formato, o sistema operacional e os recursos disponíveis no ambiente.
+
+## Desenvolvimento
 
 ### Requisitos
 
-- Node.js 24
+- Node.js 24 ou superior
 - npm
 
 ### Instalação
 
+Clone o repositório:
+
 ```bash
 git clone https://github.com/joaomjbraga/tocae.git
+```
 
+Acesse o diretório:
+
+```bash
 cd tocae
+```
 
+Instale as dependências:
+
+```bash
 npm install
+```
 
+Inicie o ambiente de desenvolvimento:
+
+```bash
 npm run dev
 ```
 
-### Comandos disponíveis
+### Scripts disponíveis
 
 | Comando | Descrição |
 |---|---|
-| `npm run dev` | Inicia o aplicativo em desenvolvimento |
-| `npm run lint` | Verifica os estilos CSS |
-| `npm test` | Executa os testes automatizados |
-| `npm run typecheck` | Verifica os tipos TypeScript |
-| `npm run build:linux` | Gera os pacotes Linux |
-| `npm run build:windows` | Gera o instalador Windows |
-| `npm run audit:release` | Verifica o pacote gerado |
+| `npm run dev` | Inicia o ambiente de desenvolvimento |
+| `npm run lint` | Executa a análise estática do código |
+| `npm run test` | Executa os testes |
+| `npm run typecheck` | Verifica os tipos |
+| `npm run build:linux` | Gera a versão para Linux |
+| `npm run build:windows` | Gera a versão para Windows |
+| `npm run audit:release` | Executa verificações da versão de distribuição |
 
-## Instalação
+## Distribuição
 
-O Tocaê possui suporte a Windows e Linux.
+O Tocaê possui configurações de empacotamento para os seguintes sistemas:
 
-### Linux
+| Sistema | Formatos |
+|---|---|
+| Linux | `.deb` e `.rpm` |
+| Windows | Instalador NSIS |
 
-O processo de build gera pacotes para distribuições baseadas em Debian e Red Hat:
+As versões de distribuição são disponibilizadas por meio das publicações do repositório no GitHub.
 
-- `.deb` — Debian e Ubuntu.
-- `.rpm` — Fedora e distribuições compatíveis.
-
-Os instaladores são disponibilizados no diretório `release/`.
-
-### Windows
-
-O instalador utiliza NSIS e permite escolher o diretório de instalação, além de criar atalhos no Menu Iniciar e na área de trabalho.
-
-## Atualizações
-
-O aplicativo verifica periodicamente a existência de novas versões e informa quando uma atualização está disponível.
-
-As atualizações são realizadas manualmente por meio dos instaladores publicados nas releases do GitHub.
-
-O projeto utiliza GitHub Actions para executar validações e gerar os pacotes de distribuição para Windows e Linux.
+As atualizações são realizadas manualmente por meio das versões publicadas. O GitHub Actions executa verificações e processos de empacotamento para auxiliar na validação das entregas.
 
 ## Idiomas
 
-O aplicativo identifica o idioma do sistema operacional na primeira execução.
+- Português (Brasil)
+- Inglês
 
-Idiomas disponíveis:
+## Projeto
 
-- Português (Brasil).
-- Inglês.
-
-A preferência pode ser alterada a qualquer momento nas configurações e fica salva para as próximas execuções.
+O Tocaê é um projeto em desenvolvimento, construído com o objetivo de oferecer uma experiência multimídia integrada, combinando reprodução local, serviços online e, futuramente, recursos de inteligência artificial.
 
 ## Autor
 
-Desenvolvido por [João M J Braga](https://github.com/joaomjbraga).
+**João M J Braga**
 
-[GitHub](https://github.com/joaomjbraga) · [Repositório](https://github.com/joaomjbraga/tocae)
+- GitHub: [@joaomjbraga](https://github.com/joaomjbraga)
+- Projeto: [Tocaê](https://github.com/joaomjbraga/tocae)
 
-Se o Tocaê for útil para você, considere deixar uma estrela no repositório!
+---
+
+**Tocaê** — suas mídias em um só lugar.
