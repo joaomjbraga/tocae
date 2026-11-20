@@ -159,8 +159,6 @@ function PlaylistPanel({
           className={styles.iconButton}
           onClick={onClose}
           aria-label={t('playlist.hide')}
-          data-tooltip={t('playlist.hideTitle')}
-          data-tooltip-placement="bottom"
         >
           <X size={14} />
         </button>
@@ -219,7 +217,6 @@ function PlaylistPanel({
                   }}
                   onClick={() => onPlay(index)}
                   onKeyDown={(event) => handleItemKeyDown(event, index)}
-                  data-tooltip={t('playlist.itemTitle', { name: item.name })}
                   aria-description={t('playlist.itemTitle', { name: item.name })}
                   aria-current={isActive ? 'true' : undefined}
                 >
@@ -240,7 +237,6 @@ function PlaylistPanel({
                   className={styles.remove}
                   onClick={() => onRemove(item.id)}
                   aria-label={t('playlist.remove', { name: item.name })}
-                  data-tooltip={t('playlist.removeTitle')}
                 >
                   <Trash2 size={14} />
                 </button>

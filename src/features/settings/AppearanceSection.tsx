@@ -48,7 +48,6 @@ function AppearanceSection({ accentColor, onAccentColorChange }: AppearanceSecti
                   onClick={() => onAccentColorChange(color)}
                   aria-label={t(label)}
                   aria-pressed={selected}
-                  data-tooltip={t(label)}
                 >
                   <span className={styles.swatchDot} style={{ backgroundColor: color }}>
                     {selected && <Check size={14} aria-hidden="true" />}

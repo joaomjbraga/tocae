@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ListVideo } from 'lucide-react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { ArrowLeft, ListVideo } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
+import type { StreamingService } from '@shared/ipc'
 import { mediaTypeForPath } from '@shared/media'
 import AppBar from '../../components/AppBar'
 import Toast from '../../components/Toast'
@@ -31,7 +32,10 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
   const playlist = usePlaylist()
   const { t } = useI18n()
   const api = window.tocae
-  const [activePage, setActivePage] = useState<'player' | 'settings'>('player')
+  const [activePage, setActivePage] = useState<'player' | 'settings' | StreamingService>('player')
+  const serviceViewHostRef = useRef<HTMLDivElement>(null)
+  const activeStreamingService =
+    activePage === 'netflix' || activePage === 'spotify' ? activePage : null
   // O painel fica montado durante a saída para poder animar; `panelLeaving`
   // marca o estado intermediário.
   const [panelLeaving, setPanelLeaving] = useState(false)
@@ -93,6 +97,45 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
     if (playbackPreferences.autoNext) playlist.next()
   }, [playbackPreferences.autoNext, playlist.next])
 
+  const handleOpenStreamingService = useCallback(
+    (service: StreamingService) => setActivePage(service),
+    [],
+  )
+
+  useLayoutEffect(() => {
+    if (!api) return
+
+    if (!activeStreamingService) {
+      void api.hideStreamingServiceView().catch((error: unknown) => {
+        console.error('Could not hide the streaming service view', error)
+      })
+      return
+    }
+
+    const host = serviceViewHostRef.current
+    if (!host) return
+
+    const updateViewBounds = () => {
+      const { left, top, width, height } = host.getBoundingClientRect()
+      if (width <= 0 || height <= 0) return
+      void api
+        .setStreamingServiceView(activeStreamingService, { x: left, y: top, width, height })
+        .catch((error: unknown) => {
+          console.error(`Could not show ${activeStreamingService}`, error)
+        })
+    }
+
+    updateViewBounds()
+    const observer = new ResizeObserver(updateViewBounds)
+    observer.observe(host)
+    window.addEventListener('resize', updateViewBounds)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updateViewBounds)
+    }
+  }, [activeStreamingService, api])
+
   useEffect(() => {
     if (!api) return
 
@@ -100,6 +143,7 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
       switch (command.type) {
         case 'open-media':
           playlist.addPaths(command.paths)
+          setActivePage('player')
           break
         case 'play-media':
           playlist.openPaths(command.paths)
@@ -227,119 +271,136 @@ function PlayerScreen({ accentColor, onAccentColorChange }: PlayerScreenProps) {
 
   return (
     <div
-      className={`${styles.screen} ${
-        activePage === 'player' ? styles.playerMode : styles.settingsMode
-      }`}
+      className={`${styles.screen} ${activeStreamingService ? styles.serviceMode : activePage === 'player' ? styles.playerMode : styles.settingsMode}`}
     >
       <AppBar
-        activePage={activePage}
+        activePage={activePage === 'settings' ? 'settings' : 'player'}
+        activeStreamingService={activeStreamingService}
         onOpenMedia={() => void api?.openMediaDialog()}
         onOpenMediaFolder={() => void api?.openMediaFolderDialog()}
+        onOpenStreamingService={handleOpenStreamingService}
         onOpenSettings={() => setActivePage('settings')}
       />
 
       <section
         className={`${styles.workspace} ${
           activePage === 'player' ? styles.playerWorkspace : ''
-        }`}
+        } ${activeStreamingService ? styles.serviceWorkspace : ''}`}
       >
-        <div className={styles.pageStack}>
-          <div
-            className={`${styles.playbackPage} ${activePage === 'player' ? '' : styles.playbackPageHidden}`}
-            aria-hidden={activePage !== 'player'}
-          >
-            <header
-              className={`${styles.workspaceHeader} ${
-                playerControlsVisible ? '' : styles.workspaceHeaderHidden
-              }`}
-            >
-              <div className={styles.mediaHeading}>
-                <h1 className={styles.mediaTitle}>
-                  {playlist.current?.name ?? t('player.sessionTitle')}
-                </h1>
-              </div>
-
-              {!(playlist.panelVisible || panelLeaving) && (
-                <button
-                  type="button"
-                  className={styles.queueButton}
-                  onClick={playlist.togglePanel}
-                  data-tooltip={t('appbar.togglePlaylistTitle')}
-                  data-tooltip-placement="bottom"
-                  aria-label={t('appbar.togglePlaylist')}
-                  aria-pressed={playlist.panelVisible}
-                >
-                  <ListVideo size={15} aria-hidden="true" />
-                  <span>{t('playlist.title')}</span>
-                  <span className={styles.queueCount}>{playlist.items.length}</span>
-                </button>
-              )}
+        {activeStreamingService ? (
+          <div className={styles.servicePage}>
+            <header className={styles.serviceHeader}>
+              <button
+                type="button"
+                className={styles.serviceBackButton}
+                onClick={() => setActivePage('player')}
+              >
+                <ArrowLeft size={16} aria-hidden="true" />
+                <span>{t('navigation.backToPlayer')}</span>
+              </button>
+              <span className={styles.serviceTitle}>
+                {t(activeStreamingService === 'netflix' ? 'services.netflix' : 'services.spotify')}
+              </span>
             </header>
+            <div ref={serviceViewHostRef} className={styles.serviceViewHost} />
+          </div>
+        ) : (
+          <div className={styles.pageStack}>
+            <div
+              className={`${styles.playbackPage} ${activePage === 'player' ? '' : styles.playbackPageHidden}`}
+              aria-hidden={activePage !== 'player'}
+            >
+              <header
+                className={`${styles.workspaceHeader} ${
+                  playerControlsVisible ? '' : styles.workspaceHeaderHidden
+                }`}
+              >
+                <div className={styles.mediaHeading}>
+                  <h1 className={styles.mediaTitle}>
+                    {playlist.current?.name ?? t('player.sessionTitle')}
+                  </h1>
+                </div>
 
-            <div className={styles.layout}>
-              <div className={styles.stage}>
-                <p className="sr-only" role="status" aria-live="polite">
-                  {announcementText}
-                </p>
-                <VideoPlayer
-                  source={playlist.source}
-                  mediaType={mediaType}
-                  title={playlist.current?.name ?? ''}
-                  autoNext={playbackPreferences.autoNext}
-                  onAutoNextChange={handleAutoNextChange}
-                  loopCurrent={playbackPreferences.repeatCurrent}
-                  onLoopCurrentChange={handleRepeatCurrentChange}
-                  message={errorMessage}
-                  hasNext={playlist.hasNext}
-                  hasPrevious={playlist.hasPrevious}
-                  onNext={playlist.next}
-                  onPrevious={playlist.previous}
-                  onEnded={handlePlaybackEnded}
-                  onFailed={playlist.failCurrent}
-                  onFilesSelected={playlist.addFiles}
-                  onControlsVisibilityChange={setPlayerControlsVisible}
-                />
-                {toast && (
-                  <Toast
-                    message={t(toast.key)}
-                    actionLabel={t('player.undo')}
-                    onAction={handleUndoClear}
-                    onDismiss={() => setToast(null)}
+                {!(playlist.panelVisible || panelLeaving) && (
+                  <button
+                    type="button"
+                    className={styles.queueButton}
+                    onClick={playlist.togglePanel}
+                    aria-label={t('appbar.togglePlaylist')}
+                    aria-pressed={playlist.panelVisible}
+                  >
+                    <ListVideo size={15} aria-hidden="true" />
+                    <span>{t('playlist.title')}</span>
+                    <span className={styles.queueCount}>{playlist.items.length}</span>
+                  </button>
+                )}
+              </header>
+
+              <div className={styles.layout}>
+                <div className={styles.stage}>
+                  <p className="sr-only" role="status" aria-live="polite">
+                    {announcementText}
+                  </p>
+                  <VideoPlayer
+                    source={playlist.source}
+                    mediaType={mediaType}
+                    title={playlist.current?.name ?? ''}
+                    autoNext={playbackPreferences.autoNext}
+                    onAutoNextChange={handleAutoNextChange}
+                    loopCurrent={playbackPreferences.repeatCurrent}
+                    onLoopCurrentChange={handleRepeatCurrentChange}
+                    message={errorMessage}
+                    hasNext={playlist.hasNext}
+                    hasPrevious={playlist.hasPrevious}
+                    onNext={playlist.next}
+                    onPrevious={playlist.previous}
+                    onEnded={handlePlaybackEnded}
+                    onFailed={playlist.failCurrent}
+                    onFilesSelected={playlist.addFiles}
+                    onControlsVisibilityChange={setPlayerControlsVisible}
+                  />
+                  {toast && (
+                    <Toast
+                      message={t(toast.key)}
+                      actionLabel={t('player.undo')}
+                      onAction={handleUndoClear}
+                      onDismiss={() => setToast(null)}
+                    />
+                  )}
+                </div>
+
+                {(playlist.panelVisible || panelLeaving) && (
+                  <PlaylistPanel
+                    items={playlist.items}
+                    currentIndex={playlist.currentIndex}
+                    closing={!playlist.panelVisible}
+                    loading={!playlist.loaded}
+                    pulseIds={playlist.pulseIds}
+                    onPlay={handlePlaylistItemPlay}
+                    onMove={playlist.move}
+                    onRemove={playlist.remove}
+                    onClear={handleClear}
+                    onClose={playlist.togglePanel}
+                    onFilesSelected={playlist.addFiles}
+                    onAnnounce={announce}
                   />
                 )}
               </div>
-
-              {(playlist.panelVisible || panelLeaving) && (
-                <PlaylistPanel
-                  items={playlist.items}
-                  currentIndex={playlist.currentIndex}
-                  closing={!playlist.panelVisible}
-                  loading={!playlist.loaded}
-                  pulseIds={playlist.pulseIds}
-                  onPlay={handlePlaylistItemPlay}
-                  onMove={playlist.move}
-                  onRemove={playlist.remove}
-                  onClear={handleClear}
-                  onClose={playlist.togglePanel}
-                  onFilesSelected={playlist.addFiles}
-                  onAnnounce={announce}
-                />
-              )}
             </div>
-          </div>
 
-          {activePage === 'settings' && (
-            <SettingsPage
-              accentColor={accentColor}
-              onAccentColorChange={onAccentColorChange}
-              autoNext={playbackPreferences.autoNext}
-              repeatCurrent={playbackPreferences.repeatCurrent}
-              onAutoNextChange={handleAutoNextChange}
-              onRepeatCurrentChange={handleRepeatCurrentChange}
-              onBack={() => setActivePage('player')}
-            />
-          )}
-        </div>
+            {activePage === 'settings' && (
+              <SettingsPage
+                accentColor={accentColor}
+                onAccentColorChange={onAccentColorChange}
+                autoNext={playbackPreferences.autoNext}
+                repeatCurrent={playbackPreferences.repeatCurrent}
+                onAutoNextChange={handleAutoNextChange}
+                onRepeatCurrentChange={handleRepeatCurrentChange}
+                onBack={() => setActivePage('player')}
+              />
+            )}
+          </div>
+        )}
         {updateVersion && (
           <Toast
             message={t('updates.available', { version: updateVersion })}

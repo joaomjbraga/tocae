@@ -1,15 +1,25 @@
-import { File, FolderOpen, Settings } from 'lucide-react'
+import { AudioLines, File, FolderOpen, Settings } from 'lucide-react'
+import type { StreamingService } from '@shared/ipc'
 import { useI18n } from '../i18n'
 import styles from './AppBar.module.css'
 
 type AppBarProps = {
   activePage: 'player' | 'settings'
+  activeStreamingService: StreamingService | null
   onOpenMedia: () => void
   onOpenMediaFolder: () => void
+  onOpenStreamingService: (service: StreamingService) => void
   onOpenSettings: () => void
 }
 
-function AppBar({ activePage, onOpenMedia, onOpenMediaFolder, onOpenSettings }: AppBarProps) {
+function AppBar({
+  activePage,
+  activeStreamingService,
+  onOpenMedia,
+  onOpenMediaFolder,
+  onOpenStreamingService,
+  onOpenSettings,
+}: AppBarProps) {
   const { t } = useI18n()
 
   return (
@@ -18,8 +28,6 @@ function AppBar({ activePage, onOpenMedia, onOpenMediaFolder, onOpenSettings }: 
         type="button"
         className={styles.button}
         onClick={onOpenMedia}
-        data-tooltip={t('appbar.openMediaFileTitle')}
-        data-tooltip-placement="bottom"
         aria-label={t('appbar.openMediaFile')}
       >
         <File size={16} />
@@ -29,11 +37,31 @@ function AppBar({ activePage, onOpenMedia, onOpenMediaFolder, onOpenSettings }: 
         type="button"
         className={styles.button}
         onClick={onOpenMediaFolder}
-        data-tooltip={t('appbar.openMediaFolderTitle')}
-        data-tooltip-placement="bottom"
         aria-label={t('appbar.openMediaFolder')}
       >
         <FolderOpen size={16} />
+      </button>
+
+      <span className={styles.separator} aria-hidden="true" />
+
+      <button
+        type="button"
+        className={`${styles.button} ${activeStreamingService === 'netflix' ? styles.active : ''}`}
+        onClick={() => onOpenStreamingService('netflix')}
+        aria-label={t('services.netflix')}
+      >
+        <span className={styles.netflixMark} aria-hidden="true">
+          N
+        </span>
+      </button>
+
+      <button
+        type="button"
+        className={`${styles.button} ${activeStreamingService === 'spotify' ? styles.active : ''}`}
+        onClick={() => onOpenStreamingService('spotify')}
+        aria-label={t('services.spotify')}
+      >
+        <AudioLines className={styles.spotifyMark} size={18} aria-hidden="true" />
       </button>
 
       <span className={styles.separator} aria-hidden="true" />
@@ -44,8 +72,6 @@ function AppBar({ activePage, onOpenMedia, onOpenMediaFolder, onOpenSettings }: 
         type="button"
         className={`${styles.button} ${activePage === 'settings' ? styles.active : ''}`}
         onClick={onOpenSettings}
-        data-tooltip={t('settings.title')}
-        data-tooltip-placement="bottom"
         aria-label={t('settings.title')}
         aria-pressed={activePage === 'settings'}
       >

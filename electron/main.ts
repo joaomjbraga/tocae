@@ -12,6 +12,7 @@ import {
   sendCommand,
 } from './commands'
 import { registerDefaultPlayerIpc } from './default-player'
+import { registerStreamingServiceIpc } from './streaming-services'
 import { registerUpdateIpc, startUpdateChecks } from './updates'
 import { DESKTOP_FILE_NAME } from './paths'
 
@@ -64,6 +65,7 @@ if (!gotTheLock) {
     registerPlaylistIpc()
     registerDialogIpc()
     registerDefaultPlayerIpc()
+    registerStreamingServiceIpc()
     registerUpdateIpc()
     registerWindowIpc()
     registerLocaleIpc()

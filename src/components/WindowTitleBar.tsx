@@ -60,8 +60,6 @@ function WindowTitleBar({ compact = false }: WindowTitleBarProps) {
           className={styles.control}
           onClick={() => runWindowAction(api.minimizeWindow)}
           aria-label={t('appbar.minimizeWindow')}
-          data-tooltip={t('appbar.minimizeWindow')}
-          data-tooltip-placement="bottom"
         >
           <Minus size={14} />
         </button>
@@ -70,8 +68,6 @@ function WindowTitleBar({ compact = false }: WindowTitleBarProps) {
           className={styles.control}
           onClick={toggleMaximize}
           aria-label={isMaximized ? t('appbar.restoreWindow') : t('appbar.maximizeWindow')}
-          data-tooltip={isMaximized ? t('appbar.restoreWindow') : t('appbar.maximizeWindow')}
-          data-tooltip-placement="bottom"
         >
           {isMaximized ? <Copy size={12} /> : <Square size={12} />}
         </button>
@@ -80,8 +76,6 @@ function WindowTitleBar({ compact = false }: WindowTitleBarProps) {
           className={`${styles.control} ${styles.close}`}
           onClick={() => runWindowAction(api.closeWindow)}
           aria-label={t('appbar.closeWindow')}
-          data-tooltip={t('appbar.closeWindow')}
-          data-tooltip-placement="bottom"
         >
           <X size={14} />
         </button>
