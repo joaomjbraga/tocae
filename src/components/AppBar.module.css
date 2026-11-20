@@ -107,20 +107,6 @@
   color: var(--text-disabled);
 }
 
-.netflixMark {
-  color: #e50914;
-  font-family: Arial, sans-serif;
-  font-size: 21px;
-  font-weight: 800;
-  letter-spacing: -0.08em;
-  line-height: 1;
-  text-shadow: 0 1px 5px rgba(229, 9, 20, 0.3);
-}
-
-.spotifyMark {
-  color: #1ed760;
-}
-
 .separator {
   width: 24px;
   height: 1px;

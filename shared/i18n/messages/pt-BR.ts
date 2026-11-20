@@ -16,8 +16,6 @@ export const ptBRMessages = {
   'appbar.maximizeWindow': 'Maximizar janela',
   'appbar.restoreWindow': 'Restaurar janela',
   'appbar.closeWindow': 'Fechar janela',
-  'services.netflix': 'Netflix',
-  'services.spotify': 'Spotify',
 
   // Troca de idioma
   'language.button': 'Idioma',

@@ -1,24 +1,19 @@
-import { AudioLines, CirclePlay, File, FolderOpen, Settings } from 'lucide-react'
-import type { StreamingService } from '@shared/ipc'
+import { CirclePlay, File, FolderOpen, Settings } from 'lucide-react'
 import { useI18n } from '../i18n'
 import styles from './AppBar.module.css'
 
 type AppBarProps = {
   activePage: 'player' | 'settings'
-  activeStreamingService: StreamingService | null
   onOpenMedia: () => void
   onOpenMediaFolder: () => void
-  onOpenStreamingService: (service: StreamingService) => void
   onOpenPlayer: () => void
   onOpenSettings: () => void
 }
 
 function AppBar({
   activePage,
-  activeStreamingService,
   onOpenMedia,
   onOpenMediaFolder,
-  onOpenStreamingService,
   onOpenPlayer,
   onOpenSettings,
 }: AppBarProps) {
@@ -52,42 +47,14 @@ function AppBar({
 
       <span className={styles.separator} aria-hidden="true" />
 
-      <button
-        type="button"
-        className={`${styles.button} ${activeStreamingService === 'netflix' ? styles.active : ''}`}
-        onClick={() => onOpenStreamingService('netflix')}
-        aria-label={t('services.netflix')}
-      >
-        <span className={styles.icon} aria-hidden="true">
-          <span className={styles.netflixMark}>N</span>
-        </span>
-        <span className={styles.label}>{t('services.netflix')}</span>
-      </button>
-
-      <button
-        type="button"
-        className={`${styles.button} ${activeStreamingService === 'spotify' ? styles.active : ''}`}
-        onClick={() => onOpenStreamingService('spotify')}
-        aria-label={t('services.spotify')}
-      >
-        <span className={styles.icon} aria-hidden="true">
-          <AudioLines className={styles.spotifyMark} size={18} />
-        </span>
-        <span className={styles.label}>{t('services.spotify')}</span>
-      </button>
-
-      <span className={styles.separator} aria-hidden="true" />
-
       <span className={styles.spacer} />
 
       <button
         type="button"
-        className={`${styles.button} ${
-          activePage === 'player' && !activeStreamingService ? styles.active : ''
-        }`}
+        className={`${styles.button} ${activePage === 'player' ? styles.active : ''}`}
         onClick={onOpenPlayer}
         aria-label={t('navigation.backToPlayer')}
-        aria-pressed={activePage === 'player' && !activeStreamingService}
+        aria-pressed={activePage === 'player'}
       >
         <span className={styles.icon} aria-hidden="true">
           <CirclePlay size={16} />

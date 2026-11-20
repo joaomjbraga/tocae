@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ListVideo } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
-import type { StreamingService } from '@shared/ipc'
 import { mediaTypeForPath } from '@shared/media'
 import AppBar from '../../components/AppBar'
 import Toast from '../../components/Toast'
@@ -37,10 +36,7 @@ function PlayerScreen({
   const playlist = usePlaylist()
   const { t } = useI18n()
   const api = window.tocae
-  const [activePage, setActivePage] = useState<'player' | 'settings' | StreamingService>('player')
-  const serviceViewHostRef = useRef<HTMLDivElement>(null)
-  const activeStreamingService =
-    activePage === 'netflix' || activePage === 'spotify' ? activePage : null
+  const [activePage, setActivePage] = useState<'player' | 'settings'>('player')
   const [playlistVisible, setPlaylistVisible] = useState(false)
   // O painel fica montado durante a saída para poder animar; `panelLeaving`
   // marca o estado intermediário.
@@ -106,45 +102,6 @@ function PlayerScreen({
   const handlePlaybackEnded = useCallback(() => {
     if (playbackPreferences.autoNext) playlist.next()
   }, [playbackPreferences.autoNext, playlist.next])
-
-  const handleOpenStreamingService = useCallback(
-    (service: StreamingService) => setActivePage(service),
-    [],
-  )
-
-  useLayoutEffect(() => {
-    if (!api) return
-
-    if (!activeStreamingService) {
-      void api.hideStreamingServiceView().catch((error: unknown) => {
-        console.error('Could not hide the streaming service view', error)
-      })
-      return
-    }
-
-    const host = serviceViewHostRef.current
-    if (!host) return
-
-    const updateViewBounds = () => {
-      const { left, top, width, height } = host.getBoundingClientRect()
-      if (width <= 0 || height <= 0) return
-      void api
-        .setStreamingServiceView(activeStreamingService, { x: left, y: top, width, height })
-        .catch((error: unknown) => {
-          console.error(`Could not show ${activeStreamingService}`, error)
-        })
-    }
-
-    updateViewBounds()
-    const observer = new ResizeObserver(updateViewBounds)
-    observer.observe(host)
-    window.addEventListener('resize', updateViewBounds)
-
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', updateViewBounds)
-    }
-  }, [activeStreamingService, api])
 
   useEffect(() => {
     if (!api) return
@@ -275,12 +232,10 @@ function PlayerScreen({
   const immersiveMedia =
     activePage === 'player' &&
     (mediaType === 'video' || mediaType === 'image' || mediaType === 'audio')
-  const immersiveMode = activeStreamingService !== null || immersiveMedia
-
   useEffect(() => {
-    onImmersiveModeChange(immersiveMode)
+    onImmersiveModeChange(immersiveMedia)
     return () => onImmersiveModeChange(false)
-  }, [immersiveMode, onImmersiveModeChange])
+  }, [immersiveMedia, onImmersiveModeChange])
 
   function handleOpenReleases() {
     void api.openReleasesPage().catch((error: unknown) => {
@@ -290,14 +245,12 @@ function PlayerScreen({
 
   return (
     <div
-      className={`${styles.screen} ${activeStreamingService ? styles.serviceMode : activePage === 'player' ? styles.playerMode : styles.settingsMode}`}
+      className={`${styles.screen} ${activePage === 'player' ? styles.playerMode : styles.settingsMode}`}
     >
       <AppBar
-        activePage={activePage === 'settings' ? 'settings' : 'player'}
-        activeStreamingService={activeStreamingService}
+        activePage={activePage}
         onOpenMedia={() => void api?.openMediaDialog()}
         onOpenMediaFolder={() => void api?.openMediaFolderDialog()}
-        onOpenStreamingService={handleOpenStreamingService}
         onOpenPlayer={() => setActivePage('player')}
         onOpenSettings={() => setActivePage('settings')}
       />
@@ -305,128 +258,122 @@ function PlayerScreen({
       <section
         className={`${styles.workspace} ${
           activePage === 'player' ? styles.playerWorkspace : ''
-        } ${activeStreamingService ? styles.serviceWorkspace : ''} ${
-          immersiveMedia ? styles.immersiveMediaWorkspace : ''
-        }`}
+        } ${immersiveMedia ? styles.immersiveMediaWorkspace : ''}`}
       >
-        {activeStreamingService ? (
-          <div className={styles.servicePage}>
-            <div ref={serviceViewHostRef} className={styles.serviceViewHost} />
-          </div>
-        ) : (
-          <div className={styles.pageStack}>
-            <div
-              className={`${styles.playbackPage} ${activePage === 'player' ? '' : styles.playbackPageHidden}`}
-              aria-hidden={activePage !== 'player'}
+        <div className={styles.pageStack}>
+          <div
+            className={`${styles.playbackPage} ${activePage === 'player' ? '' : styles.playbackPageHidden}`}
+            aria-hidden={activePage !== 'player'}
+          >
+            <header
+              className={`${styles.workspaceHeader} ${
+                playerControlsVisible ? '' : styles.workspaceHeaderHidden
+              }`}
             >
-              <header
-                className={`${styles.workspaceHeader} ${
-                  playerControlsVisible ? '' : styles.workspaceHeaderHidden
-                }`}
-              >
-                <div className={styles.mediaHeading}>
-                  <h1 className={styles.mediaTitle}>
-                    {playlist.current?.name ?? t('player.sessionTitle')}
-                  </h1>
-                </div>
-              </header>
+              <div className={styles.mediaHeading}>
+                <h1 className={styles.mediaTitle}>
+                  {playlist.current?.name ?? t('player.sessionTitle')}
+                </h1>
+              </div>
+            </header>
 
-              <div className={styles.layout}>
-                <div className={styles.stage}>
-                  <p className="sr-only" role="status" aria-live="polite">
-                    {announcementText}
-                  </p>
-                  <VideoPlayer
-                    source={playlist.source}
-                    mediaType={mediaType}
-                    title={playlist.current?.name ?? ''}
-                    immersive={immersiveMedia}
-                    autoNext={playbackPreferences.autoNext}
-                    onAutoNextChange={handleAutoNextChange}
-                    loopCurrent={playbackPreferences.repeatCurrent}
-                    onLoopCurrentChange={handleRepeatCurrentChange}
-                    message={errorMessage}
-                    hasNext={playlist.hasNext}
-                    hasPrevious={playlist.hasPrevious}
-                    onNext={playlist.next}
-                    onPrevious={playlist.previous}
-                    onEnded={handlePlaybackEnded}
-                    onFailed={playlist.failCurrent}
-                    onFilesSelected={playlist.addFiles}
-                    onControlsVisibilityChange={setPlayerControlsVisible}
+            <div className={styles.layout}>
+              <div className={styles.stage}>
+                <p className="sr-only" role="status" aria-live="polite">
+                  {announcementText}
+                </p>
+                <VideoPlayer
+                  source={playlist.source}
+                  mediaType={mediaType}
+                  title={playlist.current?.name ?? ''}
+                  immersive={immersiveMedia}
+                  autoNext={playbackPreferences.autoNext}
+                  onAutoNextChange={handleAutoNextChange}
+                  loopCurrent={playbackPreferences.repeatCurrent}
+                  onLoopCurrentChange={handleRepeatCurrentChange}
+                  message={errorMessage}
+                  hasNext={playlist.hasNext}
+                  hasPrevious={playlist.hasPrevious}
+                  onNext={playlist.next}
+                  onPrevious={playlist.previous}
+                  onEnded={handlePlaybackEnded}
+                  onFailed={playlist.failCurrent}
+                  onFilesSelected={playlist.addFiles}
+                  onControlsVisibilityChange={setPlayerControlsVisible}
+                />
+                {toast && (
+                  <Toast
+                    message={t(toast.key)}
+                    actionLabel={t('player.undo')}
+                    onAction={handleUndoClear}
+                    onDismiss={() => setToast(null)}
                   />
-                  {toast && (
-                    <Toast
-                      message={t(toast.key)}
-                      actionLabel={t('player.undo')}
-                      onAction={handleUndoClear}
-                      onDismiss={() => setToast(null)}
-                    />
-                  )}
-                </div>
+                )}
+              </div>
 
-                <div
-                  className={`${styles.playlistHoverRegion} ${
-                    playlistVisible || panelLeaving ? styles.playlistHoverRegionOpen : ''
-                  } ${immersiveMedia ? styles.playlistHoverRegionImmersive : ''}`}
-                  onMouseEnter={() => setPlaylistVisible(true)}
-                  onMouseLeave={(event) => {
-                    if (!event.currentTarget.matches(':focus-within')) {
-                      setPlaylistVisible(false)
-                    }
-                  }}
-                  onFocusCapture={() => setPlaylistVisible(true)}
-                  onBlurCapture={(event) => {
-                    const next = event.relatedTarget
-                    if (next instanceof Node && event.currentTarget.contains(next)) return
+              <div
+                className={`${styles.playlistHoverRegion} ${
+                  playlistVisible || panelLeaving ? styles.playlistHoverRegionOpen : ''
+                } ${immersiveMedia ? styles.playlistHoverRegionImmersive : ''}`}
+                onMouseEnter={() => setPlaylistVisible(true)}
+                onMouseLeave={(event) => {
+                  if (!event.currentTarget.matches(':focus-within')) {
                     setPlaylistVisible(false)
-                  }}
+                  }
+                }}
+                onFocusCapture={() => setPlaylistVisible(true)}
+                onBlurCapture={(event) => {
+                  const next = event.relatedTarget
+                  if (next instanceof Node && event.currentTarget.contains(next)) return
+                  setPlaylistVisible(false)
+                }}
+              >
+                <button
+                  type="button"
+                  className={`${styles.queueButton} ${
+                    !playerControlsVisible && !playlistVisible ? styles.queueButtonHidden : ''
+                  }`}
+                  onClick={() => setPlaylistVisible(true)}
+                  aria-label={t('playlist.label')}
+                  aria-expanded={playlistVisible}
+                  aria-controls="playlist-panel"
                 >
-                  <button
-                    type="button"
-                    className={styles.queueButton}
-                    onClick={() => setPlaylistVisible(true)}
-                    aria-label={t('playlist.label')}
-                    aria-expanded={playlistVisible}
-                    aria-controls="playlist-panel"
-                  >
-                    <ListVideo size={15} aria-hidden="true" />
-                    <span>{t('playlist.title')}</span>
-                    <span className={styles.queueCount}>{playlist.items.length}</span>
-                  </button>
+                  <ListVideo size={15} aria-hidden="true" />
+                  <span>{t('playlist.title')}</span>
+                  <span className={styles.queueCount}>{playlist.items.length}</span>
+                </button>
 
-                  {(playlistVisible || panelLeaving) && (
-                    <PlaylistPanel
-                      items={playlist.items}
-                      currentIndex={playlist.currentIndex}
-                      immersive={immersiveMedia}
-                      closing={!playlistVisible}
-                      loading={!playlist.loaded}
-                      pulseIds={playlist.pulseIds}
-                      onPlay={handlePlaylistItemPlay}
-                      onMove={playlist.move}
-                      onRemove={playlist.remove}
-                      onClear={handleClear}
-                      onFilesSelected={playlist.addFiles}
-                      onAnnounce={announce}
-                    />
-                  )}
-                </div>
+                {(playlistVisible || panelLeaving) && (
+                  <PlaylistPanel
+                    items={playlist.items}
+                    currentIndex={playlist.currentIndex}
+                    immersive={immersiveMedia}
+                    closing={!playlistVisible}
+                    loading={!playlist.loaded}
+                    pulseIds={playlist.pulseIds}
+                    onPlay={handlePlaylistItemPlay}
+                    onMove={playlist.move}
+                    onRemove={playlist.remove}
+                    onClear={handleClear}
+                    onFilesSelected={playlist.addFiles}
+                    onAnnounce={announce}
+                  />
+                )}
               </div>
             </div>
-
-            {activePage === 'settings' && (
-              <SettingsPage
-                accentColor={accentColor}
-                onAccentColorChange={onAccentColorChange}
-                autoNext={playbackPreferences.autoNext}
-                repeatCurrent={playbackPreferences.repeatCurrent}
-                onAutoNextChange={handleAutoNextChange}
-                onRepeatCurrentChange={handleRepeatCurrentChange}
-              />
-            )}
           </div>
-        )}
+
+          {activePage === 'settings' && (
+            <SettingsPage
+              accentColor={accentColor}
+              onAccentColorChange={onAccentColorChange}
+              autoNext={playbackPreferences.autoNext}
+              repeatCurrent={playbackPreferences.repeatCurrent}
+              onAutoNextChange={handleAutoNextChange}
+              onRepeatCurrentChange={handleRepeatCurrentChange}
+            />
+          )}
+        </div>
         {updateVersion && (
           <Toast
             message={t('updates.available', { version: updateVersion })}

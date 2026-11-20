@@ -9,8 +9,6 @@ export const IPC_CHANNELS = {
   MEDIA_FOLDER_PICK: 'media-folder:pick',
   DEFAULT_PLAYER_STATUS: 'default-player:status',
   DEFAULT_PLAYER_SET: 'default-player:set',
-  STREAMING_SERVICE_VIEW_SET: 'streaming-service:view:set',
-  STREAMING_SERVICE_VIEW_HIDE: 'streaming-service:view:hide',
   RELEASES_OPEN: 'releases:open',
   RENDERER_READY: 'renderer:ready',
   WINDOW_MINIMIZE: 'window:minimize',
@@ -49,15 +47,6 @@ export interface DefaultPlayerStatus {
   isDefault: boolean
 }
 
-export type StreamingService = 'netflix' | 'spotify'
-
-export interface StreamingServiceViewBounds {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
 export interface TocaeApi {
   onCommand(callback: (command: AppCommand) => void): () => void
   notifyRendererReady(): void
@@ -67,11 +56,6 @@ export interface TocaeApi {
   openMediaFolderDialog(): Promise<void>
   getDefaultPlayerStatus(): Promise<DefaultPlayerStatus>
   setDefaultPlayer(): Promise<void>
-  setStreamingServiceView(
-    service: StreamingService,
-    bounds: StreamingServiceViewBounds,
-  ): Promise<void>
-  hideStreamingServiceView(): Promise<void>
   openReleasesPage(): Promise<void>
   minimizeWindow(): Promise<void>
   toggleMaximizeWindow(): Promise<void>

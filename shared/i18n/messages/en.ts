@@ -11,8 +11,6 @@ export const enMessages: Messages = {
   'appbar.maximizeWindow': 'Maximize window',
   'appbar.restoreWindow': 'Restore window',
   'appbar.closeWindow': 'Close window',
-  'services.netflix': 'Netflix',
-  'services.spotify': 'Spotify',
 
   // Language switching
   'language.button': 'Language',

@@ -10,10 +10,6 @@
   gap: 0;
 }
 
-.serviceMode {
-  gap: 0;
-}
-
 .settingsMode {
   margin: 0 12px 12px;
 }
@@ -34,28 +30,6 @@
 .playerWorkspace {
   gap: 0;
   padding: 0;
-}
-
-.serviceWorkspace {
-  gap: 0;
-  padding: 0;
-}
-
-.servicePage {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  padding-top: 36px;
-  background: var(--bg-fullscreen);
-}
-
-.serviceViewHost {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  background: var(--bg-fullscreen);
 }
 
 .workspaceHeader {
@@ -159,7 +133,23 @@
   cursor: pointer;
   transition:
     color var(--duration-fast),
-    transform var(--duration-fast);
+    transform var(--duration-fast),
+    opacity var(--duration-exit) var(--ease-exit),
+    visibility var(--duration-exit) linear;
+}
+
+.queueButtonHidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  visibility: hidden;
+}
+
+.queueButtonHidden:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  visibility: visible;
 }
 
 .queueButton:hover {
@@ -249,21 +239,12 @@
     gap: 0;
   }
 
-  .serviceMode {
-    gap: 0;
-  }
-
   .workspace {
     padding: 8px;
     gap: 8px;
   }
 
   .playerWorkspace {
-    gap: 0;
-    padding: 0;
-  }
-
-  .serviceWorkspace {
     gap: 0;
     padding: 0;
   }

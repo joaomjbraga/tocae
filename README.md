@@ -19,14 +19,11 @@ Reprodutor multimídia minimalista construído com Electron, React e TypeScript.
 - Ouça músicas com um visualizador animado que reage ao estado da reprodução
 - Navegue pela timeline com prévia do quadro ou avance e volte em intervalos de 1 segundo
 - Continue a reprodução de vídeos e músicas de onde parou, inclusive depois de fechar o aplicativo
-- Abra Netflix e Spotify em telas integradas à janela principal, com sessões de login separadas e uma tela de recuperação quando o serviço não puder ser acessado
 - Defina o Tocaê como reprodutor padrão de mídias no Linux
 - Receba um aviso quando uma nova versão do Tocaê estiver disponível
 - Troque entre português (Brasil) e inglês a qualquer momento
 
 Formatos aceitos: vídeos MP4, WebM, MKV, AVI, MOV e OGV; músicas MP3, M4A, AAC, WAV, FLAC, OGG e Opus; imagens JPG, PNG, APNG, GIF, WebP, BMP e AVIF. Imagens ficam paradas até a navegação para outra mídia; músicas usam a linha do tempo e os controles de reprodução.
-
-Netflix e Spotify são carregados pelos sites oficiais em telas integradas ao Tocaê; as credenciais são inseridas diretamente nesses serviços e as sessões ficam separadas. O acesso exige internet. Se a conexão falhar, uma tela local permite tentar novamente e voltar ao player. A reprodução da Netflix depende do suporte DRM disponível na plataforma e no Electron instalado; o Tocaê não contorna as proteções do serviço.
 
 ## Estrutura do projeto
 
