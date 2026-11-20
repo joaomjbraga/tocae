@@ -6,6 +6,7 @@ import type { Locale } from '@shared/i18n'
 import type { MediaMetadata } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
 import type { PlaylistItem } from '@shared/playlist'
+import type { AiProviderConfig, AiStatus } from '@shared/ai'
 
 const api: TocaeApi = {
   onCommand(callback) {
@@ -81,6 +82,25 @@ const api: TocaeApi = {
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
   getLocale: () => ipcRenderer.invoke(IPC_CHANNELS.LOCALE_GET),
   setLocale: (locale: Locale | null) => ipcRenderer.invoke(IPC_CHANNELS.LOCALE_SET, locale),
+  ai: {
+    getStatus: () => ipcRenderer.invoke(IPC_CHANNELS.AI_STATUS_GET) as Promise<AiStatus>,
+    getConfig: () => ipcRenderer.invoke(IPC_CHANNELS.AI_CONFIG_GET) as Promise<AiProviderConfig>,
+    setConfig: (config) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_CONFIG_SET, config) as Promise<AiProviderConfig>,
+    setCredential: (apiKey) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_CREDENTIAL_SET, apiKey),
+    removeCredential: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_CREDENTIAL_REMOVE),
+    sendMessage: (message) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_SEND, message) as Promise<AiStatus>,
+    cancel: () => ipcRenderer.invoke(IPC_CHANNELS.AI_CANCEL) as Promise<AiStatus>,
+    clear: () => ipcRenderer.invoke(IPC_CHANNELS.AI_CLEAR) as Promise<AiStatus>,
+    onStreamChunk(callback) {
+      const listener = (_event: IpcRendererEvent, chunk: string) => callback(chunk)
+      ipcRenderer.on(IPC_CHANNELS.AI_STREAM_CHUNK, listener)
+      return () => ipcRenderer.off(IPC_CHANNELS.AI_STREAM_CHUNK, listener)
+    },
+  },
 }
 
 contextBridge.exposeInMainWorld('tocae', api)

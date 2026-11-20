@@ -26,7 +26,21 @@ export async function readSettings(): Promise<Settings> {
     const parsed: unknown = JSON.parse(raw)
     const stored = parsed as Partial<Settings> | null
     if (!stored || typeof stored !== 'object') return { ...DEFAULT_SETTINGS }
-    return { locale: isLocale(stored.locale) ? stored.locale : null }
+    const ai = stored.ai
+    return {
+      locale: isLocale(stored.locale) ? stored.locale : null,
+      ai:
+        ai &&
+        ai.provider === 'openai-compatible' &&
+        typeof ai.baseUrl === 'string' &&
+        typeof ai.model === 'string'
+          ? {
+              provider: 'openai-compatible',
+              baseUrl: ai.baseUrl,
+              model: ai.model,
+            }
+          : { ...DEFAULT_SETTINGS.ai },
+    }
   } catch (error) {
     console.warn('Could not parse app settings; using defaults', error)
     return { ...DEFAULT_SETTINGS }

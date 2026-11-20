@@ -1,0 +1,18 @@
+.section { width:100%; min-width:0; display:flex; flex-direction:column; gap:20px; }
+.header { display:flex; flex-direction:column; gap:6px; }
+.title { margin:0; color:var(--text-primary); font-size:22px; font-weight:600; }
+.description { margin:0; color:var(--text-muted); font-size:var(--text-xs); }
+.group { display:flex; flex-direction:column; gap:12px; overflow:hidden; border:1px solid var(--border-hairline); border-radius:10px; background:var(--bg-surface); padding-bottom:12px; }
+.groupHeader { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:12px 14px; border-bottom:1px solid var(--border-hairline); }
+.settingTitle { margin:0; color:var(--text-primary); font-size:var(--text-sm); }
+.settingDescription { margin:3px 0 0; color:var(--text-muted); font-size:var(--text-xs); }
+.keyIcon { color:var(--accent); }
+.field { display:flex; flex-direction:column; gap:6px; margin:0 14px; color:var(--text-secondary); font-size:var(--text-xs); }
+.field input { height:36px; border:1px solid var(--border-surface); border-radius:8px; padding:0 10px; outline:0; background:var(--bg-glass); color:var(--text-primary); user-select:text; }
+.field input:focus { border-color:var(--accent); }
+.actions { display:flex; gap:8px; }
+.primary,.danger { height:34px; display:inline-flex; align-items:center; justify-content:center; gap:7px; margin:0 14px; border:1px solid var(--border-surface); border-radius:8px; background:var(--accent-tint); color:var(--accent); cursor:pointer; }
+.danger { margin:0; background:transparent; color:var(--text-danger); }
+.actions .primary { margin:0 0 0 14px; }
+.primary:disabled,.danger:disabled { color:var(--text-disabled); cursor:default; }
+.feedback { margin:0; color:var(--text-muted); font-size:var(--text-xs); }

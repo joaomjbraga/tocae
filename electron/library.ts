@@ -211,7 +211,7 @@ async function scanLibrary(): Promise<LibrarySnapshot> {
   }
 }
 
-async function getLibrarySnapshot(): Promise<LibrarySnapshot> {
+export async function getLibrarySnapshot(): Promise<LibrarySnapshot> {
   await initializeLibrary()
   return scanLibrary()
 }

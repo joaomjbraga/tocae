@@ -6,6 +6,7 @@ import {
   Palette,
   Play,
   Settings,
+  BrainCircuit,
 } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import AboutSection from './AboutSection'
@@ -13,6 +14,7 @@ import AppearanceSection from './AppearanceSection'
 import DefaultPlayerSection from './DefaultPlayerSection'
 import LanguageSection from './LanguageSection'
 import ShortcutsSection from './ShortcutsSection'
+import AiSection from './AiSection'
 import styles from './SettingsPage.module.css'
 
 type SettingsPageProps = {
@@ -26,6 +28,12 @@ const CATEGORIES = [
     icon: Languages,
     title: 'language.button',
     description: 'settings.languageDescription',
+  },
+  {
+    id: 'ai',
+    icon: BrainCircuit,
+    title: 'assistant.title',
+    description: 'settings.aiDescription',
   },
   {
     id: 'appearance',
@@ -103,6 +111,7 @@ function SettingsPage({
           tabIndex={0}
         >
           {activeCategory === 'language' && <LanguageSection />}
+          {activeCategory === 'ai' && <AiSection />}
           {activeCategory === 'appearance' && (
             <AppearanceSection
               accentColor={accentColor}

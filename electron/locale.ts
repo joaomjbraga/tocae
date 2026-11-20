@@ -41,7 +41,8 @@ export async function applyLocale(next: Locale | null): Promise<LocaleInfo> {
   preference = next
   current = next ?? getSystemLocale()
 
-  await writeSettings({ locale: preference })
+  const settings = await readSettings()
+  await writeSettings({ ...settings, locale: preference })
 
   const source: LocaleSource = preference === null ? 'system' : 'user'
   for (const window of BrowserWindow.getAllWindows()) {

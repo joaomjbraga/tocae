@@ -11,6 +11,7 @@ import VideoPlayer from './VideoPlayer'
 import { readPlaybackPreferences, savePlaybackPreferences } from './playbackPreferences'
 import SettingsPage from '../settings/SettingsPage'
 import YouTubeMusicPage from '../integrations/youtube-music/YouTubeMusicPage'
+import AssistantPage from '../ai/AssistantPage'
 import { usePlaylist } from '../playlist/usePlaylist'
 import type { PlaylistSnapshot } from '../playlist/usePlaylist'
 import { useI18n } from '../../i18n'
@@ -329,6 +330,7 @@ function PlayerScreen({
         onOpenLibrary={() => setActivePage('library')}
         onOpenPlayer={() => setActivePage('player')}
         onOpenYouTubeMusic={handleOpenYouTubeMusic}
+        onOpenAssistant={() => setActivePage('assistant')}
         onOpenSettings={() => setActivePage('settings')}
       />
 
@@ -465,6 +467,8 @@ function PlayerScreen({
               onReturnToLibrary={() => setActivePage('library')}
             />
           )}
+
+          {activePage === 'assistant' && <AssistantPage />}
         </div>
         {updateVersion && (
           <Toast

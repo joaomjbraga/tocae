@@ -2,7 +2,7 @@ import { CirclePlay, File, FolderOpen, House, Music2, Settings } from 'lucide-re
 import { useI18n } from '../i18n'
 import styles from './AppBar.module.css'
 
-export type AppPage = 'library' | 'player' | 'settings' | 'youtube-music'
+export type AppPage = 'library' | 'player' | 'assistant' | 'settings' | 'youtube-music'
 
 type AppBarProps = {
   activePage: AppPage
@@ -11,6 +11,7 @@ type AppBarProps = {
   onOpenLibrary: () => void
   onOpenPlayer: () => void
   onOpenYouTubeMusic: () => void
+  onOpenAssistant: () => void
   onOpenSettings: () => void
 }
 
@@ -21,6 +22,7 @@ function AppBar({
   onOpenLibrary,
   onOpenPlayer,
   onOpenYouTubeMusic,
+  onOpenAssistant,
   onOpenSettings,
 }: AppBarProps) {
   const { t } = useI18n()
@@ -92,6 +94,19 @@ function AppBar({
           <Music2 size={13} />
         </span>
         <span className={styles.label}>{t('youtubeMusic.title')}</span>
+      </button>
+
+      <button
+        type="button"
+        className={`${styles.button} ${activePage === 'assistant' ? styles.active : ''}`}
+        onClick={onOpenAssistant}
+        aria-label={t('assistant.title')}
+        aria-pressed={activePage === 'assistant'}
+      >
+        <span className={styles.icon} aria-hidden="true">
+          <img className={styles.tecoIcon} src="/images/teco.png" alt="" />
+        </span>
+        <span className={styles.label}>{t('assistant.title')}</span>
       </button>
 
       <button

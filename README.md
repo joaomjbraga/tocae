@@ -43,9 +43,35 @@ A integração utiliza a interface oficial do serviço. O Tocaê não extrai mú
 
 ### Inteligência artificial
 
-<sub>Em desenvolvimento</sub>
+O Tocaê inclui um assistente conversacional integrado ao processo principal do Electron.
+Esta primeira versão utiliza um adaptador compatível com a API de Chat Completions
+no formato OpenAI.
 
-A inteligência artificial está entre as próximas etapas de evolução do Tocaê. A proposta é incorporar recursos inteligentes para facilitar a descoberta, a organização e a interação com a biblioteca multimídia.
+#### Configuração
+
+1. Abra **Configurações > Assistente**.
+2. Informe a URL base do provedor compatível e o modelo.
+3. Informe a chave de API e use **Salvar chave**.
+
+A chave é criptografada pelo `safeStorage` do Electron e armazenada fora do
+Renderer, no diretório de dados do usuário. A configuração do provedor fica no
+arquivo de preferências da aplicação. Não coloque credenciais no código-fonte,
+em variáveis expostas ao Renderer ou em arquivos versionados.
+
+Exemplo para o provedor oficial da OpenAI:
+
+- URL base: `https://api.openai.com/v1`
+- Modelo: `gpt-4o-mini`
+
+Para desenvolvimento, execute `npm run dev`. A aplicação empacotada exige a
+mesma configuração feita pelo usuário; não é necessário fornecer uma chave no
+arquivo de distribuição.
+
+O assistente suporta envio de mensagens, streaming de respostas, histórico
+persistido localmente, cancelamento, timeout de 60 segundos e tratamento de
+falhas. Nesta versão ele pode consultar a biblioteca e a fila por meio de
+ferramentas somente leitura, incluindo metadados do item atual. Não controla
+a reprodução nem altera arquivos.
 
 Entre as funcionalidades planejadas estão:
 

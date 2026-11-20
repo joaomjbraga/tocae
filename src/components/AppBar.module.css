@@ -60,6 +60,13 @@
   place-items: center;
 }
 
+.tecoIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 5px;
+}
+
 .youtubeIcon {
   border-radius: 50%;
   background: #ff0033;

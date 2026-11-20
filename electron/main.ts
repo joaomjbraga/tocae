@@ -18,6 +18,7 @@ import {
 import { registerDefaultPlayerIpc } from './default-player'
 import { registerUpdateIpc, startUpdateChecks } from './updates'
 import { DESKTOP_FILE_NAME } from './paths'
+import { registerAiIpc } from './ai'
 
 registerMediaSchemes()
 
@@ -75,6 +76,7 @@ if (!gotTheLock) {
     registerUpdateIpc()
     registerWindowIpc()
     registerLocaleIpc()
+    registerAiIpc()
     // O idioma precisa estar resolvido antes da primeira janela para a
     // interface começar no idioma escolhido.
     await initLocale()

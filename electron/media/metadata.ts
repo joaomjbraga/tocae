@@ -113,7 +113,7 @@ async function extractMetadata(
   return result
 }
 
-async function getMediaMetadata(filePath: unknown): Promise<MediaMetadata> {
+export async function getMediaMetadata(filePath: unknown): Promise<MediaMetadata> {
   if (typeof filePath !== 'string' || !mediaTypeForPath(filePath)) {
     throw new TypeError('A supported media file path is required.')
   }

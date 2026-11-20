@@ -3,6 +3,7 @@ import type { LibrarySnapshot } from './library'
 import type { MediaMetadata } from './media'
 import type { MediaTrack } from './mediaTracks'
 import type { PersistedPlaylist, PlaylistItem } from './playlist'
+import type { AiProviderConfig, AiStatus } from './ai'
 
 export const IPC_CHANNELS = {
   COMMAND: 'app:command',
@@ -41,6 +42,15 @@ export const IPC_CHANNELS = {
   WINDOW_STATE: 'window:state',
   LOCALE_GET: 'locale:get',
   LOCALE_SET: 'locale:set',
+  AI_STATUS_GET: 'ai:status:get',
+  AI_CONFIG_GET: 'ai:config:get',
+  AI_CONFIG_SET: 'ai:config:set',
+  AI_CREDENTIAL_SET: 'ai:credential:set',
+  AI_CREDENTIAL_REMOVE: 'ai:credential:remove',
+  AI_SEND: 'ai:send',
+  AI_CANCEL: 'ai:cancel',
+  AI_CLEAR: 'ai:clear',
+  AI_STREAM_CHUNK: 'ai:stream:chunk',
 } as const
 
 export type AppCommand =
@@ -128,4 +138,15 @@ export interface TocaeApi {
    * persistida e propagada para as outras janelas.
    */
   setLocale(locale: Locale | null): Promise<LocaleInfo>
+  ai: {
+    getStatus(): Promise<AiStatus>
+    getConfig(): Promise<AiProviderConfig>
+    setConfig(config: AiProviderConfig): Promise<AiProviderConfig>
+    setCredential(apiKey: string): Promise<void>
+    removeCredential(): Promise<void>
+    sendMessage(message: string): Promise<AiStatus>
+    cancel(): Promise<AiStatus>
+    clear(): Promise<AiStatus>
+    onStreamChunk(callback: (chunk: string) => void): () => void
+  }
 }
