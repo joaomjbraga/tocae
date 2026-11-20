@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ListVideo } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
 import { mediaTypeForPath } from '@shared/media'
+import type { MediaMetadata } from '@shared/media'
 import AppBar from '../../components/AppBar'
 import Toast from '../../components/Toast'
 import PlaylistPanel from '../playlist/PlaylistPanel'
@@ -13,6 +14,7 @@ import { usePlaylist } from '../playlist/usePlaylist'
 import type { PlaylistSnapshot } from '../playlist/usePlaylist'
 import { useI18n } from '../../i18n'
 import styles from './PlayerScreen.module.css'
+import { summarizeMediaMetadata } from '../../lib/mediaMetadata'
 
 /** Deve cobrir a saída animada do painel (--duration-exit) antes de desmontar. */
 const PANEL_EXIT_MS = 160
@@ -35,7 +37,7 @@ function PlayerScreen({
   onImmersiveModeChange,
 }: PlayerScreenProps) {
   const playlist = usePlaylist()
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
   const api = window.tocae
   const [activePage, setActivePage] = useState<'library' | 'player' | 'settings'>('library')
   const [playlistVisible, setPlaylistVisible] = useState(false)
@@ -53,6 +55,47 @@ function PlayerScreen({
   const [playerControlsVisible, setPlayerControlsVisible] = useState(true)
   const [playbackPreferences, setPlaybackPreferences] = useState(readPlaybackPreferences)
   const announcedIdRef = useRef<string | null>(null)
+  const currentMediaPath = playlist.current?.path ?? null
+  const [mediaMetadataState, setMediaMetadataState] = useState<{
+    path: string
+    metadata: MediaMetadata
+  } | null>(null)
+  const [mediaElementMetadataState, setMediaElementMetadataState] = useState<{
+    path: string
+    metadata: Pick<MediaMetadata, 'duration' | 'width' | 'height'>
+  } | null>(null)
+  const mediaMetadata =
+    mediaMetadataState?.path === currentMediaPath ? mediaMetadataState.metadata : null
+  const mediaElementMetadata =
+    mediaElementMetadataState?.path === currentMediaPath
+      ? mediaElementMetadataState.metadata
+      : null
+
+  useEffect(() => {
+    if (!api || !currentMediaPath) return
+    let active = true
+    void api
+      .getMediaMetadata(currentMediaPath)
+      .then((metadata) => {
+        if (active) setMediaMetadataState({ path: currentMediaPath, metadata })
+      })
+      .catch((error: unknown) => {
+        console.error(`Could not load player metadata for "${currentMediaPath}"`, error)
+      })
+    return () => {
+      active = false
+    }
+  }, [api, currentMediaPath])
+
+  const handleMediaElementMetadata = useCallback(
+    (metadata: Pick<MediaMetadata, 'duration' | 'width' | 'height'>) => {
+      if (currentMediaPath) setMediaElementMetadataState({ path: currentMediaPath, metadata })
+    },
+    [currentMediaPath],
+  )
+  const handleMediaMetadataSaved = useCallback((path: string, metadata: MediaMetadata) => {
+    setMediaMetadataState({ path, metadata })
+  }, [])
 
   const announce = useCallback(
     (key: MessageKey, params?: TranslationParams) => setAnnouncement({ key, params }),
@@ -239,6 +282,15 @@ function PlayerScreen({
 
   const errorMessage = playlist.error ? t(playlist.error) : null
   const mediaType = playlist.current ? mediaTypeForPath(playlist.current.path) : null
+  const currentMetadata =
+    mediaMetadata && mediaElementMetadata
+      ? { ...mediaMetadata, ...mediaElementMetadata }
+      : mediaMetadata
+  const mediaTitle = mediaMetadata?.title || playlist.current?.name || ''
+  const mediaSubtitle =
+    currentMetadata && mediaType
+      ? summarizeMediaMetadata(mediaType, currentMetadata, locale)
+      : ''
   const immersiveMedia =
     activePage === 'player' &&
     (mediaType === 'video' || mediaType === 'image' || mediaType === 'audio')
@@ -283,8 +335,9 @@ function PlayerScreen({
             >
               <div className={styles.mediaHeading}>
                 <h1 className={styles.mediaTitle}>
-                  {playlist.current?.name ?? t('player.sessionTitle')}
+                  {mediaTitle || t('player.sessionTitle')}
                 </h1>
+                {mediaSubtitle && <p className={styles.mediaSubtitle}>{mediaSubtitle}</p>}
               </div>
             </header>
 
@@ -296,7 +349,9 @@ function PlayerScreen({
                 <VideoPlayer
                   source={playlist.source}
                   mediaType={mediaType}
-                  title={playlist.current?.name ?? ''}
+                  title={mediaTitle}
+                  audioArtwork={mediaMetadata?.coverArt ?? null}
+                  onMediaMetadata={handleMediaElementMetadata}
                   immersive={immersiveMedia}
                   autoNext={playbackPreferences.autoNext}
                   onAutoNextChange={handleAutoNextChange}
@@ -376,7 +431,9 @@ function PlayerScreen({
             </div>
           </div>
 
-          {activePage === 'library' && <Library onPlay={handleLibraryItemPlay} />}
+          {activePage === 'library' && (
+            <Library onPlay={handleLibraryItemPlay} onMetadataSaved={handleMediaMetadataSaved} />
+          )}
 
           {activePage === 'settings' && (
             <SettingsPage

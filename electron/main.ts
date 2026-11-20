@@ -2,6 +2,7 @@ import { app, Menu } from 'electron'
 import { fileURLToPath } from 'node:url'
 import { isMediaPath } from '@shared/media'
 import { registerMediaSchemes, registerMediaProtocol } from './media/protocol'
+import { registerMediaMetadataIpc } from './media/metadata'
 import { registerDialogIpc } from './dialogs'
 import { registerPlaylistIpc } from './playlist'
 import { initializeLibrary, registerLibraryIpc } from './library'
@@ -64,6 +65,7 @@ if (!gotTheLock) {
     registerCommandIpc()
     registerPlaylistIpc()
     registerLibraryIpc()
+    registerMediaMetadataIpc()
     registerDialogIpc()
     registerDefaultPlayerIpc()
     registerUpdateIpc()

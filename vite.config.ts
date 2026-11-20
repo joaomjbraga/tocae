@@ -8,13 +8,18 @@ const aliases = {
   '@shared': path.resolve(import.meta.dirname, 'shared'),
 }
 
+const electronMainExternals = ['exiftool-vendored', 'exifr', 'music-metadata', 'node-id3']
+
 export default defineConfig({
   plugins: [
     react(),
     electron({
       main: {
         entry: 'electron/main.ts',
-        vite: { resolve: { alias: aliases } },
+        vite: {
+          resolve: { alias: aliases },
+          build: { rollupOptions: { external: electronMainExternals } },
+        },
       },
       preload: {
         input: path.join(import.meta.dirname, 'electron/preload.ts'),

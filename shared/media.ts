@@ -40,6 +40,45 @@ export const MEDIA_EXTENSIONS = [
 
 export type MediaType = 'video' | 'audio' | 'image'
 
+export interface MediaMetadata {
+  fileSize: number
+  modifiedAt: number
+  title?: string
+  artist?: string
+  album?: string
+  description?: string
+  year?: number
+  genres?: string[]
+  duration?: number
+  codec?: string
+  width?: number
+  height?: number
+  capturedAt?: number
+  camera?: string
+  coverArt?: string
+}
+
+export type MediaMetadataUpdate =
+  | {
+      mediaType: 'audio'
+      title: string
+      artist: string
+      album: string
+      year: number | null
+      genre: string
+    }
+  | {
+      mediaType: 'video' | 'image'
+      title: string
+      description: string
+      capturedAt: number | null
+    }
+
+export interface MediaMetadataUpdateResult {
+  metadata: MediaMetadata
+  warnings: string[]
+}
+
 function extensionFor(source: string): string {
   const isUrl = /^[a-z][a-z\d+.-]*:\/\//i.test(source)
   const path = isUrl ? source.split(/[?#]/, 1)[0] : source

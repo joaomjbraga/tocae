@@ -29,7 +29,7 @@ import {
   ZoomOut,
 } from 'lucide-react'
 import { formatTime } from '../../lib/format'
-import type { MediaType } from '@shared/media'
+import type { MediaMetadata, MediaType } from '@shared/media'
 import { useI18n } from '../../i18n'
 import { getPlaybackPosition, savePlaybackPosition } from './playbackProgress'
 import { useMediaViewport } from './useMediaViewport'
@@ -48,6 +48,8 @@ type VideoPlayerProps = {
   source: string | null
   mediaType: MediaType | null
   title: string
+  audioArtwork: string | null
+  onMediaMetadata: (metadata: Pick<MediaMetadata, 'duration' | 'width' | 'height'>) => void
   immersive: boolean
   autoNext: boolean
   onAutoNextChange: (enabled: boolean) => void
@@ -68,6 +70,8 @@ function VideoPlayer({
   source,
   mediaType,
   title,
+  audioArtwork,
+  onMediaMetadata,
   immersive,
   autoNext,
   onAutoNextChange,
@@ -394,9 +398,18 @@ function VideoPlayer({
   function handleMediaMetadata(event: SyntheticEvent<HTMLMediaElement>) {
     const media = event.currentTarget
     setDuration(media.duration)
+    const metadata: Pick<MediaMetadata, 'duration' | 'width' | 'height'> = {}
+    if (Number.isFinite(media.duration) && media.duration > 0) {
+      metadata.duration = media.duration
+    }
     if (media instanceof HTMLVideoElement) {
       viewport.setMediaDimensions(media.videoWidth, media.videoHeight)
+      if (media.videoWidth > 0 && media.videoHeight > 0) {
+        metadata.width = media.videoWidth
+        metadata.height = media.videoHeight
+      }
     }
+    onMediaMetadata(metadata)
 
     const resumePosition = source ? getPlaybackPosition(source) : 0
     if (resumePosition <= 0 || !Number.isFinite(media.duration) || media.duration <= 0) return
@@ -540,11 +553,15 @@ function VideoPlayer({
               />
               <div className={styles.audioStage}>
                 <div className={styles.audioArtwork} aria-hidden="true">
-                  <div className={styles.audioDisc}>
-                    <div className={styles.audioDiscCenter}>
-                      <Music2 size={34} strokeWidth={1.4} />
+                  {audioArtwork ? (
+                    <img className={styles.audioCover} src={audioArtwork} alt="" />
+                  ) : (
+                    <div className={styles.audioDisc}>
+                      <div className={styles.audioDiscCenter}>
+                        <Music2 size={34} strokeWidth={1.4} />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 <div className={styles.audioVisualizer} aria-hidden="true">
                   {Array.from({ length: 9 }, (_, index) => (
@@ -574,12 +591,11 @@ function VideoPlayer({
                 src={source ?? undefined}
                 alt={title}
                 draggable={false}
-                onLoad={(event) =>
-                  viewport.setMediaDimensions(
-                    event.currentTarget.naturalWidth,
-                    event.currentTarget.naturalHeight,
-                  )
-                }
+                onLoad={(event) => {
+                  const image = event.currentTarget
+                  viewport.setMediaDimensions(image.naturalWidth, image.naturalHeight)
+                  onMediaMetadata({ width: image.naturalWidth, height: image.naturalHeight })
+                }}
                 onError={handleImageError}
                 onPointerDown={viewport.handlePointerDown}
                 onPointerMove={viewport.handlePointerMove}

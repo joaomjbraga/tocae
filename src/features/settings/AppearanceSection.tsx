@@ -3,6 +3,12 @@ import { useI18n } from '../../i18n'
 import { ACCENT_COLOR_PRESETS } from './colors'
 import styles from './AppearanceSection.module.css'
 
+const uniqueAccentColorPresets = ACCENT_COLOR_PRESETS.filter(
+  (preset, index, presets) =>
+    presets.findIndex((candidate) => candidate.color.toLowerCase() === preset.color.toLowerCase()) ===
+    index,
+)
+
 type AppearanceSectionProps = {
   accentColor: string
   onAccentColorChange: (color: string) => void
@@ -38,11 +44,11 @@ function AppearanceSection({ accentColor, onAccentColorChange }: AppearanceSecti
 
         <div className={styles.colorControls}>
           <div className={styles.presets} role="group" aria-label={t('appearance.presets')}>
-            {ACCENT_COLOR_PRESETS.map(({ color, label }) => {
+            {uniqueAccentColorPresets.map(({ color, label }) => {
               const selected = accentColor.toLowerCase() === color
               return (
                 <button
-                  key={color}
+                  key={color.toLowerCase()}
                   type="button"
                   className={`${styles.swatch} ${selected ? styles.swatchSelected : ''}`}
                   onClick={() => onAccentColorChange(color)}

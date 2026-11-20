@@ -4,8 +4,8 @@
  * Único arquivo do projeto onde cores, espaços, raios, elevação e durações
  * são declarados. Os CSS Modules consomem apenas `var()`.
  *
- * O acento preserva a matiz teal da marca, com luminosidade suficiente para
- * destacar estados ativos no tema escuro.
+ * O acento violeta da marca mantém luminosidade suficiente para destacar
+ * estados ativos no tema escuro.
  *
  * Tema: apenas dark. Os nomes são semânticos para permitir um tema claro
  * futuramente sem reescrever os componentes.
@@ -49,9 +49,9 @@
   --text-danger: #e88e8e; /* hover do remover */
 
   /* Acento: apenas estados ativos (item em reprodução, foco, inserção) */
-  --accent: #55c7a6;
-  --accent-strong: #348f79;
-  --accent-tint: rgba(85, 199, 166, 0.14);
+  --accent: #a777ff;
+  --accent-strong: #8051d1;
+  --accent-tint: rgba(167, 119, 255, 0.14);
   --focus-ring: var(--accent);
 
   /* Espaço */

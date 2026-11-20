@@ -8,6 +8,7 @@ import {
   Image,
   LoaderCircle,
   Music2,
+  Pencil,
   Play,
   RefreshCw,
   Search,
@@ -15,16 +16,19 @@ import {
   Video,
 } from 'lucide-react'
 import type { MessageKey } from '@shared/i18n'
-import type { LibraryFolder, LibrarySnapshot, StandardLibraryFolderId } from '@shared/library'
-import type { MediaType } from '@shared/media'
+import type { LibraryFolder, LibraryMediaItem, LibrarySnapshot, StandardLibraryFolderId } from '@shared/library'
+import type { MediaMetadata, MediaType } from '@shared/media'
 import { useI18n } from '../../i18n'
 import { toMediaUrl } from '../../lib/media'
+import { summarizeMediaMetadata } from '../../lib/mediaMetadata'
+import MetadataEditorDialog from './MetadataEditorDialog'
 import styles from './Library.module.css'
 
 type MediaFilter = 'all' | MediaType
 
 type LibraryProps = {
   onPlay: (filePath: string) => void
+  onMetadataSaved?: (filePath: string, metadata: MediaMetadata) => void
 }
 
 const STANDARD_FOLDER_LABELS: Record<StandardLibraryFolderId, MessageKey> = {
@@ -52,7 +56,13 @@ function mediaIcon(type: MediaType) {
   return Music2
 }
 
-function VideoPreview({ src }: { src: string }) {
+function VideoPreview({
+  src,
+  onDimensions,
+}: {
+  src: string
+  onDimensions?: (width: number, height: number, duration?: number) => void
+}) {
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -88,6 +98,9 @@ function VideoPreview({ src }: { src: string }) {
       aria-hidden="true"
       onLoadedMetadata={(event) => {
         const video = event.currentTarget
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+          onDimensions?.(video.videoWidth, video.videoHeight, video.duration)
+        }
         if (Number.isFinite(video.duration) && video.duration > 0.5) {
           video.currentTime = Math.min(1, video.duration * 0.15)
         }
@@ -103,6 +116,166 @@ function VideoPreview({ src }: { src: string }) {
         delete event.currentTarget.dataset.previewReady
       }}
     />
+  )
+}
+
+function LibraryMediaCard({
+  item,
+  context,
+  onPlay,
+  onMetadataSaved,
+}: {
+  item: LibraryMediaItem
+  context: string
+  onPlay: (filePath: string) => void
+  onMetadataSaved?: (filePath: string, metadata: MediaMetadata) => void
+}) {
+  const { locale, t } = useI18n()
+  const [metadata, setMetadata] = useState<MediaMetadata | null>(null)
+  const [metadataEditorOpen, setMetadataEditorOpen] = useState(false)
+  const [metadataLoadFailed, setMetadataLoadFailed] = useState(false)
+  const [previewDetails, setPreviewDetails] = useState<{
+    width: number
+    height: number
+    duration?: number
+  } | null>(null)
+  const metadataRequestRef = useRef<Promise<MediaMetadata | null> | null>(null)
+  const Icon = mediaIcon(item.type)
+  const displayName = metadata?.title || item.name
+  const completeMetadata =
+    metadata && previewDetails
+      ? {
+          ...metadata,
+          width: previewDetails.width,
+          height: previewDetails.height,
+          ...(previewDetails.duration && Number.isFinite(previewDetails.duration)
+            ? { duration: previewDetails.duration }
+            : {}),
+        }
+      : metadata
+  const summary = completeMetadata
+    ? summarizeMediaMetadata(item.type, completeMetadata, locale)
+    : ''
+
+  const loadMetadata = useCallback((): Promise<MediaMetadata | null> => {
+    if (metadata) return Promise.resolve(metadata)
+    if (metadataRequestRef.current) return metadataRequestRef.current
+    const api = window.tocae
+    if (!api) return Promise.resolve(null)
+
+    const request = api
+      .getMediaMetadata(item.path)
+      .then((loadedMetadata) => {
+        setMetadata(loadedMetadata)
+        setMetadataLoadFailed(false)
+        return loadedMetadata
+      })
+      .catch((error: unknown) => {
+        setMetadataLoadFailed(true)
+        console.error(`Could not load metadata for "${item.path}"`, error)
+        return null
+      })
+      .finally(() => {
+        metadataRequestRef.current = null
+      })
+    metadataRequestRef.current = request
+    return request
+  }, [item.path, metadata])
+
+  const handleEditMetadata = useCallback(async () => {
+    const loadedMetadata = await loadMetadata()
+    if (loadedMetadata) setMetadataEditorOpen(true)
+  }, [loadMetadata])
+
+  return (
+    <>
+      <div className={styles.mediaCardShell}>
+        <button
+          type="button"
+          className={styles.mediaCard}
+          onClick={() => onPlay(item.path)}
+          onMouseEnter={() => void loadMetadata()}
+          onFocus={() => void loadMetadata()}
+          aria-label={t('library.playItem', { name: displayName })}
+          aria-description={context}
+          title={summary ? `${item.path}\n${summary}` : item.path}
+        >
+          <span className={styles.artwork}>
+            <Icon
+              size={34}
+              className={item.type === 'audio' ? undefined : styles.artworkFallback}
+              aria-hidden="true"
+            />
+            {item.type === 'image' && (
+              <img
+                src={toMediaUrl(item.path)}
+                alt=""
+                loading="lazy"
+                onLoad={(event) => {
+                  const image = event.currentTarget
+                  setPreviewDetails({ width: image.naturalWidth, height: image.naturalHeight })
+                }}
+                onError={(event) => {
+                  event.currentTarget.style.opacity = '0'
+                }}
+              />
+            )}
+            {item.type === 'video' && (
+              <VideoPreview
+                src={toMediaUrl(item.path)}
+                onDimensions={(width, height, duration) =>
+                  setPreviewDetails({ width, height, duration })
+                }
+              />
+            )}
+            {item.type === 'audio' && metadata?.coverArt && (
+              <img
+                src={metadata.coverArt}
+                alt=""
+                loading="lazy"
+                onError={(event) => {
+                  event.currentTarget.style.opacity = '0'
+                }}
+              />
+            )}
+            <span className={styles.cardPlay}>
+              <Play size={18} fill="currentColor" aria-hidden="true" />
+            </span>
+          </span>
+          <span className={styles.cardTitle}>{displayName}</span>
+          <span className={styles.cardContext}>{context}</span>
+          {summary && <span className={styles.cardMetadata}>{summary}</span>}
+          <span className={styles.mediaType}>{t(MEDIA_TYPE_LABELS[item.type])}</span>
+        </button>
+        <button
+          type="button"
+          className={styles.editMetadataButton}
+          onClick={() => void handleEditMetadata()}
+          onFocus={() => void loadMetadata()}
+          aria-label={t('metadata.edit', { name: displayName })}
+          title={t('metadata.edit', { name: displayName })}
+        >
+          <Pencil size={14} aria-hidden="true" />
+        </button>
+      </div>
+      {metadataLoadFailed && (
+        <span className={styles.metadataLoadError} role="alert">
+          {t('library.loadError')}
+        </span>
+      )}
+      {metadataEditorOpen && metadata && (
+        <MetadataEditorDialog
+          path={item.path}
+          mediaType={item.type}
+          metadata={metadata}
+          onSaved={(updatedMetadata) => {
+            setMetadata(updatedMetadata)
+            onMetadataSaved?.(item.path, updatedMetadata)
+          }}
+          onClose={() => setMetadataEditorOpen(false)}
+        />
+      )}
+    </>
   )
 }
 
@@ -199,7 +372,7 @@ function LibrarySelect({ label, value, options, onChange, disabled = false }: Li
   )
 }
 
-function Library({ onPlay }: LibraryProps) {
+function Library({ onPlay, onMetadataSaved }: LibraryProps) {
   const { t } = useI18n()
   const api = window.tocae
   const [snapshot, setSnapshot] = useState<LibrarySnapshot | null>(null)
@@ -581,7 +754,6 @@ function Library({ onPlay }: LibraryProps) {
               </h2>
               <ul className={styles.mediaGrid}>
                 {group.map((item) => {
-                  const Icon = mediaIcon(item.type)
                   const folder = snapshot.folders.find((entry) => entry.id === item.folderId)
                   const parentDirectory = item.relativePath.split('/').slice(0, -1).join('/')
                   const context = [folder ? folderName(folder, t) : '', parentDirectory]
@@ -590,43 +762,12 @@ function Library({ onPlay }: LibraryProps) {
 
                   return (
                     <li key={item.path}>
-                      <button
-                        type="button"
-                        className={styles.mediaCard}
-                        onClick={() => onPlay(item.path)}
-                        aria-label={t('library.playItem', { name: item.name })}
-                        aria-description={context}
-                        title={item.path}
-                      >
-                        <span className={styles.artwork}>
-                          {item.type === 'image' ? (
-                            <>
-                              <Icon size={32} className={styles.artworkFallback} aria-hidden="true" />
-                              <img
-                                src={toMediaUrl(item.path)}
-                                alt=""
-                                loading="lazy"
-                                onError={(event) => {
-                                  event.currentTarget.style.opacity = '0'
-                                }}
-                              />
-                            </>
-                          ) : item.type === 'video' ? (
-                            <>
-                              <Icon size={34} className={styles.artworkFallback} aria-hidden="true" />
-                              <VideoPreview src={toMediaUrl(item.path)} />
-                            </>
-                          ) : (
-                            <Icon size={34} aria-hidden="true" />
-                          )}
-                          <span className={styles.cardPlay}>
-                            <Play size={18} fill="currentColor" aria-hidden="true" />
-                          </span>
-                        </span>
-                        <span className={styles.cardTitle}>{item.name}</span>
-                        <span className={styles.cardContext}>{context}</span>
-                        <span className={styles.mediaType}>{t(MEDIA_TYPE_LABELS[item.type])}</span>
-                      </button>
+                      <LibraryMediaCard
+                        item={item}
+                        context={context}
+                        onPlay={onPlay}
+                        onMetadataSaved={onMetadataSaved}
+                      />
                     </li>
                   )
                 })}

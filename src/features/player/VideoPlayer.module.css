@@ -72,8 +72,17 @@
 .audioArtwork::before {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background: radial-gradient(circle at 50% 38%, var(--accent-tint), transparent 64%);
   content: '';
+}
+
+.audioCover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .audioDisc {
@@ -215,6 +224,7 @@
 }
 
 .videoArea.imageMode .playPause,
+.videoArea.audioMode .playPause,
 .videoArea.imageMode .controlsBar {
   display: none;
 }

@@ -12,6 +12,8 @@ Reprodutor multimídia minimalista construído com Electron, React e TypeScript.
 
 - Organize uma biblioteca de mídias com as pastas padrão do sistema ou adicione locais monitorados
 - Pesquise vídeos, imagens e músicas e filtre os resultados pelo tipo de mídia
+- Consulte metadados de áudio, vídeo e imagem, além do tamanho e da data dos arquivos
+- Edite tags de áudio e informações descritivas de imagens e vídeos nos formatos compatíveis
 - Reproduza vídeos e músicas e navegue por imagens em uma única lista
 - Avance automaticamente ao fim ou repita a mídia atual, com opções nas configurações
 - Reordene a lista arrastando os itens ou pelo teclado
@@ -38,6 +40,8 @@ Formatos aceitos: vídeos MP4, WebM, MKV, AVI, MOV e OGV; músicas MP3, M4A, AAC
 - `electron/`: processo principal, preload e integração com o sistema
 
 O player preserva a proporção original de vídeos e imagens, inclusive em retrato. O zoom pode ser movido com o mouse ou toque e é limitado às bordas visíveis da mídia. Músicas usam os mesmos controles de reprodução e linha do tempo, com um disco animado e um visualizador de barras enquanto tocam. A interface usa controles compactos e translúcidos, com adaptação para janelas estreitas.
+
+Os metadados incluem tags e capas de áudio, duração e codec de mídia, dimensões de vídeo e imagem, dados EXIF básicos e informações do arquivo. A biblioteca os carrega conforme os itens são explorados. A edição grava no arquivo original quando o formato aceita os campos; uma cópia `_original` é mantida na mesma pasta. MP3 usa tags ID3 e os demais formatos usam o ExifTool. No Linux, o pacote instala Perl como dependência do ExifTool.
 
 ## Idiomas
 

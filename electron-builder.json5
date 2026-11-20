@@ -6,6 +6,7 @@
   // provedor GitHub a partir do repositório e incluiria app-update.yml no pacote.
   "publish": null,
   "asar": true,
+  "asarUnpack": ["**/node_modules/exiftool-vendored.{pl,exe}/**"],
   "productName": "Tocaê Reprodutor",
   "directories": {
     "output": "release/${version}",
@@ -20,6 +21,7 @@
     "icon": "public/tocae.png",
     "category": "AudioVideo;Player;",
     "executableName": "tocae-reprodutor",
+    "depends": ["perl"],
     "mimeTypes": [
       "video/mp4",
       "video/x-m4v",

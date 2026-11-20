@@ -8,6 +8,6 @@ export function formatTime(seconds: number): string {
 }
 
 export function baseNameFor(filePath: string): string {
-  const segments = filePath.split('/')
+  const segments = filePath.split(/[\\/]/)
   return segments[segments.length - 1] || filePath
 }

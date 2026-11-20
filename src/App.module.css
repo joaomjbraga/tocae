@@ -7,7 +7,7 @@
   overflow: hidden;
   border: 1px solid var(--border-surface);
   border-radius: 12px;
-  --accent: var(--player-accent, #fbbf24);
+  --accent: var(--player-accent, #a777ff);
   --accent-strong: color-mix(in srgb, var(--accent) 74%, #000);
   --accent-tint: color-mix(in srgb, var(--accent) 16%, transparent);
   --focus-ring: var(--accent);

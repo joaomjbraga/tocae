@@ -513,12 +513,17 @@
 
 .mediaGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   align-items: start;
   gap: 14px 12px;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.mediaCardShell {
+  position: relative;
+  min-width: 0;
 }
 
 .mediaCard {
@@ -536,6 +541,49 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.editMetadataButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-surface);
+  border-radius: var(--radius-sm);
+  background: var(--bg-glass-strong);
+  color: var(--text-primary);
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  transition:
+    opacity var(--duration-fast),
+    background-color var(--duration-fast);
+}
+
+.mediaCardShell:hover .editMetadataButton,
+.mediaCardShell:focus-within .editMetadataButton {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.editMetadataButton:hover {
+  background: var(--bg-active);
+}
+
+.editMetadataButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.metadataLoadError {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-danger);
+  font-size: 10px;
 }
 
 .artwork {
@@ -627,7 +675,7 @@
 
 .cardTitle {
   color: var(--text-primary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.25;
 }
@@ -635,13 +683,23 @@
 .cardContext {
   min-height: 12px;
   color: var(--text-subtle);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.25;
+}
+
+.cardMetadata {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .mediaType {
   color: var(--text-muted);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -658,6 +716,187 @@
   color: var(--text-subtle);
   font-size: 11px;
   text-align: center;
+}
+
+.metadataOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(8px);
+}
+
+.metadataDialog {
+  width: min(520px, 100%);
+  max-height: min(90vh, 760px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+  overflow: auto;
+  border: 1px solid var(--border-surface);
+  border-radius: var(--radius-lg);
+  background: var(--bg-glass-strong);
+  box-shadow: var(--shadow-material);
+}
+
+.metadataDialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.metadataDialogHeading {
+  min-width: 0;
+}
+
+.metadataDialogHeading h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  font-weight: 650;
+}
+
+.metadataDialogHeading p {
+  overflow: hidden;
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metadataClose {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.metadataClose:hover,
+.metadataCancel:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.metadataForm {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.metadataField {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.metadataField input,
+.metadataField textarea {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.metadataField textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.metadataField input:focus,
+.metadataField textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-tint);
+}
+
+.metadataFieldRow {
+  display: flex;
+  gap: 12px;
+}
+
+.metadataNote {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.metadataError,
+.metadataWarning {
+  margin: 0;
+  color: var(--text-danger);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.metadataWarning ul {
+  margin: 5px 0 0;
+  padding-left: 18px;
+}
+
+.metadataActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 4px;
+}
+
+.metadataCancel,
+.metadataSave {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.metadataCancel {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.metadataSave {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: var(--accent-tint);
+}
+
+.metadataSave:hover {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.metadataCancel:disabled,
+.metadataSave:disabled,
+.metadataClose:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .spinning {
@@ -738,7 +977,28 @@
   }
 
   .mediaGrid {
-    grid-template-columns: repeat(auto-fill, minmax(102px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 12px 9px;
+  }
+}
+
+@media (hover: none) {
+  .editMetadataButton {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .metadataOverlay {
+    padding: 12px;
+  }
+
+  .metadataDialog {
+    padding: 16px;
+  }
+
+  .metadataFieldRow {
+    flex-direction: column;
   }
 }
