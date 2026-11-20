@@ -1,4 +1,4 @@
-import { AudioLines, File, FolderOpen, Settings } from 'lucide-react'
+import { AudioLines, CirclePlay, File, FolderOpen, Settings } from 'lucide-react'
 import type { StreamingService } from '@shared/ipc'
 import { useI18n } from '../i18n'
 import styles from './AppBar.module.css'
@@ -9,6 +9,7 @@ type AppBarProps = {
   onOpenMedia: () => void
   onOpenMediaFolder: () => void
   onOpenStreamingService: (service: StreamingService) => void
+  onOpenPlayer: () => void
   onOpenSettings: () => void
 }
 
@@ -18,6 +19,7 @@ function AppBar({
   onOpenMedia,
   onOpenMediaFolder,
   onOpenStreamingService,
+  onOpenPlayer,
   onOpenSettings,
 }: AppBarProps) {
   const { t } = useI18n()
@@ -77,6 +79,21 @@ function AppBar({
       <span className={styles.separator} aria-hidden="true" />
 
       <span className={styles.spacer} />
+
+      <button
+        type="button"
+        className={`${styles.button} ${
+          activePage === 'player' && !activeStreamingService ? styles.active : ''
+        }`}
+        onClick={onOpenPlayer}
+        aria-label={t('navigation.backToPlayer')}
+        aria-pressed={activePage === 'player' && !activeStreamingService}
+      >
+        <span className={styles.icon} aria-hidden="true">
+          <CirclePlay size={16} />
+        </span>
+        <span className={styles.label}>{t('navigation.backToPlayer')}</span>
+      </button>
 
       <button
         type="button"

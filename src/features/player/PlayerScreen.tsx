@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ListVideo } from 'lucide-react'
+import { ListVideo } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
 import type { StreamingService } from '@shared/ipc'
 import { mediaTypeForPath } from '@shared/media'
@@ -26,13 +26,13 @@ type Announcement = { key: MessageKey; params?: TranslationParams }
 type PlayerScreenProps = {
   accentColor: string
   onAccentColorChange: (color: string) => void
-  onImmersiveMediaChange: (immersive: boolean) => void
+  onImmersiveModeChange: (immersive: boolean) => void
 }
 
 function PlayerScreen({
   accentColor,
   onAccentColorChange,
-  onImmersiveMediaChange,
+  onImmersiveModeChange,
 }: PlayerScreenProps) {
   const playlist = usePlaylist()
   const { t } = useI18n()
@@ -275,11 +275,12 @@ function PlayerScreen({
   const immersiveMedia =
     activePage === 'player' &&
     (mediaType === 'video' || mediaType === 'image' || mediaType === 'audio')
+  const immersiveMode = activeStreamingService !== null || immersiveMedia
 
   useEffect(() => {
-    onImmersiveMediaChange(immersiveMedia)
-    return () => onImmersiveMediaChange(false)
-  }, [immersiveMedia, onImmersiveMediaChange])
+    onImmersiveModeChange(immersiveMode)
+    return () => onImmersiveModeChange(false)
+  }, [immersiveMode, onImmersiveModeChange])
 
   function handleOpenReleases() {
     void api.openReleasesPage().catch((error: unknown) => {
@@ -297,6 +298,7 @@ function PlayerScreen({
         onOpenMedia={() => void api?.openMediaDialog()}
         onOpenMediaFolder={() => void api?.openMediaFolderDialog()}
         onOpenStreamingService={handleOpenStreamingService}
+        onOpenPlayer={() => setActivePage('player')}
         onOpenSettings={() => setActivePage('settings')}
       />
 
@@ -309,19 +311,6 @@ function PlayerScreen({
       >
         {activeStreamingService ? (
           <div className={styles.servicePage}>
-            <header className={styles.serviceHeader}>
-              <button
-                type="button"
-                className={styles.serviceBackButton}
-                onClick={() => setActivePage('player')}
-              >
-                <ArrowLeft size={16} aria-hidden="true" />
-                <span>{t('navigation.backToPlayer')}</span>
-              </button>
-              <span className={styles.serviceTitle}>
-                {t(activeStreamingService === 'netflix' ? 'services.netflix' : 'services.spotify')}
-              </span>
-            </header>
             <div ref={serviceViewHostRef} className={styles.serviceViewHost} />
           </div>
         ) : (
@@ -434,7 +423,6 @@ function PlayerScreen({
                 repeatCurrent={playbackPreferences.repeatCurrent}
                 onAutoNextChange={handleAutoNextChange}
                 onRepeatCurrentChange={handleRepeatCurrentChange}
-                onBack={() => setActivePage('player')}
               />
             )}
           </div>

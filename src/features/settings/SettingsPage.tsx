@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import {
-  ArrowLeft,
   Check,
   Info,
   Keyboard,
@@ -26,7 +25,6 @@ type SettingsPageProps = PlaybackPreferences & {
   onAccentColorChange: (color: string) => void
   onAutoNextChange: (enabled: boolean) => void
   onRepeatCurrentChange: (enabled: boolean) => void
-  onBack: () => void
 }
 
 const CATEGORIES = [
@@ -77,7 +75,6 @@ function SettingsPage({
   repeatCurrent,
   onAutoNextChange,
   onRepeatCurrentChange,
-  onBack,
 }: SettingsPageProps) {
   const { locale, systemLocale, source, setLocale, t } = useI18n()
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('language')
@@ -85,15 +82,6 @@ function SettingsPage({
   return (
     <section className={styles.page} aria-labelledby="settings-title">
       <header className={styles.pageHeader}>
-        <button
-          type="button"
-          className={styles.backButton}
-          onClick={onBack}
-          aria-label={t('navigation.backToPlayer')}
-        >
-          <ArrowLeft size={16} aria-hidden="true" />
-        </button>
-        <span className={styles.headerDivider} aria-hidden="true" />
         <Settings size={18} className={styles.pageIcon} aria-hidden="true" />
         <div>
           <h1 id="settings-title" className={styles.title}>

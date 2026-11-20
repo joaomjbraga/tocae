@@ -21,29 +21,29 @@ function getSavedAccentColor() {
 
 function App() {
   const [accentColor, setAccentColor] = useState<string>(getSavedAccentColor)
-  const [immersiveMedia, setImmersiveMedia] = useState(false)
+  const [immersiveMode, setImmersiveMode] = useState(false)
 
   function handleAccentColorChange(color: string) {
     window.localStorage.setItem(ACCENT_COLOR_STORAGE_KEY, color)
     setAccentColor(color)
   }
 
-  const handleImmersiveMediaChange = useCallback((immersive: boolean) => {
-    setImmersiveMedia(immersive)
+  const handleImmersiveModeChange = useCallback((immersive: boolean) => {
+    setImmersiveMode(immersive)
   }, [])
 
   return (
     <div
-      className={`${styles.app} ${immersiveMedia ? styles.immersive : ''}`}
+      className={`${styles.app} ${immersiveMode ? styles.immersive : ''}`}
       data-window-shell
       style={{ '--player-accent': accentColor } as AppStyle}
     >
-      <WindowTitleBar compact overlay={immersiveMedia} />
+      <WindowTitleBar compact overlay={immersiveMode} />
       <main className={`${styles.content} ${styles.playerContent}`}>
         <PlayerScreen
           accentColor={accentColor}
           onAccentColorChange={handleAccentColorChange}
-          onImmersiveMediaChange={handleImmersiveMediaChange}
+          onImmersiveModeChange={handleImmersiveModeChange}
         />
       </main>
     </div>

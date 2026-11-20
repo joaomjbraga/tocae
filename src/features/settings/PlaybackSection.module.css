@@ -3,7 +3,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 18px;
 }
 
 .header {
@@ -20,8 +20,9 @@
 .title {
   margin: 0;
   color: var(--text-primary);
-  font-size: var(--text-sm);
-  font-weight: 600;
+  font-size: 21px;
+  font-weight: 620;
+  letter-spacing: -0.25px;
 }
 
 .description,
@@ -35,7 +36,11 @@
 .options {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-hairline);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.028);
 }
 
 .option {
@@ -45,10 +50,11 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: 14px;
-  border: 1px solid var(--border-hairline);
-  border-radius: 11px;
-  background: rgba(255, 255, 255, 0.025);
+  padding: 13px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border-hairline);
+  border-radius: 0;
+  background: transparent;
   color: var(--text-primary);
   font: inherit;
   text-align: left;
@@ -59,8 +65,11 @@
 }
 
 .option:hover {
-  border-color: var(--border-control);
   background: var(--bg-hover);
+}
+
+.option:last-child {
+  border-bottom: 0;
 }
 
 .option:focus-visible {

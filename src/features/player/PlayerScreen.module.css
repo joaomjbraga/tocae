@@ -47,50 +47,8 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  padding-top: 36px;
   background: var(--bg-fullscreen);
-}
-
-.serviceHeader {
-  height: 44px;
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: 0 var(--space-3);
-  border-bottom: 1px solid var(--border-hairline);
-  background: var(--bg-bar);
-}
-
-.serviceBackButton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 6px 8px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: var(--text-xs);
-  cursor: pointer;
-  transition:
-    color var(--duration-fast),
-    transform var(--duration-fast);
-}
-
-.serviceBackButton:hover {
-  color: var(--accent);
-}
-
-.serviceBackButton:active {
-  transform: scale(0.97);
-}
-
-.serviceTitle {
-  color: var(--text-primary);
-  font-size: var(--text-xs);
-  font-weight: 600;
 }
 
 .serviceViewHost {

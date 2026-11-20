@@ -5,53 +5,22 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 10px 12px;
+  margin: 8px;
 }
 
 .pageHeader {
-  min-height: 48px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   gap: var(--space-3);
   flex: 0 0 auto;
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--border-hairline);
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
 }
 
-.backButton {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid var(--border-surface);
-  border-radius: 9px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition:
-    background-color var(--duration-fast),
-    color var(--duration-fast),
-    border-color var(--duration-fast);
-}
-
-.backButton:hover {
-  border-color: var(--border-control);
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.backButton:focus-visible,
 .categoryButton:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
-}
-
-.headerDivider {
-  width: 1px;
-  height: 24px;
-  flex: 0 0 auto;
-  background: var(--border-surface);
 }
 
 .pageIcon {
@@ -79,9 +48,8 @@
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(190px, 0.36fr) minmax(0, 1fr);
-  gap: 12px;
-  padding-top: 10px;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 0;
 }
 
 .categoryNav {
@@ -89,22 +57,24 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   overflow-y: auto;
-  padding-right: 6px;
+  padding: 12px 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.055);
+  background: rgba(255, 255, 255, 0.018);
 }
 
 .categoryButton {
   width: 100%;
-  min-height: 64px;
+  min-height: 44px;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
   gap: var(--space-2);
-  padding: 9px;
-  border: 1px solid var(--border-hairline);
-  border-radius: 11px;
-  background: rgba(255, 255, 255, 0.025);
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
   color: var(--text-secondary);
   text-align: left;
   cursor: pointer;
@@ -120,29 +90,26 @@
 }
 
 .categoryActive {
-  border-color: color-mix(in srgb, var(--accent) 25%, transparent);
-  background: var(--accent-tint);
+  background: color-mix(in srgb, var(--accent) 20%, rgba(255, 255, 255, 0.06));
   color: var(--text-primary);
 }
 
 .categoryIcon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.045);
+  border-radius: 7px;
+  background: transparent;
   color: var(--text-muted);
 }
 
 .categoryActive .categoryIcon {
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
   color: var(--accent);
 }
 
 .categoryButton.categoryActive:hover {
-  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
-  background: var(--accent-tint);
+  background: color-mix(in srgb, var(--accent) 24%, rgba(255, 255, 255, 0.065));
 }
 
 .categoryCopy {
@@ -162,13 +129,10 @@
 }
 
 .categoryDescription {
-  display: -webkit-box;
-  overflow: hidden;
+  display: none;
   color: var(--text-subtle);
   font-size: var(--text-2xs);
   line-height: 1.35;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .detailPane {
@@ -179,10 +143,10 @@
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
-  padding: 16px 18px;
-  border: 1px solid var(--border-surface);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.035);
+  padding: 20px 24px 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 160px),
+    rgba(18, 18, 22, 0.34);
 }
 
 .detailPane::-webkit-scrollbar,
@@ -225,6 +189,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  margin-bottom: 18px;
 }
 
 .detailIcon {
@@ -235,8 +200,9 @@
 .detailTitle {
   margin: 0;
   color: var(--text-primary);
-  font-size: var(--text-lg);
-  font-weight: 650;
+  font-size: 21px;
+  font-weight: 620;
+  letter-spacing: -0.25px;
 }
 
 .detailDescription {
@@ -256,20 +222,25 @@
 .languageChoices {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
-  margin-top: var(--space-5);
+  gap: 0;
+  overflow: hidden;
+  margin-top: 14px;
+  border: 1px solid var(--border-hairline);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.028);
 }
 
 .languageChoice {
   min-width: 0;
-  min-height: 72px;
+  min-height: 58px;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: 11px 12px;
-  border: 1px solid var(--border-hairline);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.025);
+  padding: 9px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border-hairline);
+  border-radius: 0;
+  background: transparent;
   color: var(--text-secondary);
   font: inherit;
   text-align: left;
@@ -281,9 +252,12 @@
 }
 
 .languageChoice:hover {
-  border-color: var(--border-control);
   background: var(--bg-hover);
   color: var(--text-primary);
+}
+
+.languageChoice:last-child {
+  border-bottom: 0;
 }
 
 .languageChoice:focus-visible {
@@ -292,8 +266,7 @@
 }
 
 .languageChoiceActive {
-  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
-  background: var(--accent-tint);
+  background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.02));
   color: var(--text-primary);
 }
 
@@ -337,14 +310,13 @@
 
 @media (max-width: 680px) {
   .page {
-    padding: 8px 10px;
+    margin: 6px;
   }
 
   .layout {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
-    gap: 10px;
-    padding-top: 10px;
+    gap: 0;
   }
 
   .categoryNav {
@@ -352,7 +324,9 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
     overflow: visible;
-    padding-right: 0;
+    padding: 8px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.055);
   }
 
   .categoryButton {
@@ -372,7 +346,7 @@
   }
 
   .detailPane {
-    padding: 14px;
+    padding: 16px 14px 24px;
   }
 }
 
