@@ -313,6 +313,96 @@
   top: var(--space-3);
 }
 
+.trackControls {
+  position: absolute;
+  top: 108px;
+  left: var(--space-3);
+  z-index: 1;
+  max-width: min(280px, calc(100% - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-md);
+  background: var(--bg-glass-strong);
+  box-shadow: var(--shadow-material);
+  backdrop-filter: blur(20px) saturate(1.4);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition:
+    opacity var(--duration-exit) var(--ease-exit),
+    transform var(--duration-exit) var(--ease-exit);
+}
+
+.videoArea:hover .trackControls,
+.videoArea:not(.playing) .trackControls {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.videoArea.playing.idle .trackControls {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+}
+
+.videoArea:fullscreen .trackControls {
+  top: 64px;
+}
+
+.videoArea.immersive:not(:fullscreen) .trackControls {
+  top: calc(36px + 56px + 52px);
+}
+
+.trackSelect {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+}
+
+.trackSelect select {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background: var(--bg-chip);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-xs);
+}
+
+.trackSelect select:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.trackSelect select:disabled {
+  opacity: 0.6;
+}
+
+.trackStatus,
+.trackError {
+  max-width: 100%;
+  font-size: var(--text-2xs);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.trackStatus {
+  color: var(--text-muted);
+}
+
+.trackError {
+  color: var(--text-danger);
+}
+
 .videoArea.immersive:not(:fullscreen) .zoomControls,
 .videoArea.immersive:not(:fullscreen) .playbackToggles {
   top: calc(36px + 56px + 8px);

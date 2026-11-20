@@ -30,7 +30,9 @@ import {
 } from 'lucide-react'
 import { formatTime } from '../../lib/format'
 import type { MediaMetadata, MediaType } from '@shared/media'
+import type { MediaTrack } from '@shared/mediaTracks'
 import { useI18n } from '../../i18n'
+import { toMediaUrl } from '../../lib/media'
 import { getPlaybackPosition, savePlaybackPosition } from './playbackProgress'
 import { useMediaViewport } from './useMediaViewport'
 import styles from './VideoPlayer.module.css'
@@ -46,6 +48,7 @@ type PreviewStyle = CSSProperties & { '--preview-position': string }
 
 type VideoPlayerProps = {
   source: string | null
+  filePath: string | null
   mediaType: MediaType | null
   title: string
   audioArtwork: string | null
@@ -68,6 +71,7 @@ type VideoPlayerProps = {
 
 function VideoPlayer({
   source,
+  filePath,
   mediaType,
   title,
   audioArtwork,
@@ -121,6 +125,110 @@ function VideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
+  const [trackState, setTrackState] = useState<{ filePath: string; tracks: MediaTrack[] } | null>(
+    null,
+  )
+  const [selectedAudioTrackIndex, setSelectedAudioTrackIndex] = useState<number | null>(null)
+  const [selectedSubtitleTrackIndex, setSelectedSubtitleTrackIndex] = useState<number | null>(null)
+  const [audioTrackOutput, setAudioTrackOutput] = useState<{
+    filePath: string
+    streamIndex: number
+    outputPath: string
+  } | null>(null)
+  const [subtitleTrackOutput, setSubtitleTrackOutput] = useState<{
+    filePath: string
+    streamIndex: number
+    outputPath: string
+  } | null>(null)
+  const [trackError, setTrackError] = useState<'load' | 'select' | null>(null)
+  const [trackBusy, setTrackBusy] = useState(false)
+  const [trackPlaybackRestore, setTrackPlaybackRestore] = useState<{
+    filePath: string
+    time: number
+    wasPlaying: boolean
+  } | null>(null)
+  const activeFilePathRef = useRef(filePath)
+  activeFilePathRef.current = filePath
+
+  const tracks = trackState?.filePath === filePath ? trackState.tracks : []
+  const audioTracks = tracks.filter((track) => track.kind === 'audio')
+  const subtitleTracks = tracks.filter((track) => track.kind === 'subtitle')
+  const defaultAudioTrack =
+    audioTracks.find((track) => track.isDefault) ?? audioTracks[0] ?? null
+  const playbackSource =
+    audioTrackOutput?.filePath === filePath
+      ? toMediaUrl(audioTrackOutput.outputPath)
+      : source
+  const activeSubtitleTrack =
+    subtitleTrackOutput?.filePath === filePath &&
+    subtitleTrackOutput.streamIndex === selectedSubtitleTrackIndex
+      ? subtitleTrackOutput
+      : null
+  const activeSubtitleInfo = activeSubtitleTrack
+    ? subtitleTracks.find((track) => track.streamIndex === activeSubtitleTrack.streamIndex)
+    : null
+
+  useEffect(() => {
+    let active = true
+    setTrackState(null)
+    setSelectedAudioTrackIndex(null)
+    setSelectedSubtitleTrackIndex(null)
+    setAudioTrackOutput(null)
+    setSubtitleTrackOutput(null)
+    setTrackPlaybackRestore(null)
+    setTrackError(null)
+    setTrackBusy(false)
+    if (!filePath || mediaType !== 'video') return
+
+    const api = window.tocae
+    if (!api) {
+      setTrackError('load')
+      return
+    }
+
+    void api
+      .getMediaTracks(filePath)
+      .then((loadedTracks) => {
+        if (!active) return
+        setTrackState({ filePath, tracks: loadedTracks })
+        const audio = loadedTracks.filter((track) => track.kind === 'audio')
+        setSelectedAudioTrackIndex(
+          (audio.find((track) => track.isDefault) ?? audio[0])?.streamIndex ?? null,
+        )
+      })
+      .catch((error: unknown) => {
+        console.error(`Could not load media tracks for "${filePath}"`, error)
+        if (active) setTrackError('load')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [filePath, mediaType])
+
+  useEffect(() => {
+    if (!audioTrackOutput) return
+    const api = window.tocae
+    if (!api) return
+
+    return () => {
+      void api.releaseMediaTrackOutput(audioTrackOutput.outputPath).catch((error: unknown) => {
+        console.error('Could not release the temporary audio track', error)
+      })
+    }
+  }, [audioTrackOutput])
+
+  useEffect(() => {
+    if (!subtitleTrackOutput) return
+    const api = window.tocae
+    if (!api) return
+
+    return () => {
+      void api.releaseMediaTrackOutput(subtitleTrackOutput.outputPath).catch((error: unknown) => {
+        console.error('Could not release the temporary subtitle track', error)
+      })
+    }
+  }, [subtitleTrackOutput])
 
   useEffect(() => {
     const area = areaRef.current
@@ -202,6 +310,7 @@ function VideoPlayer({
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null
+      if (target instanceof HTMLSelectElement) return
       const isButton = target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement
       switch (event.key) {
         case 'f':
@@ -265,6 +374,139 @@ function VideoPlayer({
   function getMediaElement(): HTMLMediaElement | null {
     const video = viewportMediaRef.current
     return audioRef.current ?? (video instanceof HTMLVideoElement ? video : null)
+  }
+
+  function trackLabel(track: MediaTrack, index: number): string {
+    const details = [track.title, track.language, track.codec].filter(Boolean).join(' · ')
+    return details || t('player.trackOption', { number: index + 1 })
+  }
+
+  async function handleAudioTrackChange(event: ChangeEvent<HTMLSelectElement>) {
+    const streamIndex = Number(event.currentTarget.value)
+    if (!Number.isSafeInteger(streamIndex) || !filePath) return
+
+    const selectedTrack = audioTracks.find((track) => track.streamIndex === streamIndex)
+    if (!selectedTrack) return
+    const previousIndex = selectedAudioTrackIndex
+    setSelectedAudioTrackIndex(streamIndex)
+    setTrackError(null)
+    if (selectedTrack.streamIndex === defaultAudioTrack?.streamIndex) {
+      if (audioTrackOutput?.filePath === filePath) {
+        const media = getMediaElement()
+        const time = media?.currentTime ?? currentTime
+        const wasPlaying = media ? !media.paused : playing
+        if (media) persistPlaybackPosition(time, true)
+        setTrackPlaybackRestore({ filePath, time, wasPlaying })
+      }
+      setAudioTrackOutput(null)
+      return
+    }
+    if (
+      audioTrackOutput?.filePath === filePath &&
+      audioTrackOutput.streamIndex === selectedTrack.streamIndex
+    ) {
+      return
+    }
+
+    const requestedFilePath = filePath
+    const api = window.tocae
+    if (!api) {
+      setSelectedAudioTrackIndex(previousIndex)
+      setTrackError('select')
+      return
+    }
+
+    setTrackBusy(true)
+    try {
+      const outputPath = await api.createAudioTrackPlayback(
+        requestedFilePath,
+        selectedTrack.streamIndex,
+      )
+      if (activeFilePathRef.current !== requestedFilePath) {
+        await api.releaseMediaTrackOutput(outputPath).catch((error: unknown) => {
+          console.error('Could not release a stale temporary audio track', error)
+        })
+        return
+      }
+
+      const media = getMediaElement()
+      const time = media?.currentTime ?? currentTime
+      const wasPlaying = media ? !media.paused : playing
+      if (media) persistPlaybackPosition(time, true)
+      setTrackPlaybackRestore({ filePath: requestedFilePath, time, wasPlaying })
+      setAudioTrackOutput({
+        filePath: requestedFilePath,
+        streamIndex: selectedTrack.streamIndex,
+        outputPath,
+      })
+    } catch (error) {
+      console.error(`Could not select audio stream ${streamIndex} for "${requestedFilePath}"`, error)
+      if (activeFilePathRef.current === requestedFilePath) {
+        setSelectedAudioTrackIndex(previousIndex)
+        setTrackError('select')
+      }
+    } finally {
+      setTrackBusy(false)
+    }
+  }
+
+  async function handleSubtitleTrackChange(event: ChangeEvent<HTMLSelectElement>) {
+    const selectedValue = event.currentTarget.value
+    const streamIndex = selectedValue ? Number(selectedValue) : null
+    if (streamIndex === null) {
+      setSelectedSubtitleTrackIndex(null)
+      setSubtitleTrackOutput(null)
+      setTrackError(null)
+      return
+    }
+    if (!Number.isSafeInteger(streamIndex) || !filePath) return
+
+    const selectedTrack = subtitleTracks.find((track) => track.streamIndex === streamIndex)
+    if (!selectedTrack) return
+    const previousIndex = selectedSubtitleTrackIndex
+    setSelectedSubtitleTrackIndex(streamIndex)
+    setTrackError(null)
+    if (
+      subtitleTrackOutput?.filePath === filePath &&
+      subtitleTrackOutput.streamIndex === selectedTrack.streamIndex
+    ) {
+      return
+    }
+
+    const requestedFilePath = filePath
+    const api = window.tocae
+    if (!api) {
+      setSelectedSubtitleTrackIndex(previousIndex)
+      setTrackError('select')
+      return
+    }
+
+    setTrackBusy(true)
+    try {
+      const outputPath = await api.extractSubtitleTrack(
+        requestedFilePath,
+        selectedTrack.streamIndex,
+      )
+      if (activeFilePathRef.current !== requestedFilePath) {
+        await api.releaseMediaTrackOutput(outputPath).catch((error: unknown) => {
+          console.error('Could not release a stale temporary subtitle track', error)
+        })
+        return
+      }
+      setSubtitleTrackOutput({
+        filePath: requestedFilePath,
+        streamIndex: selectedTrack.streamIndex,
+        outputPath,
+      })
+    } catch (error) {
+      console.error(`Could not extract subtitle stream ${streamIndex} for "${requestedFilePath}"`, error)
+      if (activeFilePathRef.current === requestedFilePath) {
+        setSelectedSubtitleTrackIndex(previousIndex)
+        setTrackError('select')
+      }
+    } finally {
+      setTrackBusy(false)
+    }
   }
 
   function handleEnded() {
@@ -411,6 +653,21 @@ function VideoPlayer({
     }
     onMediaMetadata(metadata)
 
+    if (trackPlaybackRestore?.filePath === filePath) {
+      const resumeTime = Number.isFinite(media.duration)
+        ? Math.min(trackPlaybackRestore.time, Math.max(0, media.duration - 1))
+        : trackPlaybackRestore.time
+      media.currentTime = resumeTime
+      media.volume = volume
+      media.muted = muted
+      setCurrentTime(resumeTime)
+      if (trackPlaybackRestore.wasPlaying) void media.play()
+      else media.pause()
+      setTrackPlaybackRestore(null)
+      lastSavedPositionRef.current = Math.floor(resumeTime)
+      return
+    }
+
     const resumePosition = source ? getPlaybackPosition(source) : 0
     if (resumePosition <= 0 || !Number.isFinite(media.duration) || media.duration <= 0) return
 
@@ -507,7 +764,7 @@ function VideoPlayer({
         <>
           {mediaType === 'video' && (
             <video
-              key={source}
+              key={playbackSource}
               ref={setViewportMediaElement}
               className={[
                 styles.video,
@@ -517,8 +774,12 @@ function VideoPlayer({
                 .filter(Boolean)
                 .join(' ')}
               style={viewport.mediaStyle}
-              src={source ?? undefined}
-              autoPlay
+              src={playbackSource ?? undefined}
+              autoPlay={
+                trackPlaybackRestore?.filePath === filePath
+                  ? trackPlaybackRestore.wasPlaying
+                  : true
+              }
               loop={loopCurrent}
               controls={false}
               muted={muted}
@@ -536,7 +797,24 @@ function VideoPlayer({
               onPointerUp={viewport.handlePointerUp}
               onPointerCancel={viewport.handlePointerCancel}
               onContextMenu={(event) => event.preventDefault()}
-            />
+            >
+              {activeSubtitleTrack && (
+                <track
+                  key={activeSubtitleTrack.outputPath}
+                  kind="subtitles"
+                  src={toMediaUrl(activeSubtitleTrack.outputPath)}
+                  label={
+                    activeSubtitleInfo
+                      ? trackLabel(activeSubtitleInfo, 0)
+                      : t('player.subtitleTrack')
+                  }
+                  default
+                  onLoad={(event) => {
+                    event.currentTarget.track.mode = 'showing'
+                  }}
+                />
+              )}
+            </video>
           )}
           {mediaType === 'audio' && (
             <>
@@ -676,6 +954,57 @@ function VideoPlayer({
               </button>
             </div>
           )}
+          {mediaType === 'video' &&
+            filePath &&
+            (audioTracks.length > 1 || subtitleTracks.length > 0 || trackError !== null) && (
+              <div className={styles.trackControls} role="group" aria-label={t('player.mediaTracks')}>
+                {audioTracks.length > 1 && (
+                  <label className={styles.trackSelect}>
+                    <span>{t('player.audioTrack')}</span>
+                    <select
+                      value={selectedAudioTrackIndex ?? ''}
+                      onChange={(event) => void handleAudioTrackChange(event)}
+                      disabled={trackBusy}
+                      aria-label={t('player.audioTrack')}
+                    >
+                      {audioTracks.map((track, index) => (
+                        <option key={track.streamIndex} value={track.streamIndex}>
+                          {trackLabel(track, index)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {subtitleTracks.length > 0 && (
+                  <label className={styles.trackSelect}>
+                    <span>{t('player.subtitleTrack')}</span>
+                    <select
+                      value={selectedSubtitleTrackIndex ?? ''}
+                      onChange={(event) => void handleSubtitleTrackChange(event)}
+                      disabled={trackBusy}
+                      aria-label={t('player.subtitleTrack')}
+                    >
+                      <option value="">{t('player.subtitleOff')}</option>
+                      {subtitleTracks.map((track, index) => (
+                        <option key={track.streamIndex} value={track.streamIndex}>
+                          {trackLabel(track, index)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {trackBusy && (
+                  <span className={styles.trackStatus} role="status">
+                    {t('player.trackPreparing')}
+                  </span>
+                )}
+                {trackError && (
+                  <span className={styles.trackError} role="alert">
+                    {t(trackError === 'load' ? 'player.trackLoadError' : 'player.trackSelectError')}
+                  </span>
+                )}
+              </div>
+            )}
           {hasPlaybackControls && (
             <button
               type="button"

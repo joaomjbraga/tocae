@@ -8,7 +8,14 @@ const aliases = {
   '@shared': path.resolve(import.meta.dirname, 'shared'),
 }
 
-const electronMainExternals = ['exiftool-vendored', 'exifr', 'music-metadata', 'node-id3']
+const electronMainExternals = [
+  '@derhuerst/ffprobe-static',
+  'exiftool-vendored',
+  'exifr',
+  'ffmpeg-static',
+  'music-metadata',
+  'node-id3',
+]
 
 export default defineConfig({
   plugins: [

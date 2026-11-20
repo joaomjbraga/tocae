@@ -6,7 +6,11 @@
   // provedor GitHub a partir do repositório e incluiria app-update.yml no pacote.
   "publish": null,
   "asar": true,
-  "asarUnpack": ["**/node_modules/exiftool-vendored.{pl,exe}/**"],
+  "asarUnpack": [
+    "**/node_modules/exiftool-vendored.{pl,exe}/**",
+    "**/node_modules/ffmpeg-static/**",
+    "**/node_modules/@derhuerst/ffprobe-static/**"
+  ],
   "productName": "Tocaê Reprodutor",
   "directories": {
     "output": "release/${version}",
@@ -16,12 +20,17 @@
     "dist",
     "dist-electron"
   ],
+  "extraResources": [
+    {
+      "from": "licenses/GPL-3.0.txt",
+      "to": "licenses/GPL-3.0.txt"
+    }
+  ],
   "linux": {
     "target": ["deb", "rpm"],
     "icon": "public/tocae.png",
     "category": "AudioVideo;Player;",
     "executableName": "tocae-reprodutor",
-    "depends": ["perl"],
     "mimeTypes": [
       "video/mp4",
       "video/x-m4v",
@@ -64,10 +73,12 @@
     }
   },
   "deb": {
+    "depends": ["perl"],
     "packageCategory": "video",
     "priority": "optional"
   },
   "rpm": {
+    "depends": ["perl"],
     "packageCategory": "video"
   },
   "win": {

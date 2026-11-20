@@ -3,6 +3,7 @@ import {
   ArrowDownAZ,
   Check,
   ChevronDown,
+  Heart,
   FolderOpen,
   FolderPlus,
   Image,
@@ -20,6 +21,7 @@ import type { MediaMetadata, MediaType } from '@shared/media'
 import { useI18n } from '../../i18n'
 import { toMediaUrl } from '../../lib/media'
 import { summarizeMediaMetadata } from '../../lib/mediaMetadata'
+import { readFavoritePaths, saveFavoritePaths } from './favorites'
 import styles from './Library.module.css'
 
 type MediaFilter = 'all' | MediaType
@@ -120,10 +122,14 @@ function LibraryMediaCard({
   item,
   context,
   onPlay,
+  favorite,
+  onToggleFavorite,
 }: {
   item: LibraryMediaItem
   context: string
   onPlay: (filePath: string) => void
+  favorite: boolean
+  onToggleFavorite: (filePath: string) => void
 }) {
   const { locale, t } = useI18n()
   const [metadata, setMetadata] = useState<MediaMetadata | null>(null)
@@ -235,15 +241,27 @@ function LibraryMediaCard({
           {summary && <span className={styles.cardMetadata}>{summary}</span>}
           <span className={styles.mediaType}>{t(MEDIA_TYPE_LABELS[item.type])}</span>
         </button>
-        <button
-          type="button"
-          className={styles.openFolderButton}
-          aria-label={t('library.openFolder')}
-          title={t('library.openFolder')}
-          onClick={() => void window.tocae?.showMediaInFolder(item.path)}
-        >
-          <FolderOpen size={15} aria-hidden="true" />
-        </button>
+        <div className={styles.mediaCardActions}>
+          <button
+            type="button"
+            className={`${styles.mediaCardActionButton} ${styles.favoriteButton} ${favorite ? styles.favoriteButtonActive : ''}`}
+            aria-label={t(favorite ? 'library.removeFavorite' : 'library.addFavorite')}
+            aria-pressed={favorite}
+            title={t(favorite ? 'library.removeFavorite' : 'library.addFavorite')}
+            onClick={() => onToggleFavorite(item.path)}
+          >
+            <Heart size={15} fill={favorite ? 'currentColor' : 'none'} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={`${styles.mediaCardActionButton} ${styles.openFolderButton}`}
+            aria-label={t('library.openFolder')}
+            title={t('library.openFolder')}
+            onClick={() => void window.tocae?.showMediaInFolder(item.path)}
+          >
+            <FolderOpen size={15} aria-hidden="true" />
+          </button>
+        </div>
       </div>
       {metadataLoadFailed && (
         <span className={styles.metadataLoadError} role="alert">
@@ -358,7 +376,28 @@ function Library({ onPlay }: LibraryProps) {
   const [selectedSubfolder, setSelectedSubfolder] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all')
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [favorites, setFavorites] = useState(readFavoritePaths)
+  const [favoriteError, setFavoriteError] = useState(false)
+
+  const handleToggleFavorite = useCallback(
+    (filePath: string) => {
+      const nextFavorites = new Set(favorites)
+      if (nextFavorites.has(filePath)) nextFavorites.delete(filePath)
+      else nextFavorites.add(filePath)
+
+      try {
+        saveFavoritePaths(nextFavorites)
+        setFavorites(nextFavorites)
+        setFavoriteError(false)
+      } catch (cause) {
+        console.error(`Could not save library favorite "${filePath}"`, cause)
+        setFavoriteError(true)
+      }
+    },
+    [favorites],
+  )
 
   const refresh = useCallback(
     async (showLoading = false) => {
@@ -500,6 +539,7 @@ function Library({ onPlay }: LibraryProps) {
           }
         }
         if (mediaFilter !== 'all' && item.type !== mediaFilter) return false
+        if (favoritesOnly && !favorites.has(item.path)) return false
         if (!query) return true
 
         const folder = snapshot.folders.find((entry) => entry.id === item.folderId)
@@ -515,7 +555,17 @@ function Library({ onPlay }: LibraryProps) {
             sensitivity: 'base',
           }) * (sortOrder === 'asc' ? 1 : -1),
       )
-  }, [mediaFilter, search, selectedFolderId, selectedSubfolder, snapshot, sortOrder, t])
+  }, [
+    favorites,
+    favoritesOnly,
+    mediaFilter,
+    search,
+    selectedFolderId,
+    selectedSubfolder,
+    snapshot,
+    sortOrder,
+    t,
+  ])
 
   const filters: { value: MediaFilter; label: MessageKey }[] = [
     { value: 'all', label: 'library.typeAll' },
@@ -575,19 +625,35 @@ function Library({ onPlay }: LibraryProps) {
             <button
               key={value}
               type="button"
-              className={`${styles.filterButton} ${mediaFilter === value ? styles.filterActive : ''}`}
-              onClick={() => setMediaFilter(value)}
-              aria-pressed={mediaFilter === value}
+              className={`${styles.filterButton} ${mediaFilter === value && (value !== 'all' || !favoritesOnly) ? styles.filterActive : ''}`}
+              onClick={() => {
+                setMediaFilter(value)
+                if (value === 'all') setFavoritesOnly(false)
+              }}
+              aria-pressed={mediaFilter === value && (value !== 'all' || !favoritesOnly)}
             >
               {t(label)}
             </button>
           ))}
+          <button
+            type="button"
+            className={`${styles.filterButton} ${favoritesOnly ? styles.filterActive : ''}`}
+            onClick={() => setFavoritesOnly((current) => !current)}
+            aria-pressed={favoritesOnly}
+          >
+            {t('library.favorites')}
+          </button>
         </nav>
       </div>
 
       {error && (
         <p className={styles.error} role="alert">
           {t(error)}
+        </p>
+      )}
+      {favoriteError && (
+        <p className={styles.error} role="alert">
+          {t('library.favoriteError')}
         </p>
       )}
       {snapshot && snapshot.unavailableFolderIds.length > 0 && (
@@ -741,6 +807,8 @@ function Library({ onPlay }: LibraryProps) {
                         item={item}
                         context={context}
                         onPlay={onPlay}
+                        favorite={favorites.has(item.path)}
+                        onToggleFavorite={handleToggleFavorite}
                       />
                     </li>
                   )

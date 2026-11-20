@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { isMediaPath } from '@shared/media'
 import { registerMediaSchemes, registerMediaProtocol } from './media/protocol'
 import { registerMediaMetadataIpc } from './media/metadata'
+import { registerMediaTracksIpc } from './media/tracks'
 import { registerDialogIpc } from './dialogs'
 import { registerPlaylistIpc } from './playlist'
 import { initializeLibrary, registerLibraryIpc } from './library'
@@ -66,6 +67,7 @@ if (!gotTheLock) {
     registerPlaylistIpc()
     registerLibraryIpc()
     registerMediaMetadataIpc()
+    registerMediaTracksIpc()
     registerDialogIpc()
     registerDefaultPlayerIpc()
     registerUpdateIpc()

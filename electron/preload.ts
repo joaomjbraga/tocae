@@ -4,6 +4,7 @@ import { IPC_CHANNELS } from '@shared/ipc'
 import type { AppCommand, TocaeApi } from '@shared/ipc'
 import type { Locale } from '@shared/i18n'
 import type { MediaMetadata } from '@shared/media'
+import type { MediaTrack } from '@shared/mediaTracks'
 import type { PlaylistItem } from '@shared/playlist'
 
 const api: TocaeApi = {
@@ -20,6 +21,22 @@ const api: TocaeApi = {
   openMediaFolderDialog: () => ipcRenderer.invoke(IPC_CHANNELS.MEDIA_FOLDER_PICK),
   showMediaInFolder: (filePath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MEDIA_SHOW_IN_FOLDER, filePath),
+  getMediaTracks: (filePath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MEDIA_TRACKS_GET, filePath) as Promise<MediaTrack[]>,
+  createAudioTrackPlayback: (filePath: string, streamIndex: number) =>
+    ipcRenderer.invoke(
+      IPC_CHANNELS.MEDIA_TRACK_AUDIO_CREATE,
+      filePath,
+      streamIndex,
+    ) as Promise<string>,
+  extractSubtitleTrack: (filePath: string, streamIndex: number) =>
+    ipcRenderer.invoke(
+      IPC_CHANNELS.MEDIA_TRACK_SUBTITLE_EXTRACT,
+      filePath,
+      streamIndex,
+    ) as Promise<string>,
+  releaseMediaTrackOutput: (outputPath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MEDIA_TRACK_OUTPUT_RELEASE, outputPath),
   getMediaMetadata: (filePath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MEDIA_METADATA_GET, filePath) as Promise<MediaMetadata>,
   getLibrary: () => ipcRenderer.invoke(IPC_CHANNELS.LIBRARY_GET),

@@ -1,6 +1,7 @@
 import type { Locale } from './i18n'
 import type { LibrarySnapshot } from './library'
 import type { MediaMetadata } from './media'
+import type { MediaTrack } from './mediaTracks'
 import type { PersistedPlaylist, PlaylistItem } from './playlist'
 
 export const IPC_CHANNELS = {
@@ -11,6 +12,10 @@ export const IPC_CHANNELS = {
   MEDIA_FOLDER_PICK: 'media-folder:pick',
   MEDIA_METADATA_GET: 'media:metadata:get',
   MEDIA_SHOW_IN_FOLDER: 'media:show-in-folder',
+  MEDIA_TRACKS_GET: 'media:tracks:get',
+  MEDIA_TRACK_AUDIO_CREATE: 'media:track-audio:create',
+  MEDIA_TRACK_SUBTITLE_EXTRACT: 'media:track-subtitle:extract',
+  MEDIA_TRACK_OUTPUT_RELEASE: 'media:track-output:release',
   LIBRARY_GET: 'library:get',
   LIBRARY_ADD_FOLDER: 'library:add-folder',
   LIBRARY_REMOVE_FOLDER: 'library:remove-folder',
@@ -63,6 +68,10 @@ export interface TocaeApi {
   openMediaDialog(): Promise<void>
   openMediaFolderDialog(): Promise<void>
   showMediaInFolder(filePath: string): Promise<void>
+  getMediaTracks(filePath: string): Promise<MediaTrack[]>
+  createAudioTrackPlayback(filePath: string, streamIndex: number): Promise<string>
+  extractSubtitleTrack(filePath: string, streamIndex: number): Promise<string>
+  releaseMediaTrackOutput(outputPath: string): Promise<void>
   getLibrary(): Promise<LibrarySnapshot>
   addLibraryFolder(): Promise<LibrarySnapshot | null>
   removeLibraryFolder(folderId: string): Promise<LibrarySnapshot>

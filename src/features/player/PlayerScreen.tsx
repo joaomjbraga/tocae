@@ -234,6 +234,7 @@ function PlayerScreen({
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null
+      if (target instanceof HTMLSelectElement) return
       if (target instanceof HTMLInputElement && target.type !== 'range') return
 
       if (
@@ -344,6 +345,7 @@ function PlayerScreen({
                 </p>
                 <VideoPlayer
                   source={playlist.source}
+                  filePath={currentMediaPath}
                   mediaType={mediaType}
                   title={mediaTitle}
                   audioArtwork={mediaMetadata?.coverArt ?? null}

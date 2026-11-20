@@ -9,6 +9,8 @@ export function mimeTypeFor(filePath: string): string {
       return 'video/mp4'
     case '.webm':
       return 'video/webm'
+    case '.vtt':
+      return 'text/vtt'
     case '.mkv':
       return 'video/x-matroska'
     case '.avi':
