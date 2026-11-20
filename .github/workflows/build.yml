@@ -84,6 +84,8 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm run lint
+      - run: npm test
       - run: npm run build:windows
 
       - uses: actions/upload-artifact@v4
@@ -122,6 +124,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y rpm
 
       - run: npm ci
+
+      - run: npm run lint
+      - run: npm test
 
       # O script já roda a verificação de tipos e o bundle antes do pacote.
       - run: npm run build

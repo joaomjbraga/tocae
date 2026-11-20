@@ -9,6 +9,7 @@ import {
 import type { IpcMainInvokeEvent, Rectangle, Session, WebContents } from 'electron'
 import { IPC_CHANNELS } from '@shared/ipc'
 import type { YouTubeMusicStatus } from '@shared/ipc'
+import { LocalPlaybackAudioFocus } from './audioFocus'
 import { getMainWindow } from '../windows'
 
 const HOME_URL = 'https://music.youtube.com/'
@@ -30,7 +31,6 @@ let serviceView: WebContentsView | null = null
 let ownerWindow: BrowserWindow | null = null
 let visibleRequested = false
 let hasLoadedServicePage = false
-let localPlaybackActive = false
 let loadTimeout: ReturnType<typeof setTimeout> | null = null
 let serviceBounds: Rectangle = { x: 0, y: 0, width: 0, height: 0 }
 let status: YouTubeMusicStatus = {
@@ -39,6 +39,16 @@ let status: YouTubeMusicStatus = {
   canGoForward: false,
 }
 const authenticationWindows = new Set<BrowserWindow>()
+const audioFocus = new LocalPlaybackAudioFocus()
+
+function* getAudioFocusTargets() {
+  const serviceWebContents = serviceView?.webContents
+  if (serviceWebContents && !serviceWebContents.isDestroyed()) yield serviceWebContents
+
+  for (const window of authenticationWindows) {
+    if (!window.isDestroyed()) yield window.webContents
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -225,7 +235,7 @@ function secureWebContents(webContents: WebContents, onBlocked?: () => void): vo
   })
   webContents.on('did-create-window', (childWindow) => {
     authenticationWindows.add(childWindow)
-    childWindow.webContents.setAudioMuted(localPlaybackActive)
+    audioFocus.applyTo(childWindow.webContents)
     secureWebContents(childWindow.webContents, () => childWindow.destroy())
     childWindow.once('closed', () => authenticationWindows.delete(childWindow))
   })
@@ -243,7 +253,7 @@ function attachWindow(window: BrowserWindow): void {
     closeAuthenticationWindows()
     ownerWindow = null
     visibleRequested = false
-    localPlaybackActive = false
+    audioFocus.reset()
     status = { state: 'idle', canGoBack: false, canGoForward: false }
   })
 }
@@ -263,7 +273,7 @@ function createServiceView(window: BrowserWindow): WebContentsView {
 
   serviceView = view
   hasLoadedServicePage = false
-  view.webContents.setAudioMuted(localPlaybackActive)
+  audioFocus.applyTo(view.webContents)
   window.contentView.addChildView(view)
   view.setBorderRadius(10)
   view.setVisible(false)
@@ -398,11 +408,7 @@ export function registerYouTubeMusicIpc(): void {
       throw new TypeError('Local playback state must be a boolean.')
     }
 
-    localPlaybackActive = value
-    serviceView?.webContents.setAudioMuted(value)
-    for (const window of authenticationWindows) {
-      if (!window.isDestroyed()) window.webContents.setAudioMuted(value)
-    }
+    audioFocus.setLocalPlaybackActive(value, getAudioFocusTargets())
   })
   ipcMain.handle(IPC_CHANNELS.YOUTUBE_MUSIC_SET_BOUNDS, (event, value: unknown) => {
     assertMainWindowSender(event)
