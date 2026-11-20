@@ -65,8 +65,6 @@ test('a malformed playlist file produces an empty queue', async (t) => {
 
 test('playlist read failures are logged and return an empty queue', async (t) => {
   const file = await createTempPlaylist(t)
-  const blockingFile = `${file}.parent`
-  await writeFile(blockingFile, 'not a directory')
   const originalWarn = console.warn
   let logged = false
   console.warn = () => {
@@ -75,7 +73,7 @@ test('playlist read failures are logged and return an empty queue', async (t) =>
 
   try {
     assert.deepEqual(
-      await readPlaylistFile(path.join(blockingFile, 'playlist.json')),
+      await readPlaylistFile(`${file}\0`),
       { items: [], currentIndex: -1 },
     )
     assert.equal(logged, true)

@@ -129,8 +129,8 @@ jobs:
       - run: npm run lint
       - run: npm test
 
-      # O script já roda a verificação de tipos e o bundle antes do pacote.
-      - run: npm run build
+      # O build Linux roda a verificação de tipos e gera os pacotes .deb/.rpm.
+      - run: npm run build:linux
       - run: npm run audit:release
 
       - uses: actions/upload-artifact@v4
