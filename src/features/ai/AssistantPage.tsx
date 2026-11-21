@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { FormEvent, ReactNode } from 'react'
+import type { FormEvent, KeyboardEvent, ReactNode } from 'react'
 import { Send, Square, Trash2 } from 'lucide-react'
 import type { AiMessage, AiPlaylistProposal, AiStatus } from '@shared/ai'
 import { useI18n } from '../../i18n'
@@ -67,6 +67,7 @@ function AssistantPage() {
   const [streamingText, setStreamingText] = useState('')
   const [playlistProposal, setPlaylistProposal] = useState<AiPlaylistProposal | null>(null)
   const endRef = useRef<HTMLDivElement | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
     void window.tocae.ai.getStatus()
@@ -128,6 +129,18 @@ function AssistantPage() {
     }
   }
 
+  function choosePrompt(prompt: string) {
+    setMessage(prompt)
+    textareaRef.current?.focus()
+  }
+
+  function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+      event.preventDefault()
+      event.currentTarget.form?.requestSubmit()
+    }
+  }
+
   async function cancel() {
     setError(null)
     try {
@@ -171,6 +184,23 @@ function AssistantPage() {
             <img className={styles.emptyAvatar} src="/images/teco.png" alt="" />
             <h2>{t('assistant.emptyTitle')}</h2>
             <p>{t('assistant.emptyDescription')}</p>
+            <div className={styles.promptGrid} role="group" aria-label={t('assistant.suggestions')}>
+              {[
+                t('assistant.promptCurrent'),
+                t('assistant.promptQueue'),
+                t('assistant.promptLibrary'),
+                t('assistant.promptHelp'),
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  className={styles.promptButton}
+                  onClick={() => choosePrompt(prompt)}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {messages.map((item: AiMessage) => (
@@ -217,10 +247,13 @@ function AssistantPage() {
 
       <form className={styles.composer} onSubmit={send}>
         <textarea
+          ref={textareaRef}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
+          onKeyDown={handleComposerKeyDown}
           placeholder={status?.configured ? t('assistant.placeholder') : t('assistant.notConfigured')}
           aria-label={t('assistant.inputLabel')}
+          aria-keyshortcuts="Enter"
           rows={2}
           disabled={status?.busy}
         />

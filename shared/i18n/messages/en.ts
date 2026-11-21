@@ -108,8 +108,8 @@ export const enMessages: Messages = {
 
   // AI assistant
   'assistant.title': 'Teco',
-  'assistant.description': 'Chat with Teco, your configured AI assistant.',
-  'assistant.placeholder': 'Ask about songs, videos, or the library...',
+  'assistant.description': 'Help with your Tocaê library, queue, and playback.',
+  'assistant.placeholder': 'Ask about Tocaê...',
   'assistant.notConfigured': 'Configure the provider and API key in settings.',
   'assistant.inputLabel': 'Message for the assistant',
   'assistant.send': 'Send message',
@@ -118,7 +118,12 @@ export const enMessages: Messages = {
   'assistant.processing': 'Processing...',
   'assistant.emptyTitle': 'How can I help?',
   'assistant.emptyDescription':
-    'Start a conversation. Teco can consult the library and control playback through authorized actions.',
+    'Your assistant for the Tocaê player. Ask about your library, queue, playback, or how to use the app.',
+  'assistant.suggestions': 'Tocaê suggestions',
+  'assistant.promptCurrent': 'What is playing now?',
+  'assistant.promptQueue': 'What is in my queue?',
+  'assistant.promptLibrary': 'How do I find media in my library?',
+  'assistant.promptHelp': 'What can Teco do in Tocaê?',
   'assistant.you': 'You',
   'assistant.unknownError': 'Could not complete the request.',
   'assistant.playlistProposal': 'Playlist proposal',

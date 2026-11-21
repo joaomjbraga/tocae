@@ -56,6 +56,33 @@ test('Gemini model discovery returns only generative models with usable model ID
   ])
 })
 
+test('Gemini sends the system instruction separately from conversation content', async () => {
+  const provider = new GeminiSdkProvider({
+    provider: 'gemini',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-3.8-flash',
+  }, 'test-key')
+  let request
+  provider.ai.models.generateContentStream = async (value) => {
+    request = value
+    return (async function* () {
+      yield { text: 'Tocaê response' }
+    })()
+  }
+
+  await provider.sendStream(
+    [
+      { role: 'system', content: 'Stay within the Tocaê app.' },
+      { role: 'user', content: 'What is playing?' },
+    ],
+    new AbortController().signal,
+    () => {},
+  )
+
+  assert.equal(request.config.systemInstruction, 'Stay within the Tocaê app.')
+  assert.deepEqual(request.contents, [{ role: 'user', parts: [{ text: 'What is playing?' }] }])
+})
+
 test('AI core adds user and assistant messages to history', async () => {
   let calls = 0
   const core = new AiCore(() => ({
@@ -77,6 +104,22 @@ test('AI core adds user and assistant messages to history', async () => {
       { role: 'assistant', content: 'Hi' },
     ],
   )
+})
+
+test('AI core includes Teco scope instructions without persisting them in chat history', async () => {
+  let sentMessages
+  const core = new AiCore(() => ({
+    async sendStream(messages, _signal, onChunk) {
+      sentMessages = messages
+      onChunk('Use the Tocaê library.')
+    },
+  }))
+
+  await core.send('What is in my queue?', config)
+
+  assert.equal(sentMessages[0].role, 'system')
+  assert.match(sentMessages[0].content, /exclusivamente o Tocaê/)
+  assert.deepEqual(core.getHistory().map(({ role }) => role), ['user', 'assistant'])
 })
 
 test('AI core blocks duplicate requests', async () => {

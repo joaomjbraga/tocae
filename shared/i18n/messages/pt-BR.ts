@@ -114,8 +114,8 @@ export const ptBRMessages = {
 
   // Assistente de inteligência artificial
   'assistant.title': 'Teco',
-  'assistant.description': 'Converse com Teco, seu assistente de IA configurado.',
-  'assistant.placeholder': 'Pergunte sobre músicas, vídeos ou a biblioteca...',
+  'assistant.description': 'Ajuda com a biblioteca, a fila e a reprodução no Tocaê.',
+  'assistant.placeholder': 'Pergunte sobre o Tocaê...',
   'assistant.notConfigured': 'Configure o provedor e a chave de API nas configurações.',
   'assistant.inputLabel': 'Mensagem para o assistente',
   'assistant.send': 'Enviar mensagem',
@@ -124,7 +124,12 @@ export const ptBRMessages = {
   'assistant.processing': 'Processando...',
   'assistant.emptyTitle': 'Como posso ajudar?',
   'assistant.emptyDescription':
-    'Comece uma conversa. O Teco pode consultar a biblioteca e controlar a reprodução por ações autorizadas.',
+    'Seu assistente para o reprodutor Tocaê. Consulte a biblioteca e a fila, pergunte sobre a reprodução ou peça ajuda com o aplicativo.',
+  'assistant.suggestions': 'Sugestões sobre o Tocaê',
+  'assistant.promptCurrent': 'O que está tocando agora?',
+  'assistant.promptQueue': 'O que tem na minha fila?',
+  'assistant.promptLibrary': 'Como encontro uma mídia na biblioteca?',
+  'assistant.promptHelp': 'O que o Teco pode fazer no Tocaê?',
   'assistant.you': 'Você',
   'assistant.unknownError': 'Não foi possível concluir a solicitação.',
   'assistant.playlistProposal': 'Proposta de playlist',

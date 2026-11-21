@@ -88,6 +88,10 @@ export class GeminiSdkProvider implements AiProvider {
     tools: readonly AiToolDefinition[] = [],
     executeTool?: (name: string, args: unknown) => Promise<unknown>,
   ): Promise<void> {
+    const systemInstruction = messages
+      .filter((message) => message.role === 'system')
+      .map((message) => message.content)
+      .join('\n\n')
     let contents = toGeminiContents(messages)
 
     for (let turn = 0; turn < 5; turn += 1) {
@@ -95,6 +99,7 @@ export class GeminiSdkProvider implements AiProvider {
         model: this.config.model,
         contents,
         config: {
+          ...(systemInstruction ? { systemInstruction } : {}),
           abortSignal: signal,
           automaticContinuation: false,
           ...(tools.length > 0
@@ -156,7 +161,7 @@ export class GeminiSdkProvider implements AiProvider {
 
 function toGeminiContents(messages: readonly AiProviderMessage[]): Content[] {
   return messages
-    .filter((message) => message.role !== 'tool')
+    .filter((message) => message.role !== 'system' && message.role !== 'tool')
     .map((message) => ({
       role: message.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: message.content }],
