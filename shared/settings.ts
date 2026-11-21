@@ -22,5 +22,6 @@ export const DEFAULT_SETTINGS: Settings = {
     audioMoodAnalysis: false,
     imageDescription: false,
     videoAnalysis: false,
+    fileOrganizationPreview: false,
   },
 }

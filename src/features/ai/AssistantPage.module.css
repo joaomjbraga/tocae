@@ -131,6 +131,20 @@
 .audioMoodResult strong { color:var(--text-primary); font-size:11px; }
 .audioMoodResult span { display:block; margin-top:3px; color:var(--text-muted); font-size:10px; }
 .audioMoodResult p { margin:5px 0 0; color:var(--text-secondary); font-size:11px; line-height:1.5; white-space:pre-wrap; }
+.organizationPlanList {
+  max-height:320px;
+  overflow:auto;
+  display:grid;
+  gap:8px;
+  margin:12px 0 0;
+  padding:0;
+  list-style:none;
+}
+.organizationPlanList li { display:grid; gap:3px; padding:8px; border:1px solid var(--border-surface); border-radius:8px; }
+.organizationPlanList strong,.organizationPlanList span { overflow-wrap:anywhere; font-size:10px; line-height:1.4; }
+.organizationPlanList strong { color:var(--text-secondary); }
+.organizationPlanList span { color:var(--text-primary); }
+.organizationPlanList small { color:var(--text-muted); font-size:10px; }
 .empty {
   max-width:440px; margin:auto; text-align:center; color:var(--text-muted);
 }

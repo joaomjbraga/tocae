@@ -58,6 +58,7 @@ import {
   MAX_VIDEO_ANALYSIS_DURATION_SECONDS,
   sampleVideoFrameTimestamps,
 } from './videoSampling'
+import { buildOrganizationPlan } from './organizationPlan'
 
 const CREDENTIAL_FILE_NAME = 'ai-credentials.json'
 const HISTORY_FILE_NAME = 'ai-history.json'
@@ -660,7 +661,8 @@ function validateAiDataPreferences(value: unknown): AiDataPreferences {
     typeof value.localRecommendations !== 'boolean' ||
     typeof value.audioMoodAnalysis !== 'boolean' ||
     typeof value.imageDescription !== 'boolean' ||
-    typeof value.videoAnalysis !== 'boolean'
+    typeof value.videoAnalysis !== 'boolean' ||
+    typeof value.fileOrganizationPreview !== 'boolean'
   ) {
     throw new TypeError('As preferências de dados do Teco não são válidas.')
   }
@@ -671,6 +673,7 @@ function validateAiDataPreferences(value: unknown): AiDataPreferences {
     audioMoodAnalysis: value.audioMoodAnalysis,
     imageDescription: value.imageDescription,
     videoAnalysis: value.videoAnalysis,
+    fileOrganizationPreview: value.fileOrganizationPreview,
   }
 }
 
@@ -888,6 +891,24 @@ export function registerAiIpc(): void {
     validateSender(event)
     await initialize()
     await clearRecommendationFeedbackFile(recommendationFeedbackPath())
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_ORGANIZATION_PLAN_GET, async (event) => {
+    validateSender(event)
+    await initialize()
+    if (!dataPreferences.fileOrganizationPreview) {
+      throw new Error('Ative a prévia de organização nas configurações do Teco para continuar.')
+    }
+    const locale = getAppLocale()
+    return buildOrganizationPlan(
+      await getLibrarySnapshot(),
+      getMediaMetadata,
+      {
+        unknownArtist: translate(locale, 'assistant.organizationUnknownArtist'),
+        unknownAlbum: translate(locale, 'assistant.organizationUnknownAlbum'),
+        videoFolder: translate(locale, 'assistant.organizationVideoFolder'),
+        imageFolder: translate(locale, 'assistant.organizationImageFolder'),
+      },
+    )
   })
   ipcMain.handle(IPC_CHANNELS.AI_AUDIO_MOOD_ANALYZE, (event, value: unknown) =>
     analyzeLibraryMediaWithConsent(event, value, {

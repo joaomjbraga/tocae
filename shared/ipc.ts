@@ -6,6 +6,7 @@ import type { PersistedPlaylist, PlaylistItem, SavedPlaylist } from './playlist'
 import type {
   AiModelOption,
   AiDataPreferences,
+  AiOrganizationPlan,
   AiPlayerState,
   AiPlaylistProposal,
   AiRecommendation,
@@ -79,6 +80,7 @@ export const IPC_CHANNELS = {
   AI_IMAGE_DESCRIPTION_CANCEL: 'ai:image-description:cancel',
   AI_VIDEO_ANALYZE: 'ai:video:analyze',
   AI_VIDEO_CANCEL: 'ai:video:cancel',
+  AI_ORGANIZATION_PLAN_GET: 'ai:organization-plan:get',
   AI_PLAYLIST_PROPOSAL_GET: 'ai:playlist-proposal:get',
   AI_PLAYLIST_PROPOSAL_APPLY: 'ai:playlist-proposal:apply',
   AI_PLAYLIST_PROPOSAL_CLEAR: 'ai:playlist-proposal:clear',
@@ -201,6 +203,7 @@ export interface TocaeApi {
     cancelImageDescription(): Promise<void>
     analyzeVideo(filePath: string): Promise<string | null>
     cancelVideoAnalysis(): Promise<void>
+    getOrganizationPlan(): Promise<AiOrganizationPlan>
     onStreamChunk(callback: (chunk: string) => void): () => void
     setPlayerState(state: AiPlayerState): Promise<AiPlayerState>
     getPlayerState(): Promise<AiPlayerState>

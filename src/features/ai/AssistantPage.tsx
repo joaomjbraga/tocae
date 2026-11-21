@@ -5,6 +5,7 @@ import { AI_LIMITS } from '@shared/ai'
 import { mediaTypeForPath } from '@shared/media'
 import type {
   AiMessage,
+  AiOrganizationPlan,
   AiPlaylistProposal,
   AiRecommendation,
   AiRecommendationFeedback,
@@ -109,6 +110,9 @@ function AssistantPage() {
     text: string
   } | null>(null)
   const [videoAnalysisError, setVideoAnalysisError] = useState<string | null>(null)
+  const [organizationPlan, setOrganizationPlan] = useState<AiOrganizationPlan | null>(null)
+  const [organizationPlanLoading, setOrganizationPlanLoading] = useState(false)
+  const [organizationPlanError, setOrganizationPlanError] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const providerName = status
@@ -302,6 +306,21 @@ function AssistantPage() {
       setStatus(await window.tocae.ai.clear())
     } catch (reason) {
       setError(providerErrorMessage(reason) || t('assistant.unknownError'))
+    }
+  }
+
+  async function previewFileOrganization() {
+    setOrganizationPlanLoading(true)
+    setOrganizationPlan(null)
+    setOrganizationPlanError(null)
+    try {
+      setOrganizationPlan(await window.tocae.ai.getOrganizationPlan())
+    } catch (reason) {
+      setOrganizationPlanError(
+        providerErrorMessage(reason) || t('assistant.unknownError'),
+      )
+    } finally {
+      setOrganizationPlanLoading(false)
     }
   }
 
@@ -634,6 +653,63 @@ function AssistantPage() {
                 <span>{videoAnalysisResult.name}</span>
                 <p>{videoAnalysisResult.text}</p>
               </div>
+            )}
+          </section>
+        )}
+        {status?.dataPreferences.fileOrganizationPreview && (
+          <section className={styles.audioMood} aria-labelledby="organization-preview-title">
+            <header className={styles.audioMoodHeader}>
+              <div>
+                <h2 id="organization-preview-title">{t('assistant.organizationPreviewTitle')}</h2>
+                <p>{t('assistant.organizationPreviewDescription')}</p>
+              </div>
+            </header>
+            <div className={styles.audioMoodAction}>
+              <span>{t('assistant.organizationPreviewLocalOnly')}</span>
+              <button
+                type="button"
+                className={styles.audioMoodButton}
+                onClick={() => void previewFileOrganization()}
+                disabled={organizationPlanLoading}
+              >
+                {organizationPlanLoading
+                  ? t('assistant.organizationPreviewLoading')
+                  : t('assistant.organizationPreviewGenerate')}
+              </button>
+            </div>
+            {organizationPlanError && (
+              <p className={styles.recommendationError} role="alert">
+                {organizationPlanError}
+              </p>
+            )}
+            {organizationPlan && (
+              <>
+                <p className={styles.recommendationEmpty} role="status">
+                  {t('assistant.organizationPreviewSummary', {
+                    total: organizationPlan.totalItems,
+                    ready: organizationPlan.readyItems,
+                    alreadyOrganized: organizationPlan.alreadyOrganizedItems,
+                    conflicts: organizationPlan.conflictItems,
+                  })}
+                </p>
+                {organizationPlan.omittedItems > 0 && (
+                  <p className={styles.recommendationEmpty}>
+                    {t('assistant.organizationPreviewOmitted', {
+                      omitted: organizationPlan.omittedItems,
+                      included: organizationPlan.includedItems,
+                    })}
+                  </p>
+                )}
+                <ul className={styles.organizationPlanList}>
+                  {organizationPlan.entries.map((entry, index) => (
+                    <li key={`${entry.folderName}:${entry.sourceRelativePath}:${index}`}>
+                      <strong>{entry.folderName} / {entry.sourceRelativePath}</strong>
+                      <span>{entry.targetRelativePath}</span>
+                      <small>{t(`assistant.organizationStatus.${entry.status}`)}</small>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </section>
         )}

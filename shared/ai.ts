@@ -1,3 +1,5 @@
+import type { MediaType } from './media'
+
 export type AiRole = 'system' | 'user' | 'assistant'
 
 export interface AiMessage {
@@ -21,6 +23,25 @@ export interface AiDataPreferences {
   audioMoodAnalysis: boolean
   imageDescription: boolean
   videoAnalysis: boolean
+  fileOrganizationPreview: boolean
+}
+
+export interface AiOrganizationPlanEntry {
+  folderName: string
+  sourceRelativePath: string
+  targetRelativePath: string
+  type: MediaType
+  status: 'ready' | 'already-organized' | 'target-conflict'
+}
+
+export interface AiOrganizationPlan {
+  totalItems: number
+  includedItems: number
+  omittedItems: number
+  readyItems: number
+  alreadyOrganizedItems: number
+  conflictItems: number
+  entries: AiOrganizationPlanEntry[]
 }
 
 export interface AiRequestContext {

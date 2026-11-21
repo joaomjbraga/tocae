@@ -76,6 +76,10 @@ export async function readSettings(): Promise<Settings> {
           typeof aiData.videoAnalysis === 'boolean'
             ? aiData.videoAnalysis
             : DEFAULT_SETTINGS.aiData.videoAnalysis,
+        fileOrganizationPreview:
+          typeof aiData.fileOrganizationPreview === 'boolean'
+            ? aiData.fileOrganizationPreview
+            : DEFAULT_SETTINGS.aiData.fileOrganizationPreview,
       },
     }
   } catch (error) {
