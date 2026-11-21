@@ -108,8 +108,15 @@ function PlayerScreen({
       void api.ai.setPlayerState({ playing, updatedAt: Date.now() }).catch((error: unknown) => {
         console.error('Could not update Teco playback state', error)
       })
+      if (playing && currentMediaPath) {
+        void api.ai
+          .recordPlayback(currentMediaPath, mediaMetadata?.title ?? playlist.current?.name ?? '')
+          .catch((error: unknown) => {
+            console.error('Could not record Teco listening history', error)
+          })
+      }
     },
-    [api],
+    [api, currentMediaPath, mediaMetadata?.title, playlist.current?.name],
   )
   const handleOpenYouTubeMusic = useCallback(() => {
     setActivePage('youtube-music')

@@ -70,6 +70,16 @@ export const ptBRMessages = {
   'settings.aiSaved': 'Configuração salva.',
   'settings.aiKeySaved': 'Chave armazenada com segurança.',
   'settings.aiKeyRemoved': 'Chave removida.',
+  'settings.aiDataTitle': 'Acesso do Teco aos dados',
+  'settings.aiDataDescription': 'Escolha o que o Teco pode usar. As duas permissões começam desativadas.',
+  'settings.aiFavoritesAccess': 'Permitir acesso aos favoritos',
+  'settings.aiFavoritesAccessDescription': 'O Teco pode listar seus favoritos quando você pedir; eles não são adicionados à conversa automaticamente.',
+  'settings.aiPlaybackHistory': 'Coletar histórico de reprodução local',
+  'settings.aiPlaybackHistoryDescription': 'Registra inícios de reprodução de mídias locais, até 500 entradas. A coleta começa desativada.',
+  'settings.aiDataPrivacyNote': 'O histórico guarda nome, tipo e horário (sem caminho do arquivo) no perfil local do Tocaê, sem criptografia. Quando uma ferramenta do Teco consulta favoritos ou histórico, os resultados são enviados ao provedor de IA configurado. Desativar o acesso não apaga o histórico existente.',
+  'settings.aiClearListeningHistory': 'Apagar histórico de reprodução',
+  'settings.aiDataPreferencesSaved': 'Preferências de dados do Teco salvas.',
+  'settings.aiListeningHistoryCleared': 'Histórico de reprodução apagado.',
   'playbackSettings.title': 'Avanço e repetição',
   'playbackSettings.autoNextTitle': 'Avançar automaticamente',
   'playbackSettings.autoNextLabel': 'Próximo',
@@ -116,7 +126,7 @@ export const ptBRMessages = {
   // Assistente de inteligência artificial
   'assistant.title': 'Teco',
   'assistant.privacyNotice':
-    'Privacidade: suas mensagens e dados da biblioteca/fila usados na resposta (nomes, caminhos e metadados) podem ser enviados a {provider} ({endpoint}). Evite incluir informações pessoais.',
+    'Privacidade: suas mensagens e dados da biblioteca/fila usados na resposta (nomes, caminhos e metadados) podem ser enviados a {provider} ({endpoint}). Se autorizados e solicitados, nomes de favoritos e registros recentes de reprodução também podem ser enviados. Evite incluir informações pessoais.',
   'assistant.contextNotice':
     'Limites: mensagens até {userMessageKiB} KiB, contexto por envio até {contextKiB} KiB e respostas até {outputTokens} tokens. O histórico é limitado a {historyKiB} KiB; mensagens antigas podem ser omitidas do contexto ou removidas do histórico.',
   'assistant.description': 'Ajuda com a biblioteca, a fila e a reprodução no Tocaê.',

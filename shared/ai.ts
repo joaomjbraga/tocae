@@ -14,6 +14,15 @@ export interface AiProviderConfig {
   embeddingModel?: string
 }
 
+export interface AiDataPreferences {
+  allowFavorites: boolean
+  collectPlaybackHistory: boolean
+}
+
+export interface AiRequestContext {
+  favoritePaths: string[]
+}
+
 export const AI_LIMITS = {
   userMessageBytes: 8 * 1024,
   contextBytes: 48 * 1024,
@@ -35,6 +44,7 @@ export interface AiStatus {
   configured: boolean
   busy: boolean
   provider: AiProviderConfig
+  dataPreferences: AiDataPreferences
   messages: AiMessage[]
 }
 

@@ -1,5 +1,5 @@
 import type { Locale } from './i18n'
-import type { AiProviderConfig } from './ai'
+import type { AiDataPreferences, AiProviderConfig } from './ai'
 import { DEFAULT_AI_PROVIDER_CONFIG } from './ai'
 
 export interface Settings {
@@ -9,9 +9,14 @@ export interface Settings {
    */
   locale: Locale | null
   ai: AiProviderConfig
+  aiData: AiDataPreferences
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   locale: null,
   ai: { ...DEFAULT_AI_PROVIDER_CONFIG },
+  aiData: {
+    allowFavorites: false,
+    collectPlaybackHistory: false,
+  },
 }

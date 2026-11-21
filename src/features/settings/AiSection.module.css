@@ -10,6 +10,12 @@
 .field { display:flex; flex-direction:column; gap:6px; margin:0 14px; color:var(--text-secondary); font-size:var(--text-xs); }
 .field input,.field select { height:36px; border:1px solid var(--border-surface); border-radius:8px; padding:0 10px; outline:0; background:var(--bg-glass); color:var(--text-primary); user-select:text; }
 .field input:focus,.field select:focus { border-color:var(--accent); }
+.toggleField { display:flex; align-items:flex-start; gap:10px; margin:0 14px; color:var(--text-secondary); font-size:var(--text-xs); }
+.toggleField input { width:16px; height:16px; flex:none; margin:1px 0 0; accent-color:var(--accent); }
+.toggleCopy { display:flex; flex-direction:column; gap:3px; }
+.toggleCopy strong { color:var(--text-primary); font-size:var(--text-xs); font-weight:500; }
+.toggleCopy small { color:var(--text-muted); font-size:var(--text-xs); }
+.privacyNote { margin:0 14px; color:var(--text-muted); font-size:var(--text-xs); }
 .modelActions { display:flex; align-items:center; gap:10px; }
 .secondary { min-height:30px; border:1px solid var(--border-surface); border-radius:7px; padding:0 10px; background:var(--bg-glass); color:var(--text-secondary); cursor:pointer; }
 .secondary:disabled { color:var(--text-disabled); cursor:default; }

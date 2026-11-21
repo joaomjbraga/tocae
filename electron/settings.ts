@@ -27,6 +27,10 @@ export async function readSettings(): Promise<Settings> {
     const stored = parsed as Partial<Settings> | null
     if (!stored || typeof stored !== 'object') return { ...DEFAULT_SETTINGS }
     const ai = stored.ai
+    const aiData =
+      typeof stored.aiData === 'object' && stored.aiData !== null
+        ? stored.aiData
+        : DEFAULT_SETTINGS.aiData
     return {
       locale: isLocale(stored.locale) ? stored.locale : null,
       ai:
@@ -47,6 +51,16 @@ export async function readSettings(): Promise<Settings> {
                   : undefined,
             }
           : { ...DEFAULT_SETTINGS.ai },
+      aiData: {
+        allowFavorites:
+          typeof aiData.allowFavorites === 'boolean'
+            ? aiData.allowFavorites
+            : DEFAULT_SETTINGS.aiData.allowFavorites,
+        collectPlaybackHistory:
+          typeof aiData.collectPlaybackHistory === 'boolean'
+            ? aiData.collectPlaybackHistory
+            : DEFAULT_SETTINGS.aiData.collectPlaybackHistory,
+      },
     }
   } catch (error) {
     console.warn('Could not parse app settings; using defaults', error)

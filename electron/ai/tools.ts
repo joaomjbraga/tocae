@@ -9,6 +9,8 @@ type MetadataSearchField = (typeof METADATA_SEARCH_FIELDS)[number]
 
 interface ReadOnlyToolOptions {
   getMediaMetadata?: (filePath: string) => Promise<MediaMetadata>
+  favoritesEnabled?: boolean
+  favoritePaths?: readonly string[]
   signal?: AbortSignal
 }
 
@@ -32,6 +34,32 @@ export const AI_TOOL_DEFINITIONS: readonly AiToolDefinition[] = [
           genre: { type: 'string', description: 'Filtra pelo gênero.' },
           type: { type: 'string', enum: ['audio', 'video', 'image'], description: 'Tipo opcional.' },
           limit: { type: 'integer', minimum: 1, maximum: 50, description: 'Máximo de resultados.' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_favorites',
+      description: 'Lista as mídias favoritas do usuário, se o acesso estiver autorizado nas configurações.',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 20 },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_listening_history',
+      description: 'Consulta as reproduções locais recentes, somente se a coleta estiver autorizada.',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 20 },
         },
       },
     },
@@ -141,20 +169,39 @@ export async function executeReadOnlyTool(
   name: string,
   args: unknown,
   library: LibrarySnapshot,
-  playlist: PersistedPlaylist,
+  playlist: PersistedPlaylist | undefined,
   options: ReadOnlyToolOptions = {},
 ): Promise<unknown> {
   if (name === 'get_current_media') {
+    if (!playlist) throw new Error('A fila atual não está disponível.')
     const current = playlist.currentIndex >= 0 ? playlist.items[playlist.currentIndex] : null
     return { current: current ? { name: current.name } : null }
   }
 
   if (name === 'get_playlist') {
+    if (!playlist) throw new Error('A fila atual não está disponível.')
     const current = playlist.currentIndex >= 0 ? playlist.items[playlist.currentIndex] : null
     return {
       total: playlist.items.length,
       current: current ? { name: current.name, path: current.path } : null,
       items: playlist.items.map((item) => ({ name: item.name, path: item.path })),
+    }
+  }
+
+  if (name === 'get_favorites') {
+    if (!options.favoritesEnabled) {
+      throw new Error('O acesso aos favoritos está desativado nas configurações do Teco.')
+    }
+    if (!isRecord(args)) throw new Error('O limite de favoritos não é válido.')
+    const limit = readLimit(args, 20)
+    const favoritePaths = new Set(options.favoritePaths ?? [])
+    const matches = library.items
+      .filter((item) => favoritePaths.has(item.path))
+      .slice(0, limit)
+      .map((item) => ({ name: item.name, type: item.type }))
+    return {
+      total: library.items.filter((item) => favoritePaths.has(item.path)).length,
+      matches,
     }
   }
 
@@ -293,6 +340,12 @@ function normalizeSearchText(value: string): string {
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
+}
+
+function readLimit(args: Record<string, unknown>, maximum = 50): number {
+  return typeof args.limit === 'number' && Number.isInteger(args.limit)
+    ? Math.min(maximum, Math.max(1, args.limit))
+    : 20
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

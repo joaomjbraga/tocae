@@ -5,6 +5,7 @@ import type { MediaTrack } from './mediaTracks'
 import type { PersistedPlaylist, PlaylistItem } from './playlist'
 import type {
   AiModelOption,
+  AiDataPreferences,
   AiPlayerState,
   AiPlaylistProposal,
   AiProviderConfig,
@@ -60,6 +61,9 @@ export const IPC_CHANNELS = {
   AI_STREAM_CHUNK: 'ai:stream:chunk',
   AI_PLAYER_STATE_SET: 'ai:player-state:set',
   AI_PLAYER_STATE_GET: 'ai:player-state:get',
+  AI_DATA_PREFERENCES_SET: 'ai:data-preferences:set',
+  AI_PLAYBACK_RECORD: 'ai:playback:record',
+  AI_LISTENING_HISTORY_CLEAR: 'ai:listening-history:clear',
   AI_PLAYLIST_PROPOSAL_GET: 'ai:playlist-proposal:get',
   AI_PLAYLIST_PROPOSAL_APPLY: 'ai:playlist-proposal:apply',
   AI_PLAYLIST_PROPOSAL_CLEAR: 'ai:playlist-proposal:clear',
@@ -161,9 +165,12 @@ export interface TocaeApi {
     listModels(): Promise<AiModelOption[]>
     setCredential(apiKey: string): Promise<void>
     removeCredential(): Promise<void>
-    sendMessage(message: string): Promise<AiStatus>
+    sendMessage(message: string, favoritePaths?: string[]): Promise<AiStatus>
     cancel(): Promise<AiStatus>
     clear(): Promise<AiStatus>
+    setDataPreferences(preferences: AiDataPreferences): Promise<AiDataPreferences>
+    recordPlayback(filePath: string, title: string): Promise<void>
+    clearListeningHistory(): Promise<void>
     onStreamChunk(callback: (chunk: string) => void): () => void
     setPlayerState(state: AiPlayerState): Promise<AiPlayerState>
     getPlayerState(): Promise<AiPlayerState>

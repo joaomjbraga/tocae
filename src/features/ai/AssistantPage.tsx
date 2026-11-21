@@ -4,6 +4,7 @@ import { Send, Square, Trash2 } from 'lucide-react'
 import { AI_LIMITS } from '@shared/ai'
 import type { AiMessage, AiPlaylistProposal, AiStatus } from '@shared/ai'
 import { useI18n } from '../../i18n'
+import { readFavoritePaths } from '../library/favorites'
 import styles from './AssistantPage.module.css'
 
 function providerErrorMessage(reason: unknown): string {
@@ -134,7 +135,10 @@ function AssistantPage() {
     setStreamingText('')
     setStatus((current) => current ? { ...current, busy: true } : current)
     try {
-      setStatus(await window.tocae.ai.sendMessage(content))
+      const favoritePaths = status?.dataPreferences.allowFavorites
+        ? [...readFavoritePaths()]
+        : []
+      setStatus(await window.tocae.ai.sendMessage(content, favoritePaths))
       setStreamingText('')
     } catch (reason) {
       setStreamingText('')

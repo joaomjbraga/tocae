@@ -64,6 +64,16 @@ export const enMessages: Messages = {
   'settings.aiSaved': 'Configuration saved.',
   'settings.aiKeySaved': 'Key stored securely.',
   'settings.aiKeyRemoved': 'Key removed.',
+  'settings.aiDataTitle': 'Teco data access',
+  'settings.aiDataDescription': 'Choose what Teco may use. Both permissions are off by default.',
+  'settings.aiFavoritesAccess': 'Allow access to favorites',
+  'settings.aiFavoritesAccessDescription': 'Teco can list your favorites when you ask; they are not added to the conversation automatically.',
+  'settings.aiPlaybackHistory': 'Collect local playback history',
+  'settings.aiPlaybackHistoryDescription': 'Record local media playback starts, up to 500 entries. Collection is off by default.',
+  'settings.aiDataPrivacyNote': 'Playback records (name, type, and time; no file path) stay in the local Tocaê profile and are not encrypted. When a Teco tool uses favorites or history, its results are sent to the configured AI provider. Turning access off does not erase existing history.',
+  'settings.aiClearListeningHistory': 'Clear playback history',
+  'settings.aiDataPreferencesSaved': 'Teco data preferences saved.',
+  'settings.aiListeningHistoryCleared': 'Playback history cleared.',
   'playbackSettings.title': 'Next and repeat',
   'playbackSettings.autoNextTitle': 'Play next automatically',
   'playbackSettings.autoNextLabel': 'Next',
@@ -110,7 +120,7 @@ export const enMessages: Messages = {
   // AI assistant
   'assistant.title': 'Teco',
   'assistant.privacyNotice':
-    'Privacy: your messages and library/queue data used in the response (names, paths, and metadata) may be sent to {provider} ({endpoint}). Avoid including personal information.',
+    'Privacy: your messages and library/queue data used in the response (names, paths, and metadata) may be sent to {provider} ({endpoint}). If enabled and requested, favorite names or recent playback records may also be sent. Avoid including personal information.',
   'assistant.contextNotice':
     'Limits: messages up to {userMessageKiB} KiB, context per request up to {contextKiB} KiB, and responses up to {outputTokens} tokens. History is limited to {historyKiB} KiB; older messages may be omitted from context or removed from retained history.',
   'assistant.description': 'Help with your Tocaê library, queue, and playback.',

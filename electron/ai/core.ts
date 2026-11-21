@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { AiMessage, AiProviderConfig } from '@shared/ai'
+import type { AiMessage, AiProviderConfig, AiRequestContext } from '@shared/ai'
 import type { AiProvider, AiProviderMessage, AiToolDefinition } from './provider'
 import { AI_LIMITS, limitAiHistory } from './limits.ts'
 
@@ -18,13 +18,23 @@ export class AiCore {
   private readonly providerFactory: (config: AiProviderConfig) => AiProvider | null
   private readonly tools: readonly AiToolDefinition[]
   private readonly executeTool:
-    | ((name: string, args: unknown, signal: AbortSignal) => Promise<unknown>)
+    | ((
+        name: string,
+        args: unknown,
+        signal: AbortSignal,
+        context: AiRequestContext,
+      ) => Promise<unknown>)
     | undefined
 
   constructor(
     providerFactory: (config: AiProviderConfig) => AiProvider | null,
     tools: readonly AiToolDefinition[] = [],
-    executeTool?: (name: string, args: unknown, signal: AbortSignal) => Promise<unknown>,
+    executeTool?: (
+      name: string,
+      args: unknown,
+      signal: AbortSignal,
+      context: AiRequestContext,
+    ) => Promise<unknown>,
   ) {
     this.providerFactory = providerFactory
     this.tools = tools
@@ -56,6 +66,7 @@ export class AiCore {
     content: string,
     config: AiProviderConfig,
     onChunk: (chunk: string) => void = () => {},
+    requestContext: AiRequestContext = { favoritePaths: [] },
   ): Promise<AiMessage> {
     if (this.busy) throw new AiRequestError('Uma solicitação já está em andamento.')
     const normalized = content.trim()
@@ -113,7 +124,7 @@ export class AiCore {
               if (toolCallCount > AI_LIMITS.toolCalls) {
                 throw new AiRequestError('A solicitação excedeu o limite de chamadas de ferramentas.')
               }
-              const result = await executeTool(name, args, controller.signal)
+              const result = await executeTool(name, args, controller.signal, requestContext)
               let serialized: string | undefined
               try {
                 serialized = JSON.stringify(result)

@@ -5,12 +5,15 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { IPC_CHANNELS } from '@shared/ipc'
 import type {
+  AiDataPreferences,
   AiPlayerState,
   AiPlaylistProposal,
   AiProviderConfig,
   AiStatus,
 } from '@shared/ai'
 import { DEFAULT_AI_PROVIDER_CONFIG } from '@shared/ai'
+import { mediaTypeForPath } from '@shared/media'
+import { DEFAULT_SETTINGS } from '@shared/settings'
 import { readSettings, writeSettings } from '../settings'
 import { AiCore, AiRequestError } from './core'
 import { AiProviderError, GeminiSdkProvider, OpenAiCompatibleProvider } from './provider'
@@ -29,6 +32,12 @@ import { AI_TOOL_DEFINITIONS, executeReadOnlyTool } from './tools'
 import { getMediaMetadata } from '../media/metadata'
 import { sendCommand } from '../commands'
 import {
+  clearListeningHistoryFile,
+  MAX_LISTENING_HISTORY_NAME_LENGTH,
+  readListeningHistoryForTool,
+  recordListeningHistory,
+} from './listeningHistory'
+import {
   cosineSimilarity,
   libraryFingerprint,
   readSemanticIndex,
@@ -38,13 +47,16 @@ import {
 
 const CREDENTIAL_FILE_NAME = 'ai-credentials.json'
 const HISTORY_FILE_NAME = 'ai-history.json'
+const LISTENING_HISTORY_FILE_NAME = 'ai-listening-history.json'
 const SEMANTIC_INDEX_FILE_NAME = 'ai-library-index.json'
 const EMBEDDING_BATCH_SIZE = 64
+const MAX_FAVORITE_PATHS_PER_REQUEST = 10_000
+const MAX_FAVORITE_PATH_CONTEXT_BYTES = 1024 * 1024
 let historyWriteQueue: Promise<void> = Promise.resolve()
 const core = new AiCore(
   createConfiguredProvider,
   AI_TOOL_DEFINITIONS,
-  async (name, args, signal) => {
+  async (name, args, signal, requestContext) => {
     if (name === 'get_player_state') {
       const playlist = await readPlaylist()
       const current = playlist.currentIndex >= 0 ? playlist.items[playlist.currentIndex] : null
@@ -72,6 +84,28 @@ const core = new AiCore(
     if (name === 'player_previous') {
       sendCommand({ type: 'previous-video' })
       return { accepted: true, action: 'previous' }
+    }
+
+    if (name === 'get_favorites' && !dataPreferences.allowFavorites) {
+      throw new Error('Ative o acesso aos favoritos nas configurações do Teco para consultar essa lista.')
+    }
+    if (name === 'get_favorites') {
+      if (!isRecord(args)) throw new TypeError('O limite de favoritos não é válido.')
+      const library = await getLibrarySnapshot()
+      throwIfAborted(signal)
+      return executeReadOnlyTool(name, args, library, undefined, {
+        favoritesEnabled: true,
+        favoritePaths: requestContext.favoritePaths,
+      })
+    }
+
+    if (name === 'get_listening_history') {
+      return readListeningHistoryForTool(
+        listeningHistoryPath(),
+        args,
+        dataPreferences.collectPlaybackHistory,
+        signal,
+      )
     }
 
     if (name === 'propose_playlist') {
@@ -221,17 +255,17 @@ const core = new AiCore(
       }
     }
 
-    const [library, playlist] = await Promise.all([
-      getLibrarySnapshot(),
-      readPlaylist(),
-    ])
+    const [library, playlist] = await Promise.all([getLibrarySnapshot(), readPlaylist()])
     return executeReadOnlyTool(name, args, library, playlist, {
       getMediaMetadata,
       signal,
+      favoritesEnabled: dataPreferences.allowFavorites,
+      favoritePaths: requestContext.favoritePaths,
     })
   },
 )
 let config: AiProviderConfig = { ...DEFAULT_AI_PROVIDER_CONFIG }
+let dataPreferences: AiDataPreferences = { ...DEFAULT_SETTINGS.aiData }
 let initialized = false
 let playerState: AiPlayerState = { playing: false, updatedAt: 0 }
 let playlistProposal: AiPlaylistProposal | null = null
@@ -242,6 +276,10 @@ function credentialsPath(): string {
 
 function historyPath(): string {
   return path.join(app.getPath('userData'), HISTORY_FILE_NAME)
+}
+
+function listeningHistoryPath(): string {
+  return path.join(app.getPath('userData'), LISTENING_HISTORY_FILE_NAME)
 }
 
 function semanticIndexPath(): string {
@@ -266,6 +304,7 @@ async function initialize(): Promise<void> {
   if (initialized) return
   const settings = await readSettings()
   config = validateAiProviderConfig(settings.ai ?? { ...DEFAULT_AI_PROVIDER_CONFIG })
+  dataPreferences = { ...settings.aiData }
   credentialCache = await readCredentials()
   core.restoreHistory(await readAiHistoryFile(historyPath()))
   initialized = true
@@ -372,6 +411,39 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function validateAiDataPreferences(value: unknown): AiDataPreferences {
+  if (
+    !isRecord(value) ||
+    typeof value.allowFavorites !== 'boolean' ||
+    typeof value.collectPlaybackHistory !== 'boolean'
+  ) {
+    throw new TypeError('As preferências de dados do Teco não são válidas.')
+  }
+  return {
+    allowFavorites: value.allowFavorites,
+    collectPlaybackHistory: value.collectPlaybackHistory,
+  }
+}
+
+function validateFavoritePaths(value: unknown): string[] {
+  if (!Array.isArray(value) || value.length > MAX_FAVORITE_PATHS_PER_REQUEST) {
+    throw new TypeError('A lista de favoritos enviada ao Teco não é válida.')
+  }
+  const paths = new Set<string>()
+  let totalBytes = 0
+  for (const item of value) {
+    if (typeof item !== 'string' || item.length === 0 || item.length > 4096) {
+      throw new TypeError('A lista de favoritos enviada ao Teco não é válida.')
+    }
+    totalBytes += Buffer.byteLength(item, 'utf8')
+    if (totalBytes > MAX_FAVORITE_PATH_CONTEXT_BYTES) {
+      throw new TypeError('A lista de favoritos enviada ao Teco excede o limite permitido.')
+    }
+    paths.add(item)
+  }
+  return [...paths]
+}
+
 function isMissingFile(error: unknown): boolean {
   return error instanceof Error && 'code' in error && error.code === 'ENOENT'
 }
@@ -387,6 +459,7 @@ function status(): AiStatus {
       Boolean(credentialForProvider(credentialCache, config.provider)),
     busy: core.isBusy(),
     provider: { ...config },
+    dataPreferences: { ...dataPreferences },
     messages: core.getHistory(),
   }
 }
@@ -487,6 +560,42 @@ export function registerAiIpc(): void {
     validateSender(event)
     return { ...playerState }
   })
+  ipcMain.handle(IPC_CHANNELS.AI_DATA_PREFERENCES_SET, async (event, value: unknown) => {
+    validateSender(event)
+    await initialize()
+    const nextPreferences = validateAiDataPreferences(value)
+    const settings = await readSettings()
+    await writeSettings({ ...settings, aiData: nextPreferences })
+    dataPreferences = nextPreferences
+    return { ...dataPreferences }
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_PLAYBACK_RECORD, async (event, filePath: unknown, title: unknown) => {
+    validateSender(event)
+    await initialize()
+    if (!dataPreferences.collectPlaybackHistory) return
+    if (
+      typeof filePath !== 'string' ||
+      !path.isAbsolute(filePath) ||
+      !mediaTypeForPath(filePath)
+    ) {
+      return
+    }
+    if (typeof title !== 'string') throw new TypeError('O título da mídia precisa ser texto.')
+    const resolvedPath = path.resolve(filePath)
+    const type = mediaTypeForPath(resolvedPath)
+    if (!type || type === 'image') return
+    await recordListeningHistory(listeningHistoryPath(), {
+      name: title.trim().slice(0, MAX_LISTENING_HISTORY_NAME_LENGTH)
+        || path.basename(resolvedPath).slice(0, MAX_LISTENING_HISTORY_NAME_LENGTH),
+      type,
+      playedAt: Date.now(),
+    })
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_LISTENING_HISTORY_CLEAR, async (event) => {
+    validateSender(event)
+    await initialize()
+    await clearListeningHistoryFile(listeningHistoryPath())
+  })
   ipcMain.handle(IPC_CHANNELS.AI_CONFIG_GET, async (event) => {
     validateSender(event)
     await initialize()
@@ -530,14 +639,17 @@ export function registerAiIpc(): void {
     await initialize()
     if (config.provider !== 'ollama') await removeCredential(config.provider)
   })
-  ipcMain.handle(IPC_CHANNELS.AI_SEND, async (event, value: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.AI_SEND, async (event, value: unknown, favorites: unknown) => {
     validateSender(event)
     await initialize()
     if (typeof value !== 'string') throw new TypeError('A mensagem deve ser texto.')
+    const favoritePaths = dataPreferences.allowFavorites
+      ? validateFavoritePaths(favorites ?? [])
+      : []
     try {
       await core.send(value, config, (chunk) => {
         event.sender.send(IPC_CHANNELS.AI_STREAM_CHUNK, chunk)
-      })
+      }, { favoritePaths })
       try {
         await persistHistory()
       } catch {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { AiCore, AiRequestError } from './core.ts'
@@ -16,6 +16,14 @@ import {
   readAiHistoryFile,
   writeAiHistoryFile,
 } from './historyStore.ts'
+import {
+  clearListeningHistoryFile,
+  MAX_LISTENING_HISTORY_ENTRIES,
+  MAX_LISTENING_HISTORY_NAME_LENGTH,
+  readListeningHistoryForTool,
+  readListeningHistoryFile,
+  recordListeningHistory,
+} from './listeningHistory.ts'
 import { executeReadOnlyTool } from './tools.ts'
 import {
   cosineSimilarity,
@@ -239,6 +247,30 @@ test('AI core includes Teco scope instructions without persisting them in chat h
   assert.deepEqual(core.getHistory().map(({ role }) => role), ['user', 'assistant'])
 })
 
+test('AI core passes favorite paths only to the per-request tool executor', async () => {
+  const favoritePaths = ['/music/favorite.mp3']
+  let context
+  let providerMessages
+  const core = new AiCore(
+    () => ({
+      async sendStream(messages, _signal, _onChunk, _tools, executeTool) {
+        providerMessages = messages
+        await executeTool('get_favorites', {})
+      },
+    }),
+    [],
+    async (_name, _args, _signal, requestContext) => {
+      context = requestContext
+      return {}
+    },
+  )
+
+  await core.send('List my favorites', config, () => {}, { favoritePaths })
+
+  assert.deepEqual(context, { favoritePaths })
+  assert.equal(JSON.stringify(providerMessages).includes(favoritePaths[0]), false)
+})
+
 test('AI core blocks duplicate requests', async () => {
   let resolveSend
   const core = new AiCore(() => ({
@@ -455,6 +487,59 @@ test('AI history persistence failures reject to the caller', async (t) => {
   await assert.rejects(writeAiHistoryFile(blockedFile, []))
 })
 
+test('Teco listening history is bounded, ordered by recent play, and clearable', async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'tocae-listening-history-'))
+  t.after(() => rm(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'history.json')
+  const oldEntries = Array.from({ length: MAX_LISTENING_HISTORY_ENTRIES }, (_, index) => ({
+    name: `Track ${index}`.slice(0, MAX_LISTENING_HISTORY_NAME_LENGTH),
+    type: 'audio',
+    playedAt: index,
+    path: `/private/music/track-${index}.mp3`,
+  }))
+  await writeFile(file, JSON.stringify({ version: 1, entries: oldEntries }))
+
+  await recordListeningHistory(file, {
+    name: 'Newest',
+    type: 'audio',
+    playedAt: MAX_LISTENING_HISTORY_ENTRIES,
+  })
+
+  const entries = await readListeningHistoryFile(file)
+  assert.equal(entries.length, MAX_LISTENING_HISTORY_ENTRIES)
+  assert.equal(entries[0].name, 'Newest')
+  assert.equal(entries.at(-1).name, `Track ${MAX_LISTENING_HISTORY_ENTRIES - 2}`)
+  const stored = JSON.parse(await readFile(file, 'utf8'))
+  assert.ok(stored.entries.every((entry) => !('path' in entry)))
+
+  await assert.rejects(
+    readListeningHistoryForTool(file, {}, false, new AbortController().signal),
+    /Ative a coleta/,
+  )
+  const historyToolResult = await readListeningHistoryForTool(
+    file,
+    { limit: 1 },
+    true,
+    new AbortController().signal,
+  )
+  assert.equal(historyToolResult.total, MAX_LISTENING_HISTORY_ENTRIES)
+  assert.deepEqual(historyToolResult.entries, [{
+    name: 'Newest',
+    type: 'audio',
+    playedAt: new Date(MAX_LISTENING_HISTORY_ENTRIES).toISOString(),
+  }])
+  const cappedHistoryToolResult = await readListeningHistoryForTool(
+    file,
+    { limit: MAX_LISTENING_HISTORY_ENTRIES },
+    true,
+    new AbortController().signal,
+  )
+  assert.equal(cappedHistoryToolResult.entries.length, 20)
+
+  await clearListeningHistoryFile(file)
+  assert.deepEqual(await readListeningHistoryFile(file), [])
+})
+
 test('AI read-only tools search the library and report the current playlist', async () => {
   const library = {
     folders: [],
@@ -516,6 +601,18 @@ test('AI read-only tools search the library and report the current playlist', as
     executeReadOnlyTool('remove_library', {}, library, playlist),
     /não autorizada/,
   )
+  await assert.rejects(
+    executeReadOnlyTool('get_favorites', {}, library, undefined),
+    /desativado/,
+  )
+  const favorites = await executeReadOnlyTool('get_favorites', {}, library, undefined, {
+    favoritesEnabled: true,
+    favoritePaths: ['/music/Blue.mp3', '/outside/not-in-library.mp3'],
+  })
+  assert.deepEqual(favorites, {
+    total: 1,
+    matches: [{ name: 'Blue.mp3', type: 'audio' }],
+  })
 
   const taggedMatches = await executeReadOnlyTool(
     'search_library',

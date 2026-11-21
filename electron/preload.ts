@@ -7,6 +7,7 @@ import type { MediaMetadata } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
 import type { PlaylistItem } from '@shared/playlist'
 import type {
+  AiDataPreferences,
   AiModelOption,
   AiPlayerState,
   AiPlaylistProposal,
@@ -99,10 +100,16 @@ const api: TocaeApi = {
       ipcRenderer.invoke(IPC_CHANNELS.AI_CREDENTIAL_SET, apiKey),
     removeCredential: () =>
       ipcRenderer.invoke(IPC_CHANNELS.AI_CREDENTIAL_REMOVE),
-    sendMessage: (message) =>
-      ipcRenderer.invoke(IPC_CHANNELS.AI_SEND, message) as Promise<AiStatus>,
+    sendMessage: (message, favoritePaths = []) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_SEND, message, favoritePaths) as Promise<AiStatus>,
     cancel: () => ipcRenderer.invoke(IPC_CHANNELS.AI_CANCEL) as Promise<AiStatus>,
     clear: () => ipcRenderer.invoke(IPC_CHANNELS.AI_CLEAR) as Promise<AiStatus>,
+    setDataPreferences: (preferences: AiDataPreferences) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_DATA_PREFERENCES_SET, preferences) as Promise<AiDataPreferences>,
+    recordPlayback: (filePath: string, title: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_PLAYBACK_RECORD, filePath, title),
+    clearListeningHistory: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_LISTENING_HISTORY_CLEAR),
     onStreamChunk(callback) {
       const listener = (_event: IpcRendererEvent, chunk: string) => callback(chunk)
       ipcRenderer.on(IPC_CHANNELS.AI_STREAM_CHUNK, listener)

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Check, KeyRound, Trash2 } from 'lucide-react'
-import type { AiModelOption, AiProviderConfig } from '@shared/ai'
+import type { AiDataPreferences, AiModelOption, AiProviderConfig } from '@shared/ai'
 import { useI18n } from '../../i18n'
 import styles from './AiSection.module.css'
 
 function AiSection() {
   const { t } = useI18n()
   const [config, setConfig] = useState<AiProviderConfig | null>(null)
+  const [dataPreferences, setDataPreferences] = useState<AiDataPreferences | null>(null)
   const [savedProvider, setSavedProvider] = useState<AiProviderConfig['provider'] | null>(null)
   const [apiKey, setApiKey] = useState('')
   const [configured, setConfigured] = useState(false)
@@ -24,6 +25,7 @@ function AiSection() {
     void window.tocae.ai.getStatus()
       .then((status) => {
         setConfig(status.provider)
+        setDataPreferences(status.dataPreferences)
         setSavedProvider(status.provider.provider)
         setConfigured(status.configured)
       })
@@ -106,6 +108,32 @@ function AiSection() {
       await window.tocae.ai.removeCredential()
       setConfigured(false)
       setMessage(t('settings.aiKeyRemoved'))
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t('assistant.unknownError'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function saveDataPreferences(nextPreferences: AiDataPreferences) {
+    setSaving(true)
+    setMessage(null)
+    try {
+      setDataPreferences(await window.tocae.ai.setDataPreferences(nextPreferences))
+      setMessage(t('settings.aiDataPreferencesSaved'))
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t('assistant.unknownError'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function clearListeningHistory() {
+    setSaving(true)
+    setMessage(null)
+    try {
+      await window.tocae.ai.clearListeningHistory()
+      setMessage(t('settings.aiListeningHistoryCleared'))
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t('assistant.unknownError'))
     } finally {
@@ -318,6 +346,63 @@ function AiSection() {
           )}
         </div>
       </form>
+      )}
+
+      {dataPreferences && (
+        <section className={styles.group} aria-labelledby="ai-data-title">
+          <header className={styles.groupHeader}>
+            <div>
+              <h3 id="ai-data-title" className={styles.settingTitle}>
+                {t('settings.aiDataTitle')}
+              </h3>
+              <p className={styles.settingDescription}>
+                {t('settings.aiDataDescription')}
+              </p>
+            </div>
+          </header>
+          <label className={styles.toggleField}>
+            <input
+              type="checkbox"
+              checked={dataPreferences.allowFavorites}
+              disabled={saving}
+              onChange={(event) => void saveDataPreferences({
+                ...dataPreferences,
+                allowFavorites: event.target.checked,
+              })}
+            />
+            <span className={styles.toggleCopy}>
+              <strong>{t('settings.aiFavoritesAccess')}</strong>
+              <small>{t('settings.aiFavoritesAccessDescription')}</small>
+            </span>
+          </label>
+          <label className={styles.toggleField}>
+            <input
+              type="checkbox"
+              checked={dataPreferences.collectPlaybackHistory}
+              disabled={saving}
+              onChange={(event) => void saveDataPreferences({
+                ...dataPreferences,
+                collectPlaybackHistory: event.target.checked,
+              })}
+            />
+            <span className={styles.toggleCopy}>
+              <strong>{t('settings.aiPlaybackHistory')}</strong>
+              <small>{t('settings.aiPlaybackHistoryDescription')}</small>
+            </span>
+          </label>
+          <p className={styles.privacyNote}>{t('settings.aiDataPrivacyNote')}</p>
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.danger}
+              onClick={() => void clearListeningHistory()}
+              disabled={saving}
+            >
+              <Trash2 size={14} aria-hidden="true" />
+              {t('settings.aiClearListeningHistory')}
+            </button>
+          </div>
+        </section>
       )}
 
       {message && <p className={styles.feedback} role="status">{message}</p>}
