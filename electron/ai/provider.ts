@@ -1,11 +1,10 @@
 import type { AiModelOption, AiProviderConfig } from '@shared/ai'
 import {
   GoogleGenAI,
-  createPartFromFunctionCall,
   createPartFromFunctionResponse,
   createUserContent,
 } from '@google/genai'
-import type { Content, FunctionCall, Tool } from '@google/genai'
+import type { Content, FunctionCall, Part, Tool } from '@google/genai'
 
 export interface AiProviderMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
@@ -118,8 +117,10 @@ export class GeminiSdkProvider implements AiProvider {
 
       let receivedText = false
       const functionCalls: FunctionCall[] = []
+      const modelParts: Part[] = []
       for await (const chunk of stream) {
         if (signal.aborted) throw new AiProviderError('Solicitação cancelada.')
+        modelParts.push(...(chunk.candidates?.[0]?.content?.parts ?? []))
         const text = chunk.text
         if (typeof text === 'string' && text) {
           receivedText = true
@@ -148,9 +149,7 @@ export class GeminiSdkProvider implements AiProvider {
       }
       contents = [
         ...contents,
-        { role: 'model', parts: functionCalls.map((call) =>
-          createPartFromFunctionCall(call.name ?? '', call.args ?? {}),
-        ) },
+        { role: 'model', parts: modelParts },
         createUserContent(responseParts),
       ]
     }

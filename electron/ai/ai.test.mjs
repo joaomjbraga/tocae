@@ -83,6 +83,67 @@ test('Gemini sends the system instruction separately from conversation content',
   assert.deepEqual(request.contents, [{ role: 'user', parts: [{ text: 'What is playing?' }] }])
 })
 
+test('Teco Gemini flow keeps scope, executes an allowed tool, and returns the final answer', async () => {
+  const provider = new GeminiSdkProvider({
+    provider: 'gemini',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-3.8-flash',
+  }, 'test-key')
+  const requests = []
+  provider.ai.models.generateContentStream = async (request) => {
+    requests.push(request)
+    const response = requests.length === 1
+      ? {
+          functionCalls: [{ id: 'call-1', name: 'get_player_state', args: {} }],
+          candidates: [{
+            content: {
+              role: 'model',
+              parts: [{
+                functionCall: { name: 'get_player_state', args: {} },
+                thoughtSignature: 'sdk-signature',
+              }],
+            },
+          }],
+        }
+      : { text: 'O Tocaê está pausado.' }
+    return (async function* () {
+      yield response
+    })()
+  }
+  const tool = {
+    type: 'function',
+    function: {
+      name: 'get_player_state',
+      description: 'Consulta o estado do player do Tocaê.',
+      parameters: { type: 'object', properties: {} },
+    },
+  }
+  const executedTools = []
+  const core = new AiCore(
+    () => provider,
+    [tool],
+    async (name, args) => {
+      executedTools.push({ name, args })
+      return { playing: false, current: 'Amostra.mp3' }
+    },
+  )
+  let streamed = ''
+
+  await core.send('O que está tocando?', {
+    provider: 'gemini',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-3.8-flash',
+  }, (chunk) => { streamed += chunk })
+
+  assert.equal(requests.length, 2)
+  assert.match(requests[0].config.systemInstruction, /exclusivamente o Tocaê/)
+  assert.equal(requests[0].config.tools[0].functionDeclarations[0].name, 'get_player_state')
+  assert.equal(requests[1].contents[1].parts[0].thoughtSignature, 'sdk-signature')
+  assert.deepEqual(executedTools, [{ name: 'get_player_state', args: {} }])
+  assert.equal(streamed, 'O Tocaê está pausado.')
+  assert.equal(core.getHistory().at(-1).content, streamed)
+})
+
 test('AI core adds user and assistant messages to history', async () => {
   let calls = 0
   const core = new AiCore(() => ({

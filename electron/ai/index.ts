@@ -390,6 +390,11 @@ function normalizeError(error: unknown): Error {
     return new Error('Solicitação cancelada ou excedeu o tempo limite.')
   }
   if (error instanceof Error) {
+    if (/thought.?signature/i.test(error.message)) {
+      return new Error(
+        'O Gemini rejeitou a continuação de uma chamada de ferramenta. Tente novamente; se o problema persistir, atualize o Tocaê.',
+      )
+    }
     if (/HTTP 404|404/i.test(error.message)) {
       return new Error(
         'O modelo configurado não foi encontrado. Em Configurações > Teco, carregue os modelos disponíveis do Gemini, selecione um modelo listado e salve a configuração.',

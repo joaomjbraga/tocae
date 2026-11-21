@@ -153,7 +153,7 @@
 .composer textarea {
   flex:1; min-height:38px; max-height:120px; resize:none; border:0;
   border-radius:17px; padding:9px 10px; outline:0; background:transparent;
-  color:var(--text-primary); font-size:13px; line-height:1.45; user-select:text;
+  color:var(--text-primary); font-size:13px; line-height:1.45; user-select:text; -webkit-user-select:text;
 }
 .composer:focus-within { border-color:rgba(167,119,255,.65); }
 .composer textarea:disabled { color:var(--text-disabled); }

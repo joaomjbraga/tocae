@@ -8,7 +8,7 @@ import styles from './AssistantPage.module.css'
 function providerErrorMessage(reason: unknown): string {
   if (!(reason instanceof Error)) return ''
   return reason.message
-    .replace(/^Error invoking remote method 'aisend':\s*/i, '')
+    .replace(/^Error invoking remote method 'ai:send':\s*/i, '')
     .replace(/^Error:\s*/i, '')
 }
 

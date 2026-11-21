@@ -29,6 +29,7 @@ import {
   ZoomOut,
 } from 'lucide-react'
 import { formatTime } from '../../lib/format'
+import { isEditableTextTarget } from '../../lib/keyboard'
 import type { MediaMetadata, MediaType } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
 import { useI18n } from '../../i18n'
@@ -338,6 +339,7 @@ function VideoPlayer({
     function handleKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null
       if (target instanceof HTMLSelectElement) return
+      if (target instanceof HTMLInputElement || isEditableTextTarget(target)) return
       const isButton = target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement
       switch (event.key) {
         case 'f':

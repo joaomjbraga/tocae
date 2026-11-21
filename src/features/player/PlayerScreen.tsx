@@ -17,6 +17,7 @@ import type { PlaylistSnapshot } from '../playlist/usePlaylist'
 import { useI18n } from '../../i18n'
 import styles from './PlayerScreen.module.css'
 import { summarizeMediaMetadata } from '../../lib/mediaMetadata'
+import { isEditableTextTarget } from '../../lib/keyboard'
 
 /** Deve cobrir a saída animada do painel (--duration-exit) antes de desmontar. */
 const PANEL_EXIT_MS = 160
@@ -265,6 +266,7 @@ function PlayerScreen({
       const target = event.target as HTMLElement | null
       if (target instanceof HTMLSelectElement) return
       if (target instanceof HTMLInputElement && target.type !== 'range') return
+      if (isEditableTextTarget(target)) return
 
       if (
         (event.ctrlKey || event.metaKey) &&
