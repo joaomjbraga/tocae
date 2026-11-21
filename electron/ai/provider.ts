@@ -182,6 +182,7 @@ export class OpenAiCompatibleProvider implements AiProvider {
     const baseUrl = this.config.baseUrl.replace(/\/+$/, '')
     const response = await fetch(`${baseUrl}/embeddings`, {
       method: 'POST',
+      redirect: 'error',
       headers: {
         ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
         'Content-Type': 'application/json',
@@ -240,6 +241,7 @@ export class OpenAiCompatibleProvider implements AiProvider {
       const baseUrl = this.config.baseUrl.replace(/\/+$/, '')
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
+        redirect: 'error',
         headers: {
           ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
           'Content-Type': 'application/json',

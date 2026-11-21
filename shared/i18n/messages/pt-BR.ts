@@ -60,8 +60,9 @@ export const ptBRMessages = {
   'settings.aiModelsAvailable': '{count} modelos disponíveis',
   'settings.aiEmbeddingModel': 'Modelo de embeddings',
   'settings.aiCredential': 'Credencial',
-  'settings.aiCredentialStored': 'Uma chave foi armazenada pelo sistema operacional.',
+  'settings.aiCredentialStored': 'Uma chave para este provedor foi armazenada pelo sistema operacional.',
   'settings.aiCredentialMissing': 'Nenhuma chave configurada.',
+  'settings.aiSaveProviderFirst': 'Salve primeiro a configuração do provedor selecionado.',
   'settings.aiApiKey': 'Chave de API',
   'settings.aiSave': 'Salvar configuração',
   'settings.aiSaveKey': 'Salvar chave',
@@ -114,6 +115,8 @@ export const ptBRMessages = {
 
   // Assistente de inteligência artificial
   'assistant.title': 'Teco',
+  'assistant.privacyNotice':
+    'Privacidade: suas mensagens e dados da biblioteca/fila usados na resposta (nomes, caminhos e metadados) podem ser enviados a {provider} ({endpoint}). Evite incluir informações pessoais.',
   'assistant.description': 'Ajuda com a biblioteca, a fila e a reprodução no Tocaê.',
   'assistant.placeholder': 'Pergunte sobre o Tocaê...',
   'assistant.notConfigured': 'Configure o provedor e a chave de API nas configurações.',

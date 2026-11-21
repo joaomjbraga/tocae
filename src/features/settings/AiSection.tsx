@@ -8,6 +8,7 @@ import styles from './AiSection.module.css'
 function AiSection() {
   const { t } = useI18n()
   const [config, setConfig] = useState<AiProviderConfig | null>(null)
+  const [savedProvider, setSavedProvider] = useState<AiProviderConfig['provider'] | null>(null)
   const [apiKey, setApiKey] = useState('')
   const [configured, setConfigured] = useState(false)
   const [models, setModels] = useState<AiModelOption[]>([])
@@ -23,13 +24,14 @@ function AiSection() {
     void window.tocae.ai.getStatus()
       .then((status) => {
         setConfig(status.provider)
+        setSavedProvider(status.provider.provider)
         setConfigured(status.configured)
       })
       .catch((error: unknown) => setMessage(error instanceof Error ? error.message : t('assistant.unknownError')))
   }, [t])
 
   useEffect(() => {
-    if (config?.provider !== 'gemini' || !configured) {
+    if (config?.provider !== 'gemini' || !configured || savedProvider !== config.provider) {
       setModels([])
       setModelsLoaded(false)
       return
@@ -58,7 +60,7 @@ function AiSection() {
     return () => {
       active = false
     }
-  }, [config?.provider, configured, modelRefresh, t])
+  }, [config?.provider, configured, modelRefresh, savedProvider, t])
 
   async function saveConfig(event: FormEvent) {
     event.preventDefault()
@@ -66,7 +68,11 @@ function AiSection() {
     setSaving(true)
     setMessage(null)
     try {
-      setConfig(await window.tocae.ai.setConfig(config))
+      const savedConfig = await window.tocae.ai.setConfig(config)
+      setConfig(savedConfig)
+      setSavedProvider(savedConfig.provider)
+      const status = await window.tocae.ai.getStatus()
+      setConfigured(status.configured)
       setMessage(t('settings.aiSaved'))
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t('assistant.unknownError'))
@@ -77,7 +83,7 @@ function AiSection() {
 
   async function saveCredential(event: FormEvent) {
     event.preventDefault()
-    if (!apiKey.trim()) return
+    if (!apiKey.trim() || !config || savedProvider !== config.provider) return
     setSaving(true)
     setMessage(null)
     try {
@@ -93,6 +99,7 @@ function AiSection() {
   }
 
   async function removeCredential() {
+    if (!config || savedProvider !== config.provider) return
     setSaving(true)
     setMessage(null)
     try {
@@ -269,7 +276,11 @@ function AiSection() {
           <div>
             <h3 className={styles.settingTitle}>{t('settings.aiCredential')}</h3>
             <p className={styles.settingDescription}>
-              {configured ? t('settings.aiCredentialStored') : t('settings.aiCredentialMissing')}
+              {savedProvider !== config?.provider
+                ? t('settings.aiSaveProviderFirst')
+                : configured
+                  ? t('settings.aiCredentialStored')
+                  : t('settings.aiCredentialMissing')}
             </p>
           </div>
           <KeyRound size={16} className={styles.keyIcon} aria-hidden="true" />
@@ -286,12 +297,21 @@ function AiSection() {
           />
         </label>
         <div className={styles.actions}>
-          <button type="submit" className={styles.primary} disabled={saving || !apiKey.trim()}>
+          <button
+            type="submit"
+            className={styles.primary}
+            disabled={saving || !apiKey.trim() || savedProvider !== config?.provider}
+          >
             <Check size={14} aria-hidden="true" />
             {t('settings.aiSaveKey')}
           </button>
           {configured && (
-            <button type="button" className={styles.danger} onClick={() => void removeCredential()} disabled={saving}>
+            <button
+              type="button"
+              className={styles.danger}
+              onClick={() => void removeCredential()}
+              disabled={saving || savedProvider !== config?.provider}
+            >
               <Trash2 size={14} aria-hidden="true" />
               {t('settings.aiRemoveKey')}
             </button>

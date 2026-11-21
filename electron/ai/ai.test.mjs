@@ -4,6 +4,12 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { AiCore, AiRequestError } from './core.ts'
+import {
+  credentialForProvider,
+  migrateLegacyCredential,
+  validateAiProviderConfig,
+  validateBaseUrl,
+} from './config.ts'
 import { GeminiSdkProvider, OpenAiCompatibleProvider } from './provider.ts'
 import {
   clearAiHistoryFile,
@@ -23,6 +29,55 @@ const config = {
   baseUrl: 'https://api.example.test/v1',
   model: 'test-model',
 }
+
+test('provider credentials stay isolated and are never selected for Ollama', () => {
+  const credentials = {
+    openai: 'openai-secret',
+    gemini: 'gemini-secret',
+  }
+
+  assert.equal(credentialForProvider(credentials, 'openai'), 'openai-secret')
+  assert.equal(credentialForProvider(credentials, 'gemini'), 'gemini-secret')
+  assert.equal(credentialForProvider(credentials, 'ollama'), null)
+  assert.deepEqual(migrateLegacyCredential('gemini', 'legacy-secret'), {
+    gemini: 'legacy-secret',
+  })
+  assert.deepEqual(migrateLegacyCredential('ollama', 'legacy-secret'), {})
+})
+
+test('remote providers require HTTPS while local HTTP endpoints remain available', () => {
+  assert.equal(validateBaseUrl('http://localhost:11434/v1'), 'http://localhost:11434/v1')
+  assert.equal(validateBaseUrl('http://127.0.0.1:11434/v1'), 'http://127.0.0.1:11434/v1')
+  assert.equal(validateBaseUrl('http://[::1]:11434/v1'), 'http://[::1]:11434/v1')
+  assert.equal(validateBaseUrl('https://api.example.test/v1'), 'https://api.example.test/v1')
+  assert.throws(
+    () => validateBaseUrl('http://api.example.test/v1'),
+    /HTTPS para provedores remotos/,
+  )
+  assert.throws(
+    () => validateBaseUrl('https://user:password@api.example.test/v1'),
+    /Não inclua credenciais/,
+  )
+})
+
+test('saved provider configuration is validated before use', () => {
+  assert.throws(
+    () => validateAiProviderConfig({
+      provider: 'openai-compatible',
+      baseUrl: 'http://api.example.test/v1',
+      model: 'test-model',
+    }),
+    /HTTPS para provedores remotos/,
+  )
+  assert.equal(
+    validateAiProviderConfig({
+      provider: 'ollama',
+      baseUrl: 'http://127.0.0.1:11434/v1',
+      model: 'llama3.2',
+    }).provider,
+    'ollama',
+  )
+})
 
 test('Gemini model discovery returns only generative models with usable model IDs', async () => {
   const provider = new GeminiSdkProvider({
@@ -220,6 +275,7 @@ test('OpenAI-compatible provider sends Chat Completions and normalizes the respo
   globalThis.fetch = async (url, options) => {
     assert.equal(url, 'https://api.example.test/v1/chat/completions')
     assert.equal(options.method, 'POST')
+    assert.equal(options.redirect, 'error')
     assert.equal(JSON.parse(options.body).model, 'test-model')
     const body =
       'data: {"choices":[{"delta":{"content":"Real provider "}}]}\n' +
@@ -359,6 +415,7 @@ test('OpenAI-compatible provider creates embeddings through the embeddings endpo
   const originalFetch = globalThis.fetch
   globalThis.fetch = async (url, options) => {
     assert.equal(url, 'https://api.example.test/v1/embeddings')
+    assert.equal(options.redirect, 'error')
     assert.equal(JSON.parse(options.body).model, 'text-embedding-3-small')
     return new Response(JSON.stringify({
       data: [

@@ -14,6 +14,14 @@ import { DEFAULT_AI_PROVIDER_CONFIG } from '@shared/ai'
 import { readSettings, writeSettings } from '../settings'
 import { AiCore, AiRequestError } from './core'
 import { AiProviderError, GeminiSdkProvider, OpenAiCompatibleProvider } from './provider'
+import type { AiProvider } from './provider'
+import {
+  credentialForProvider,
+  migrateLegacyCredential,
+  type AiCredentials,
+  type CredentialProvider,
+  validateAiProviderConfig,
+} from './config'
 import { clearAiHistoryFile, readAiHistoryFile, writeAiHistoryFile } from './historyStore'
 import { getLibrarySnapshot } from '../library'
 import { readPlaylist, writePlaylist } from '../playlist'
@@ -34,16 +42,7 @@ const SEMANTIC_INDEX_FILE_NAME = 'ai-library-index.json'
 const EMBEDDING_BATCH_SIZE = 64
 let historyWriteQueue: Promise<void> = Promise.resolve()
 const core = new AiCore(
-  (config) => {
-    const apiKey = readCredentialSync()
-    if (config.provider === 'ollama') {
-      return new OpenAiCompatibleProvider(config, apiKey ?? '')
-    }
-    if (config.provider === 'gemini') {
-      return apiKey ? new GeminiSdkProvider(config, apiKey) : null
-    }
-    return apiKey ? new OpenAiCompatibleProvider(config, apiKey) : null
-  },
+  createConfiguredProvider,
   AI_TOOL_DEFINITIONS,
   async (name, args) => {
     if (name === 'get_player_state') {
@@ -125,7 +124,7 @@ const core = new AiCore(
       if (!isRecord(args) || typeof args.query !== 'string' || !args.query.trim()) {
         throw new Error('A busca semântica exige uma descrição.')
       }
-      if (config.provider !== 'ollama' && !credentialCache) {
+      if (config.provider !== 'ollama' && !credentialForProvider(credentialCache, config.provider)) {
         throw new Error('Configure uma chave de API antes de usar a busca semântica.')
       }
 
@@ -133,10 +132,8 @@ const core = new AiCore(
       const fingerprint = libraryFingerprint(library)
       let index = await readSemanticIndex(semanticIndexPath())
       if (!index || index.fingerprint !== fingerprint) {
-        const provider =
-          config.provider === 'gemini'
-            ? new GeminiSdkProvider(config, credentialCache ?? '')
-            : new OpenAiCompatibleProvider(config, credentialCache ?? '')
+        const provider = createConfiguredProvider(config)
+        if (!provider) throw new Error('Configure uma chave de API antes de usar a busca semântica.')
         const entries: SemanticIndexEntry[] = []
 
         for (let start = 0; start < library.items.length; start += EMBEDDING_BATCH_SIZE) {
@@ -162,10 +159,8 @@ const core = new AiCore(
         index = { version: 1, fingerprint, entries }
       }
 
-      const provider =
-        config.provider === 'gemini'
-          ? new GeminiSdkProvider(config, credentialCache ?? '')
-          : new OpenAiCompatibleProvider(config, credentialCache ?? '')
+      const provider = createConfiguredProvider(config)
+      if (!provider) throw new Error('Configure uma chave de API antes de usar a busca semântica.')
       const [queryVector] = await provider.embed(
         [String(args.query).trim()],
         new AbortController().signal,
@@ -243,13 +238,25 @@ function semanticIndexPath(): string {
   return path.join(app.getPath('userData'), SEMANTIC_INDEX_FILE_NAME)
 }
 
-let credentialCache: string | null = null
+let credentialCache: AiCredentials = {}
+
+function createConfiguredProvider(providerConfig: AiProviderConfig): AiProvider | null {
+  const apiKey = credentialForProvider(credentialCache, providerConfig.provider)
+  if (providerConfig.provider === 'ollama') {
+    return new OpenAiCompatibleProvider(providerConfig, '')
+  }
+  if (!apiKey) return null
+  if (providerConfig.provider === 'gemini') {
+    return new GeminiSdkProvider(providerConfig, apiKey)
+  }
+  return new OpenAiCompatibleProvider(providerConfig, apiKey)
+}
 
 async function initialize(): Promise<void> {
   if (initialized) return
   const settings = await readSettings()
-  config = settings.ai ?? { ...DEFAULT_AI_PROVIDER_CONFIG }
-  credentialCache = await readCredential()
+  config = validateAiProviderConfig(settings.ai ?? { ...DEFAULT_AI_PROVIDER_CONFIG })
+  credentialCache = await readCredentials()
   core.restoreHistory(await readAiHistoryFile(historyPath()))
   initialized = true
 }
@@ -264,51 +271,91 @@ function persistHistory(): Promise<void> {
   return historyWriteQueue
 }
 
-function readCredentialSync(): string | null {
-  return credentialCache
-}
-
-async function readCredential(): Promise<string | null> {
-  if (!safeStorage.isEncryptionAvailable()) return null
+async function readCredentials(): Promise<AiCredentials> {
+  if (!safeStorage.isEncryptionAvailable()) return {}
   let raw: string
   try {
     raw = await readFile(credentialsPath(), 'utf8')
   } catch (error) {
-    if (isMissingFile(error)) return null
+    if (isMissingFile(error)) return {}
     console.warn('Could not read AI credentials', error)
-    return null
+    return {}
   }
+  let parsed: unknown
   try {
-    const parsed = JSON.parse(raw) as unknown
-    if (!isRecord(parsed) || typeof parsed.value !== 'string') return null
-    const encrypted = Buffer.from(parsed.value, 'base64')
-    return safeStorage.decryptString(encrypted)
+    parsed = JSON.parse(raw) as unknown
   } catch (error) {
-    console.warn('Could not decrypt AI credentials', error)
-    return null
+    console.warn('Could not parse AI credentials', error)
+    return {}
   }
+  if (!isRecord(parsed)) return {}
+  if (parsed.version === 2 && isRecord(parsed.credentials)) {
+    const credentials: AiCredentials = {}
+    for (const provider of ['openai', 'gemini', 'openai-compatible'] as const) {
+      const encrypted = parsed.credentials[provider]
+      if (typeof encrypted !== 'string') continue
+      try {
+        credentials[provider] = safeStorage.decryptString(Buffer.from(encrypted, 'base64'))
+      } catch (error) {
+        console.warn(`Could not decrypt ${provider} AI credentials`, error)
+      }
+    }
+    return credentials
+  }
+
+  if (parsed.version === 1 && typeof parsed.value === 'string') {
+    let legacyCredential: string
+    try {
+      legacyCredential = safeStorage.decryptString(Buffer.from(parsed.value, 'base64'))
+    } catch (error) {
+      console.warn('Could not decrypt legacy AI credentials', error)
+      return {}
+    }
+    const credentials = migrateLegacyCredential(config.provider, legacyCredential)
+    await writeCredentials(credentials)
+    return credentials
+  }
+  return {}
 }
 
-async function writeCredential(apiKey: string): Promise<void> {
+async function writeCredentials(credentials: AiCredentials): Promise<void> {
+  const entries = Object.entries(credentials).filter(
+    (entry): entry is [CredentialProvider, string] => typeof entry[1] === 'string' && Boolean(entry[1]),
+  )
+  const file = credentialsPath()
+  if (entries.length === 0) {
+    await rm(file, { force: true })
+    credentialCache = {}
+    return
+  }
   if (!safeStorage.isEncryptionAvailable()) {
     throw new Error('O armazenamento seguro de credenciais não está disponível neste sistema.')
   }
-  const encrypted = safeStorage.encryptString(apiKey)
-  const file = credentialsPath()
+  const encryptedCredentials = Object.fromEntries(
+    entries.map(([provider, apiKey]) => [
+      provider,
+      safeStorage.encryptString(apiKey).toString('base64'),
+    ]),
+  )
   const temp = `${file}.tmp`
   await mkdir(path.dirname(file), { recursive: true })
-  await writeFile(temp, JSON.stringify({ version: 1, value: encrypted.toString('base64') }), 'utf8')
+  await writeFile(
+    temp,
+    JSON.stringify({ version: 2, credentials: encryptedCredentials }),
+    'utf8',
+  )
   await rename(temp, file)
-  credentialCache = apiKey
+  credentialCache = Object.fromEntries(entries)
 }
 
-async function removeCredential(): Promise<void> {
-  try {
-    await rm(credentialsPath(), { force: true })
-  } catch (error) {
-    if (!isMissingFile(error)) throw error
-  }
-  credentialCache = null
+async function setCredential(provider: CredentialProvider, apiKey: string): Promise<void> {
+  await writeCredentials({ ...credentialCache, [provider]: apiKey })
+}
+
+async function removeCredential(provider: CredentialProvider): Promise<void> {
+  const credentials = { ...credentialCache }
+  delete credentials[provider]
+  await writeCredentials(credentials)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -319,47 +366,11 @@ function isMissingFile(error: unknown): boolean {
   return error instanceof Error && 'code' in error && error.code === 'ENOENT'
 }
 
-function validateConfig(value: unknown): AiProviderConfig {
-  if (!isRecord(value)) throw new TypeError('Configuração de IA inválida.')
-  if (
-    value.provider !== 'openai' &&
-    value.provider !== 'gemini' &&
-    value.provider !== 'ollama' &&
-    value.provider !== 'openai-compatible'
-  ) {
-    throw new TypeError('Provedor de IA inválido.')
-  }
-  if (typeof value.baseUrl !== 'string' || typeof value.model !== 'string') {
-    throw new TypeError('URL base e modelo são obrigatórios.')
-  }
-  const baseUrl = value.baseUrl.trim().replace(/\/+$/, '')
-  const model = value.model.trim()
-  let url: URL
-  try {
-    url = new URL(baseUrl)
-  } catch {
-    throw new TypeError('A URL base do provedor é inválida.')
-  }
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-    throw new TypeError('Use uma URL HTTP ou HTTPS.')
-  }
-  if (!model) throw new TypeError('Informe o modelo.')
-  return {
-    provider: value.provider,
-    baseUrl: url.toString().replace(/\/+$/, ''),
-    model,
-    embeddingModel:
-      typeof value.embeddingModel === 'string' && value.embeddingModel.trim()
-        ? value.embeddingModel.trim()
-        : value.provider === 'gemini'
-          ? 'gemini-embedding-001'
-          : 'text-embedding-3-small',
-  }
-}
-
 function status(): AiStatus {
   return {
-    configured: config.provider === 'ollama' || Boolean(credentialCache),
+    configured:
+      config.provider === 'ollama' ||
+      Boolean(credentialForProvider(credentialCache, config.provider)),
     busy: core.isBusy(),
     provider: { ...config },
     messages: core.getHistory(),
@@ -470,7 +481,7 @@ export function registerAiIpc(): void {
   ipcMain.handle(IPC_CHANNELS.AI_CONFIG_SET, async (event, value: unknown) => {
     validateSender(event)
     await initialize()
-    config = validateConfig(value)
+    config = validateAiProviderConfig(value)
     const settings = await readSettings()
     await writeSettings({ ...settings, ai: config })
     return { ...config }
@@ -481,11 +492,12 @@ export function registerAiIpc(): void {
     if (config.provider !== 'gemini') {
       throw new Error('A listagem de modelos está disponível apenas para o Google Gemini.')
     }
-    if (!credentialCache) {
+    const apiKey = credentialForProvider(credentialCache, 'gemini')
+    if (!apiKey) {
       throw new Error('Configure uma chave de API para carregar os modelos disponíveis.')
     }
     try {
-      return await new GeminiSdkProvider(config, credentialCache).listModels()
+      return await new GeminiSdkProvider(config, apiKey).listModels()
     } catch (error) {
       throw normalizeError(error)
     }
@@ -493,13 +505,16 @@ export function registerAiIpc(): void {
   ipcMain.handle(IPC_CHANNELS.AI_CREDENTIAL_SET, async (event, value: unknown) => {
     validateSender(event)
     await initialize()
+    if (config.provider === 'ollama') {
+      throw new Error('O Ollama não precisa de uma chave de API.')
+    }
     if (typeof value !== 'string' || !value.trim()) throw new TypeError('Informe uma chave de API.')
-    await writeCredential(value.trim())
+    await setCredential(config.provider, value.trim())
   })
   ipcMain.handle(IPC_CHANNELS.AI_CREDENTIAL_REMOVE, async (event) => {
     validateSender(event)
     await initialize()
-    await removeCredential()
+    if (config.provider !== 'ollama') await removeCredential(config.provider)
   })
   ipcMain.handle(IPC_CHANNELS.AI_SEND, async (event, value: unknown) => {
     validateSender(event)

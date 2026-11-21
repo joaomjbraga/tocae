@@ -68,6 +68,17 @@ function AssistantPage() {
   const [playlistProposal, setPlaylistProposal] = useState<AiPlaylistProposal | null>(null)
   const endRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const providerName = status
+    ? {
+        openai: t('settings.aiProviderOpenAI'),
+        gemini: t('settings.aiProviderGemini'),
+        ollama: t('settings.aiProviderOllama'),
+        'openai-compatible': t('settings.aiProviderCompatible'),
+      }[status.provider.provider]
+    : ''
+  const endpoint = status?.provider.provider === 'gemini'
+    ? 'https://generativelanguage.googleapis.com'
+    : status?.provider.baseUrl ?? ''
 
   useEffect(() => {
     void window.tocae.ai.getStatus()
@@ -243,6 +254,12 @@ function AssistantPage() {
             </button>
           </div>
         </section>
+      )}
+
+      {status && (
+        <p className={styles.privacyNotice} role="note">
+          {t('assistant.privacyNotice', { provider: providerName, endpoint })}
+        </p>
       )}
 
       <form className={styles.composer} onSubmit={send}>

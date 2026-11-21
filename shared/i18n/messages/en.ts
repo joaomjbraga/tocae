@@ -54,8 +54,9 @@ export const enMessages: Messages = {
   'settings.aiModelsAvailable': '{count} models available',
   'settings.aiEmbeddingModel': 'Embedding model',
   'settings.aiCredential': 'Credential',
-  'settings.aiCredentialStored': 'A key is stored by the operating system.',
+  'settings.aiCredentialStored': 'A key for this provider is stored by the operating system.',
   'settings.aiCredentialMissing': 'No API key configured.',
+  'settings.aiSaveProviderFirst': 'Save the selected provider configuration first.',
   'settings.aiApiKey': 'API key',
   'settings.aiSave': 'Save configuration',
   'settings.aiSaveKey': 'Save key',
@@ -108,6 +109,8 @@ export const enMessages: Messages = {
 
   // AI assistant
   'assistant.title': 'Teco',
+  'assistant.privacyNotice':
+    'Privacy: your messages and library/queue data used in the response (names, paths, and metadata) may be sent to {provider} ({endpoint}). Avoid including personal information.',
   'assistant.description': 'Help with your Tocaê library, queue, and playback.',
   'assistant.placeholder': 'Ask about Tocaê...',
   'assistant.notConfigured': 'Configure the provider and API key in settings.',
