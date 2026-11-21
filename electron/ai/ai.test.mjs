@@ -270,6 +270,32 @@ test('AI core supports cancellation', async () => {
   await assert.rejects(pending, /cancel/i)
 })
 
+test('AI core propagates cancellation to an in-progress tool execution', async () => {
+  let markStarted
+  let toolSignal
+  const started = new Promise((resolve) => { markStarted = resolve })
+  const core = new AiCore(
+    () => ({
+      async sendStream(_messages, _signal, _onChunk, _tools, executeTool) {
+        await executeTool('search_library_semantic', {})
+      },
+    }),
+    [],
+    async (_name, _args, signal) => new Promise((_resolve, reject) => {
+      toolSignal = signal
+      signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+      markStarted()
+    }),
+  )
+
+  const pending = core.send('Search the library', config)
+  await started
+  core.cancel()
+
+  await assert.rejects(pending, /cancel/i)
+  assert.equal(toolSignal.aborted, true)
+})
+
 test('AI core rejects oversized user messages before calling the provider', async () => {
   let calls = 0
   const core = new AiCore(() => {
@@ -528,6 +554,108 @@ test('OpenAI-compatible provider creates embeddings through the embeddings endpo
       await provider.embed(['first', 'second'], new AbortController().signal),
       [[1, 0], [0, 1]],
     )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('embedding requests retry only transient failures with a bounded attempt count', async (t) => {
+  const originalFetch = globalThis.fetch
+  t.after(() => { globalThis.fetch = originalFetch })
+  let calls = 0
+  globalThis.fetch = async () => {
+    calls += 1
+    if (calls === 1) return new Response('temporary outage', { status: 503 })
+    if (calls === 2) return new Response('rate limited', { status: 429 })
+    return new Response(JSON.stringify({ data: [{ index: 0, embedding: [1, 0] }] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  const provider = new OpenAiCompatibleProvider(config, 'test-key')
+  assert.deepEqual(
+    await provider.embed(['retry-safe input'], new AbortController().signal),
+    [[1, 0]],
+  )
+  assert.equal(calls, 3)
+})
+
+test('embedding retries stop after two retries when the provider remains unavailable', async () => {
+  const originalFetch = globalThis.fetch
+  let calls = 0
+  globalThis.fetch = async () => {
+    calls += 1
+    return new Response('temporary outage', { status: 503 })
+  }
+
+  try {
+    const provider = new OpenAiCompatibleProvider(config, 'test-key')
+    await assert.rejects(
+      provider.embed(['retry limit'], new AbortController().signal),
+      /HTTP 503/,
+    )
+    assert.equal(calls, 3)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('embedding retry stops immediately when the request is cancelled', async () => {
+  const originalFetch = globalThis.fetch
+  const controller = new AbortController()
+  let calls = 0
+  globalThis.fetch = async () => {
+    calls += 1
+    controller.abort()
+    return new Response('temporary outage', { status: 503 })
+  }
+
+  try {
+    const provider = new OpenAiCompatibleProvider(config, 'test-key')
+    await assert.rejects(provider.embed(['cancel retry'], controller.signal), /cancel/i)
+    assert.equal(calls, 1)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('Gemini embedding retries transient SDK errors and preserves the cancellation signal', async () => {
+  const provider = new GeminiSdkProvider({
+    provider: 'gemini',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-3.8-flash',
+  }, 'test-key')
+  const controller = new AbortController()
+  let calls = 0
+  let receivedSignal
+  provider.ai.models.embedContent = async (request) => {
+    calls += 1
+    receivedSignal = request.config.abortSignal
+    if (calls === 1) throw Object.assign(new Error('Temporary service error'), { status: 503 })
+    return { embeddings: [{ values: [1, 0] }] }
+  }
+
+  assert.deepEqual(await provider.embed(['retry-safe input'], controller.signal), [[1, 0]])
+  assert.equal(calls, 2)
+  assert.equal(receivedSignal, controller.signal)
+})
+
+test('chat generation is not retried after a transient server response', async () => {
+  const originalFetch = globalThis.fetch
+  let calls = 0
+  globalThis.fetch = async () => {
+    calls += 1
+    return new Response('temporary outage', { status: 503 })
+  }
+
+  try {
+    const provider = new OpenAiCompatibleProvider(config, 'test-key')
+    await assert.rejects(
+      provider.sendStream([{ role: 'user', content: 'Do not replay tools' }], new AbortController().signal, () => {}),
+      /HTTP 503/,
+    )
+    assert.equal(calls, 1)
   } finally {
     globalThis.fetch = originalFetch
   }

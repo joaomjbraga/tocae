@@ -68,11 +68,14 @@ export class GeminiSdkProvider implements AiProvider {
 
   async embed(texts: readonly string[], signal: AbortSignal): Promise<number[][]> {
     if (texts.length === 0) return []
-    const response = await this.ai.models.embedContent({
-      model: this.config.embeddingModel ?? 'gemini-embedding-001',
-      contents: [...texts],
-      config: { abortSignal: signal },
-    })
+    const response = await retryEmbeddingRequest(
+      () => this.ai.models.embedContent({
+        model: this.config.embeddingModel ?? 'gemini-embedding-001',
+        contents: [...texts],
+        config: { abortSignal: signal },
+      }),
+      signal,
+    )
 
     const vectors = (response.embeddings ?? []).map((embedding) => embedding.values ?? [])
     if (vectors.length !== texts.length || vectors.some((vector) => vector.length === 0)) {
@@ -182,20 +185,23 @@ export class OpenAiCompatibleProvider implements AiProvider {
   async embed(texts: readonly string[], signal: AbortSignal): Promise<number[][]> {
     if (texts.length === 0) return []
     const baseUrl = this.config.baseUrl.replace(/\/+$/, '')
-    const response = await fetch(`${baseUrl}/embeddings`, {
-      method: 'POST',
-      redirect: 'error',
-      headers: {
-        ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+    const response = await fetchEmbeddingWithRetries(
+      `${baseUrl}/embeddings`,
+      {
+        method: 'POST',
+        redirect: 'error',
+        headers: {
+          ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.config.embeddingModel ?? 'text-embedding-3-small',
+          input: texts,
+        }),
       },
-      body: JSON.stringify({
-        model: this.config.embeddingModel ?? 'text-embedding-3-small',
-        input: texts,
-      }),
       signal,
-    })
+    )
 
     if (!response.ok) {
       const detail = await safeResponseDetail(response)
@@ -347,6 +353,122 @@ export class OpenAiCompatibleProvider implements AiProvider {
 }
 
 export class AiProviderError extends Error {}
+
+// Only embeddings are retried; generation can trigger tools with side effects.
+const MAX_EMBEDDING_RETRIES = 2
+const RETRYABLE_HTTP_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504])
+const RETRYABLE_NETWORK_CODES = new Set([
+  'ECONNABORTED',
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'EAI_AGAIN',
+  'ENETUNREACH',
+  'ETIMEDOUT',
+])
+
+async function retryEmbeddingRequest<T>(
+  operation: () => Promise<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    throwIfAborted(signal)
+    try {
+      return await operation()
+    } catch (error) {
+      if (
+        signal.aborted ||
+        attempt >= MAX_EMBEDDING_RETRIES ||
+        !isTransientProviderError(error)
+      ) {
+        throw error
+      }
+      await waitForRetry(attempt, signal)
+    }
+  }
+}
+
+async function fetchEmbeddingWithRetries(
+  url: string,
+  init: RequestInit,
+  signal: AbortSignal,
+): Promise<Response> {
+  for (let attempt = 0; ; attempt += 1) {
+    throwIfAborted(signal)
+    let response: Response
+    try {
+      response = await fetch(url, { ...init, signal })
+    } catch (error) {
+      if (
+        signal.aborted ||
+        attempt >= MAX_EMBEDDING_RETRIES ||
+        !isTransientFetchError(error)
+      ) {
+        throw error
+      }
+      await waitForRetry(attempt, signal)
+      continue
+    }
+
+    if (!RETRYABLE_HTTP_STATUSES.has(response.status) || attempt >= MAX_EMBEDDING_RETRIES) {
+      return response
+    }
+    await response.body?.cancel()
+    await waitForRetry(attempt, signal)
+  }
+}
+
+function isTransientFetchError(error: unknown): boolean {
+  return error instanceof TypeError || isTransientProviderError(error)
+}
+
+function isTransientProviderError(error: unknown): boolean {
+  const status = readProviderErrorStatus(error)
+  if (status !== null) return RETRYABLE_HTTP_STATUSES.has(status)
+  const code = readProviderErrorCode(error)
+  if (code && RETRYABLE_NETWORK_CODES.has(code)) return true
+  if (error instanceof Error) {
+    return /\b(?:408|425|429|500|502|503|504)\b/.test(error.message)
+  }
+  return false
+}
+
+function readProviderErrorStatus(error: unknown): number | null {
+  if (!isRecord(error)) return null
+  const response = isRecord(error.response) ? error.response : null
+  const value = error.status ?? error.statusCode ?? response?.status
+  if (typeof value === 'number' && Number.isInteger(value)) return value
+  if (typeof value === 'string' && /^\d{3}$/.test(value)) return Number(value)
+  return null
+}
+
+function readProviderErrorCode(error: unknown): string | null {
+  if (!isRecord(error)) return null
+  const cause = isRecord(error.cause) ? error.cause : null
+  const value = error.code ?? cause?.code
+  return typeof value === 'string' ? value : null
+}
+
+function throwIfAborted(signal: AbortSignal): void {
+  if (signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
+}
+
+function waitForRetry(attempt: number, signal: AbortSignal): Promise<void> {
+  const delayMs = 250 * (2 ** attempt)
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout>
+    const onAbort = () => {
+      clearTimeout(timer)
+      signal.removeEventListener('abort', onAbort)
+      reject(new DOMException('Solicitação cancelada.', 'AbortError'))
+    }
+    timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort)
+      resolve()
+    }, delayMs)
+    signal.addEventListener('abort', onAbort, { once: true })
+    if (signal.aborted) onAbort()
+  })
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

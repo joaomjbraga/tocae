@@ -17,12 +17,14 @@ export class AiCore {
   private busy = false
   private readonly providerFactory: (config: AiProviderConfig) => AiProvider | null
   private readonly tools: readonly AiToolDefinition[]
-  private readonly executeTool: ((name: string, args: unknown) => Promise<unknown>) | undefined
+  private readonly executeTool:
+    | ((name: string, args: unknown, signal: AbortSignal) => Promise<unknown>)
+    | undefined
 
   constructor(
     providerFactory: (config: AiProviderConfig) => AiProvider | null,
     tools: readonly AiToolDefinition[] = [],
-    executeTool?: (name: string, args: unknown) => Promise<unknown>,
+    executeTool?: (name: string, args: unknown, signal: AbortSignal) => Promise<unknown>,
   ) {
     this.providerFactory = providerFactory
     this.tools = tools
@@ -104,11 +106,14 @@ export class AiCore {
         this.tools,
         executeTool
           ? async (name, args) => {
+              if (controller.signal.aborted) {
+                throw new AiRequestError('Solicitação cancelada.')
+              }
               toolCallCount += 1
               if (toolCallCount > AI_LIMITS.toolCalls) {
                 throw new AiRequestError('A solicitação excedeu o limite de chamadas de ferramentas.')
               }
-              const result = await executeTool(name, args)
+              const result = await executeTool(name, args, controller.signal)
               let serialized: string | undefined
               try {
                 serialized = JSON.stringify(result)

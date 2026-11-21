@@ -44,7 +44,7 @@ let historyWriteQueue: Promise<void> = Promise.resolve()
 const core = new AiCore(
   createConfiguredProvider,
   AI_TOOL_DEFINITIONS,
-  async (name, args) => {
+  async (name, args, signal) => {
     if (name === 'get_player_state') {
       const playlist = await readPlaylist()
       const current = playlist.currentIndex >= 0 ? playlist.items[playlist.currentIndex] : null
@@ -124,24 +124,28 @@ const core = new AiCore(
       if (!isRecord(args) || typeof args.query !== 'string' || !args.query.trim()) {
         throw new Error('A busca semântica exige uma descrição.')
       }
+      throwIfAborted(signal)
       if (config.provider !== 'ollama' && !credentialForProvider(credentialCache, config.provider)) {
         throw new Error('Configure uma chave de API antes de usar a busca semântica.')
       }
 
       const library = await getLibrarySnapshot()
+      throwIfAborted(signal)
       const fingerprint = libraryFingerprint(library)
       let index = await readSemanticIndex(semanticIndexPath())
+      throwIfAborted(signal)
       if (!index || index.fingerprint !== fingerprint) {
         const provider = createConfiguredProvider(config)
         if (!provider) throw new Error('Configure uma chave de API antes de usar a busca semântica.')
         const entries: SemanticIndexEntry[] = []
 
         for (let start = 0; start < library.items.length; start += EMBEDDING_BATCH_SIZE) {
+          throwIfAborted(signal)
           const batch = library.items.slice(start, start + EMBEDDING_BATCH_SIZE)
           const texts = batch.map((item) =>
             [item.name, item.relativePath, item.type].filter(Boolean).join(' | '),
           )
-          const vectors = await provider.embed(texts, new AbortController().signal)
+          const vectors = await provider.embed(texts, signal)
           for (let indexValue = 0; indexValue < batch.length; indexValue += 1) {
             const item = batch[indexValue]
             entries.push({
@@ -155,16 +159,19 @@ const core = new AiCore(
           }
         }
 
+        throwIfAborted(signal)
         await writeSemanticIndex(semanticIndexPath(), fingerprint, entries)
         index = { version: 1, fingerprint, entries }
       }
 
+      throwIfAborted(signal)
       const provider = createConfiguredProvider(config)
       if (!provider) throw new Error('Configure uma chave de API antes de usar a busca semântica.')
       const [queryVector] = await provider.embed(
         [String(args.query).trim()],
-        new AbortController().signal,
+        signal,
       )
+      throwIfAborted(signal)
       const type = typeof args.type === 'string' ? args.type : null
       const limit =
         typeof args.limit === 'number' && Number.isInteger(args.limit)
@@ -364,6 +371,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isMissingFile(error: unknown): boolean {
   return error instanceof Error && 'code' in error && error.code === 'ENOENT'
+}
+
+function throwIfAborted(signal: AbortSignal): void {
+  if (signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
 }
 
 function status(): AiStatus {
