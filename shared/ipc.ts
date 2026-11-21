@@ -3,7 +3,13 @@ import type { LibrarySnapshot } from './library'
 import type { MediaMetadata } from './media'
 import type { MediaTrack } from './mediaTracks'
 import type { PersistedPlaylist, PlaylistItem } from './playlist'
-import type { AiPlayerState, AiPlaylistProposal, AiProviderConfig, AiStatus } from './ai'
+import type {
+  AiModelOption,
+  AiPlayerState,
+  AiPlaylistProposal,
+  AiProviderConfig,
+  AiStatus,
+} from './ai'
 
 export const IPC_CHANNELS = {
   COMMAND: 'app:command',
@@ -45,6 +51,7 @@ export const IPC_CHANNELS = {
   AI_STATUS_GET: 'ai:status:get',
   AI_CONFIG_GET: 'ai:config:get',
   AI_CONFIG_SET: 'ai:config:set',
+  AI_MODELS_LIST: 'ai:models:list',
   AI_CREDENTIAL_SET: 'ai:credential:set',
   AI_CREDENTIAL_REMOVE: 'ai:credential:remove',
   AI_SEND: 'ai:send',
@@ -151,6 +158,7 @@ export interface TocaeApi {
     getStatus(): Promise<AiStatus>
     getConfig(): Promise<AiProviderConfig>
     setConfig(config: AiProviderConfig): Promise<AiProviderConfig>
+    listModels(): Promise<AiModelOption[]>
     setCredential(apiKey: string): Promise<void>
     removeCredential(): Promise<void>
     sendMessage(message: string): Promise<AiStatus>

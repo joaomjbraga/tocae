@@ -4,11 +4,16 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { IPC_CHANNELS } from '@shared/ipc'
-import type { AiPlayerState, AiPlaylistProposal, AiProviderConfig, AiStatus } from '@shared/ai'
+import type {
+  AiPlayerState,
+  AiPlaylistProposal,
+  AiProviderConfig,
+  AiStatus,
+} from '@shared/ai'
 import { DEFAULT_AI_PROVIDER_CONFIG } from '@shared/ai'
 import { readSettings, writeSettings } from '../settings'
 import { AiCore, AiRequestError } from './core'
-import { AiProviderError, OpenAiCompatibleProvider } from './provider'
+import { AiProviderError, GeminiSdkProvider, OpenAiCompatibleProvider } from './provider'
 import { clearAiHistoryFile, readAiHistoryFile, writeAiHistoryFile } from './historyStore'
 import { getLibrarySnapshot } from '../library'
 import { readPlaylist, writePlaylist } from '../playlist'
@@ -31,6 +36,12 @@ let historyWriteQueue: Promise<void> = Promise.resolve()
 const core = new AiCore(
   (config) => {
     const apiKey = readCredentialSync()
+    if (config.provider === 'ollama') {
+      return new OpenAiCompatibleProvider(config, apiKey ?? '')
+    }
+    if (config.provider === 'gemini') {
+      return apiKey ? new GeminiSdkProvider(config, apiKey) : null
+    }
     return apiKey ? new OpenAiCompatibleProvider(config, apiKey) : null
   },
   AI_TOOL_DEFINITIONS,
@@ -114,7 +125,7 @@ const core = new AiCore(
       if (!isRecord(args) || typeof args.query !== 'string' || !args.query.trim()) {
         throw new Error('A busca semântica exige uma descrição.')
       }
-      if (!credentialCache) {
+      if (config.provider !== 'ollama' && !credentialCache) {
         throw new Error('Configure uma chave de API antes de usar a busca semântica.')
       }
 
@@ -122,7 +133,10 @@ const core = new AiCore(
       const fingerprint = libraryFingerprint(library)
       let index = await readSemanticIndex(semanticIndexPath())
       if (!index || index.fingerprint !== fingerprint) {
-        const provider = new OpenAiCompatibleProvider(config, credentialCache)
+        const provider =
+          config.provider === 'gemini'
+            ? new GeminiSdkProvider(config, credentialCache ?? '')
+            : new OpenAiCompatibleProvider(config, credentialCache ?? '')
         const entries: SemanticIndexEntry[] = []
 
         for (let start = 0; start < library.items.length; start += EMBEDDING_BATCH_SIZE) {
@@ -148,7 +162,10 @@ const core = new AiCore(
         index = { version: 1, fingerprint, entries }
       }
 
-      const provider = new OpenAiCompatibleProvider(config, credentialCache)
+      const provider =
+        config.provider === 'gemini'
+          ? new GeminiSdkProvider(config, credentialCache ?? '')
+          : new OpenAiCompatibleProvider(config, credentialCache ?? '')
       const [queryVector] = await provider.embed(
         [String(args.query).trim()],
         new AbortController().signal,
@@ -304,7 +321,14 @@ function isMissingFile(error: unknown): boolean {
 
 function validateConfig(value: unknown): AiProviderConfig {
   if (!isRecord(value)) throw new TypeError('Configuração de IA inválida.')
-  if (value.provider !== 'openai-compatible') throw new TypeError('Provedor de IA inválido.')
+  if (
+    value.provider !== 'openai' &&
+    value.provider !== 'gemini' &&
+    value.provider !== 'ollama' &&
+    value.provider !== 'openai-compatible'
+  ) {
+    throw new TypeError('Provedor de IA inválido.')
+  }
   if (typeof value.baseUrl !== 'string' || typeof value.model !== 'string') {
     throw new TypeError('URL base e modelo são obrigatórios.')
   }
@@ -321,19 +345,21 @@ function validateConfig(value: unknown): AiProviderConfig {
   }
   if (!model) throw new TypeError('Informe o modelo.')
   return {
-    provider: 'openai-compatible',
+    provider: value.provider,
     baseUrl: url.toString().replace(/\/+$/, ''),
     model,
     embeddingModel:
       typeof value.embeddingModel === 'string' && value.embeddingModel.trim()
         ? value.embeddingModel.trim()
-        : 'text-embedding-3-small',
+        : value.provider === 'gemini'
+          ? 'gemini-embedding-001'
+          : 'text-embedding-3-small',
   }
 }
 
 function status(): AiStatus {
   return {
-    configured: Boolean(credentialCache),
+    configured: config.provider === 'ollama' || Boolean(credentialCache),
     busy: core.isBusy(),
     provider: { ...config },
     messages: core.getHistory(),
@@ -364,6 +390,14 @@ function normalizeError(error: unknown): Error {
     return new Error('Solicitação cancelada ou excedeu o tempo limite.')
   }
   if (error instanceof Error) {
+    if (/HTTP 404|404/i.test(error.message)) {
+      return new Error(
+        'O modelo configurado não foi encontrado. Em Configurações > Teco, carregue os modelos disponíveis do Gemini, selecione um modelo listado e salve a configuração.',
+      )
+    }
+    if (/HTTP 401|401|invalid api key|API_KEY_INVALID/i.test(error.message)) {
+      return new Error('A chave da API não foi aceita pelo provedor. Verifique ou substitua a credencial.')
+    }
     if (/fetch failed|network|ENOTFOUND|ECONN|timeout/i.test(error.message)) {
       return new Error('Não foi possível conectar ao provedor. Verifique a URL e a conexão.')
     }
@@ -435,6 +469,21 @@ export function registerAiIpc(): void {
     const settings = await readSettings()
     await writeSettings({ ...settings, ai: config })
     return { ...config }
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_MODELS_LIST, async (event) => {
+    validateSender(event)
+    await initialize()
+    if (config.provider !== 'gemini') {
+      throw new Error('A listagem de modelos está disponível apenas para o Google Gemini.')
+    }
+    if (!credentialCache) {
+      throw new Error('Configure uma chave de API para carregar os modelos disponíveis.')
+    }
+    try {
+      return await new GeminiSdkProvider(config, credentialCache).listModels()
+    } catch (error) {
+      throw normalizeError(error)
+    }
   })
   ipcMain.handle(IPC_CHANNELS.AI_CREDENTIAL_SET, async (event, value: unknown) => {
     validateSender(event)

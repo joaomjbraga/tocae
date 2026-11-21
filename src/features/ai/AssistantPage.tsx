@@ -5,6 +5,13 @@ import type { AiMessage, AiPlaylistProposal, AiStatus } from '@shared/ai'
 import { useI18n } from '../../i18n'
 import styles from './AssistantPage.module.css'
 
+function providerErrorMessage(reason: unknown): string {
+  if (!(reason instanceof Error)) return ''
+  return reason.message
+    .replace(/^Error invoking remote method 'aisend':\s*/i, '')
+    .replace(/^Error:\s*/i, '')
+}
+
 function inlineMarkdown(text: string): ReactNode[] {
   const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g)
   return parts.map((part, index) => {
@@ -64,7 +71,7 @@ function AssistantPage() {
   useEffect(() => {
     void window.tocae.ai.getStatus()
       .then(setStatus)
-      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : t('assistant.unknownError')))
+      .catch((reason: unknown) => setError(providerErrorMessage(reason) || t('assistant.unknownError')))
   }, [t])
 
   useEffect(() => {
@@ -87,7 +94,7 @@ function AssistantPage() {
     try {
       await window.tocae.ai.applyPlaylistProposal()
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : t('assistant.unknownError'))
+      setError(providerErrorMessage(reason) || t('assistant.unknownError'))
     }
   }
 
@@ -95,7 +102,7 @@ function AssistantPage() {
     try {
       await window.tocae.ai.clearPlaylistProposal()
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : t('assistant.unknownError'))
+      setError(providerErrorMessage(reason) || t('assistant.unknownError'))
     }
   }
 
@@ -112,7 +119,7 @@ function AssistantPage() {
       setStreamingText('')
     } catch (reason) {
       setStreamingText('')
-      setError(reason instanceof Error ? reason.message : t('assistant.unknownError'))
+      setError(providerErrorMessage(reason) || t('assistant.unknownError'))
       try {
         setStatus(await window.tocae.ai.getStatus())
       } catch {
@@ -126,7 +133,7 @@ function AssistantPage() {
     try {
       setStatus(await window.tocae.ai.cancel())
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : t('assistant.unknownError'))
+      setError(providerErrorMessage(reason) || t('assistant.unknownError'))
     }
   }
 
@@ -135,7 +142,7 @@ function AssistantPage() {
     try {
       setStatus(await window.tocae.ai.clear())
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : t('assistant.unknownError'))
+      setError(providerErrorMessage(reason) || t('assistant.unknownError'))
     }
   }
 

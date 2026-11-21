@@ -4,7 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { AiCore, AiRequestError } from './core.ts'
-import { OpenAiCompatibleProvider } from './provider.ts'
+import { GeminiSdkProvider, OpenAiCompatibleProvider } from './provider.ts'
 import {
   clearAiHistoryFile,
   readAiHistoryFile,
@@ -23,6 +23,38 @@ const config = {
   baseUrl: 'https://api.example.test/v1',
   model: 'test-model',
 }
+
+test('Gemini model discovery returns only generative models with usable model IDs', async () => {
+  const provider = new GeminiSdkProvider({
+    provider: 'gemini',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-2.5-flash',
+  }, 'test-key')
+  provider.ai.models.list = async () => ({
+    async *[Symbol.asyncIterator]() {
+      yield {
+        name: 'models/gemini-2.5-pro',
+        displayName: 'Gemini 2.5 Pro',
+        supportedActions: ['generateContent'],
+      }
+      yield {
+        name: 'models/text-embedding-004',
+        displayName: 'Embedding model',
+        supportedActions: ['embedContent'],
+      }
+      yield {
+        name: 'gemini-2.5-flash',
+        displayName: 'Gemini 2.5 Flash',
+        supportedActions: ['generateContent'],
+      }
+    },
+  })
+
+  assert.deepEqual(await provider.listModels(), [
+    { name: 'gemini-2.5-flash', displayName: 'Gemini 2.5 Flash' },
+    { name: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro' },
+  ])
+})
 
 test('AI core adds user and assistant messages to history', async () => {
   let calls = 0
@@ -107,7 +139,6 @@ test('OpenAI-compatible provider sends Chat Completions and normalizes the respo
     globalThis.fetch = originalFetch
   }
 })
-
 test('AI core restores a validated in-memory history', () => {
   const core = new AiCore(() => null)
   core.restoreHistory([

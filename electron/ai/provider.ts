@@ -1,4 +1,11 @@
-import type { AiProviderConfig } from '@shared/ai'
+import type { AiModelOption, AiProviderConfig } from '@shared/ai'
+import {
+  GoogleGenAI,
+  createPartFromFunctionCall,
+  createPartFromFunctionResponse,
+  createUserContent,
+} from '@google/genai'
+import type { Content, FunctionCall, Tool } from '@google/genai'
 
 export interface AiProviderMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
@@ -36,6 +43,127 @@ export interface AiProvider {
   ): Promise<void>
 }
 
+export class GeminiSdkProvider implements AiProvider {
+  private readonly ai: GoogleGenAI
+  private readonly config: AiProviderConfig
+
+  constructor(config: AiProviderConfig, apiKey: string) {
+    this.config = config
+    this.ai = new GoogleGenAI({ apiKey })
+  }
+
+  async listModels(): Promise<AiModelOption[]> {
+    const models = await this.ai.models.list()
+    const available: AiModelOption[] = []
+    for await (const model of models) {
+      const name = model.name?.replace(/^models\//, '')
+      if (!name || !model.supportedActions?.includes('generateContent')) continue
+      available.push({
+        name,
+        displayName: model.displayName || name,
+      })
+    }
+    return available.sort((left, right) => left.displayName.localeCompare(right.displayName))
+  }
+
+  async embed(texts: readonly string[], signal: AbortSignal): Promise<number[][]> {
+    if (texts.length === 0) return []
+    const response = await this.ai.models.embedContent({
+      model: this.config.embeddingModel ?? 'gemini-embedding-001',
+      contents: [...texts],
+      config: { abortSignal: signal },
+    })
+
+    const vectors = (response.embeddings ?? []).map((embedding) => embedding.values ?? [])
+    if (vectors.length !== texts.length || vectors.some((vector) => vector.length === 0)) {
+      throw new AiProviderError('O Gemini não retornou todos os vetores esperados.')
+    }
+    return vectors
+  }
+
+  async sendStream(
+    messages: readonly AiProviderMessage[],
+    signal: AbortSignal,
+    onChunk: (chunk: string) => void,
+    tools: readonly AiToolDefinition[] = [],
+    executeTool?: (name: string, args: unknown) => Promise<unknown>,
+  ): Promise<void> {
+    let contents = toGeminiContents(messages)
+
+    for (let turn = 0; turn < 5; turn += 1) {
+      const stream = await this.ai.models.generateContentStream({
+        model: this.config.model,
+        contents,
+        config: {
+          abortSignal: signal,
+          automaticContinuation: false,
+          ...(tools.length > 0
+            ? {
+                tools: [{
+                  functionDeclarations: tools.map((tool) => ({
+                    name: tool.function.name,
+                    description: tool.function.description,
+                    parametersJsonSchema: tool.function.parameters,
+                  })),
+                }] as Tool[],
+              }
+            : {}),
+        },
+      })
+
+      let receivedText = false
+      const functionCalls: FunctionCall[] = []
+      for await (const chunk of stream) {
+        if (signal.aborted) throw new AiProviderError('Solicitação cancelada.')
+        const text = chunk.text
+        if (typeof text === 'string' && text) {
+          receivedText = true
+          onChunk(text)
+        }
+        if (chunk.functionCalls) functionCalls.push(...chunk.functionCalls)
+      }
+
+      if (functionCalls.length === 0) {
+        if (!receivedText) throw new AiProviderError('O Gemini não retornou uma resposta.')
+        return
+      }
+      if (!executeTool) throw new AiProviderError('O Gemini solicitou uma ferramenta indisponível.')
+
+      const responseParts = []
+      for (const call of functionCalls) {
+        if (!call.name) continue
+        const result = await executeTool(call.name, call.args ?? {})
+        responseParts.push(
+          createPartFromFunctionResponse(
+            call.id ?? call.name,
+            call.name,
+            { output: result },
+          ),
+        )
+      }
+      contents = [
+        ...contents,
+        { role: 'model', parts: functionCalls.map((call) =>
+          createPartFromFunctionCall(call.name ?? '', call.args ?? {}),
+        ) },
+        createUserContent(responseParts),
+      ]
+    }
+
+    throw new AiProviderError('O Gemini excedeu o limite de etapas de ferramentas.')
+  }
+}
+
+function toGeminiContents(messages: readonly AiProviderMessage[]): Content[] {
+  return messages
+    .filter((message) => message.role !== 'tool')
+    .map((message) => ({
+      role: message.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: message.content }],
+    }))
+}
+
+
 export class OpenAiCompatibleProvider implements AiProvider {
   private readonly config: AiProviderConfig
   private readonly apiKey: string
@@ -51,7 +179,7 @@ export class OpenAiCompatibleProvider implements AiProvider {
     const response = await fetch(`${baseUrl}/embeddings`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${this.apiKey}`,
+        ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
@@ -109,7 +237,7 @@ export class OpenAiCompatibleProvider implements AiProvider {
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${this.apiKey}`,
+          ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },

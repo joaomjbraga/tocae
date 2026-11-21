@@ -8,10 +8,15 @@ export interface AiMessage {
 }
 
 export interface AiProviderConfig {
-  provider: 'openai-compatible'
+  provider: 'openai' | 'gemini' | 'ollama' | 'openai-compatible'
   baseUrl: string
   model: string
   embeddingModel?: string
+}
+
+export interface AiModelOption {
+  name: string
+  displayName: string
 }
 
 export interface AiStatus {
@@ -34,7 +39,7 @@ export interface AiPlaylistProposal {
 }
 
 export const DEFAULT_AI_PROVIDER_CONFIG: AiProviderConfig = {
-  provider: 'openai-compatible',
+  provider: 'openai',
   baseUrl: 'https://api.openai.com/v1',
   model: 'gpt-4o-mini',
   embeddingModel: 'text-embedding-3-small',

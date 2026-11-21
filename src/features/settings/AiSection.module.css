@@ -8,8 +8,13 @@
 .settingDescription { margin:3px 0 0; color:var(--text-muted); font-size:var(--text-xs); }
 .keyIcon { color:var(--accent); }
 .field { display:flex; flex-direction:column; gap:6px; margin:0 14px; color:var(--text-secondary); font-size:var(--text-xs); }
-.field input { height:36px; border:1px solid var(--border-surface); border-radius:8px; padding:0 10px; outline:0; background:var(--bg-glass); color:var(--text-primary); user-select:text; }
-.field input:focus { border-color:var(--accent); }
+.field input,.field select { height:36px; border:1px solid var(--border-surface); border-radius:8px; padding:0 10px; outline:0; background:var(--bg-glass); color:var(--text-primary); user-select:text; }
+.field input:focus,.field select:focus { border-color:var(--accent); }
+.modelActions { display:flex; align-items:center; gap:10px; }
+.secondary { min-height:30px; border:1px solid var(--border-surface); border-radius:7px; padding:0 10px; background:var(--bg-glass); color:var(--text-secondary); cursor:pointer; }
+.secondary:disabled { color:var(--text-disabled); cursor:default; }
+.modelCount { color:var(--text-muted); }
+.modelError { color:var(--text-danger); }
 .actions { display:flex; gap:8px; }
 .primary,.danger { height:34px; display:inline-flex; align-items:center; justify-content:center; gap:7px; margin:0 14px; border:1px solid var(--border-surface); border-radius:8px; background:var(--accent-tint); color:var(--accent); cursor:pointer; }
 .danger { margin:0; background:transparent; color:var(--text-danger); }

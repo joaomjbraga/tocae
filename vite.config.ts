@@ -9,6 +9,7 @@ const aliases = {
 }
 
 const electronMainExternals = [
+  '@google/genai',
   '@derhuerst/ffprobe-static',
   'exiftool-vendored',
   'exifr',

@@ -6,7 +6,13 @@ import type { Locale } from '@shared/i18n'
 import type { MediaMetadata } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
 import type { PlaylistItem } from '@shared/playlist'
-import type { AiPlayerState, AiPlaylistProposal, AiProviderConfig, AiStatus } from '@shared/ai'
+import type {
+  AiModelOption,
+  AiPlayerState,
+  AiPlaylistProposal,
+  AiProviderConfig,
+  AiStatus,
+} from '@shared/ai'
 
 const api: TocaeApi = {
   onCommand(callback) {
@@ -87,6 +93,8 @@ const api: TocaeApi = {
     getConfig: () => ipcRenderer.invoke(IPC_CHANNELS.AI_CONFIG_GET) as Promise<AiProviderConfig>,
     setConfig: (config) =>
       ipcRenderer.invoke(IPC_CHANNELS.AI_CONFIG_SET, config) as Promise<AiProviderConfig>,
+    listModels: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_MODELS_LIST) as Promise<AiModelOption[]>,
     setCredential: (apiKey) =>
       ipcRenderer.invoke(IPC_CHANNELS.AI_CREDENTIAL_SET, apiKey),
     removeCredential: () =>

@@ -31,11 +31,14 @@ export async function readSettings(): Promise<Settings> {
       locale: isLocale(stored.locale) ? stored.locale : null,
       ai:
         ai &&
-        ai.provider === 'openai-compatible' &&
+        (ai.provider === 'openai' ||
+          ai.provider === 'gemini' ||
+          ai.provider === 'ollama' ||
+          ai.provider === 'openai-compatible') &&
         typeof ai.baseUrl === 'string' &&
         typeof ai.model === 'string'
           ? {
-              provider: 'openai-compatible',
+              provider: ai.provider,
               baseUrl: ai.baseUrl,
               model: ai.model,
               embeddingModel:

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Check, KeyRound, Trash2 } from 'lucide-react'
-import type { AiProviderConfig } from '@shared/ai'
+import type { AiModelOption, AiProviderConfig } from '@shared/ai'
 import { useI18n } from '../../i18n'
 import styles from './AiSection.module.css'
 
@@ -10,6 +10,12 @@ function AiSection() {
   const [config, setConfig] = useState<AiProviderConfig | null>(null)
   const [apiKey, setApiKey] = useState('')
   const [configured, setConfigured] = useState(false)
+  const [models, setModels] = useState<AiModelOption[]>([])
+  const [modelsLoaded, setModelsLoaded] = useState(false)
+  const [modelsLoading, setModelsLoading] = useState(false)
+  const [modelsError, setModelsError] = useState<string | null>(null)
+  const [customModel, setCustomModel] = useState(false)
+  const [modelRefresh, setModelRefresh] = useState(0)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -21,6 +27,38 @@ function AiSection() {
       })
       .catch((error: unknown) => setMessage(error instanceof Error ? error.message : t('assistant.unknownError')))
   }, [t])
+
+  useEffect(() => {
+    if (config?.provider !== 'gemini' || !configured) {
+      setModels([])
+      setModelsLoaded(false)
+      return
+    }
+
+    let active = true
+    setModelsLoaded(false)
+    setModelsLoading(true)
+    setModelsError(null)
+    window.tocae.ai.listModels()
+      .then((availableModels) => {
+        if (active) {
+          setModels(availableModels)
+          setModelsLoaded(true)
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setModelsError(error instanceof Error ? error.message : t('assistant.unknownError'))
+        }
+      })
+      .finally(() => {
+        if (active) setModelsLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [config?.provider, configured, modelRefresh, t])
 
   async function saveConfig(event: FormEvent) {
     event.preventDefault()
@@ -68,6 +106,40 @@ function AiSection() {
     }
   }
 
+  function changeProvider(provider: AiProviderConfig['provider']) {
+    if (!config) return
+    setCustomModel(false)
+    if (provider === 'openai') {
+      setConfig({
+        provider,
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-4o-mini',
+        embeddingModel: 'text-embedding-3-small',
+      })
+    } else if (provider === 'gemini') {
+      setConfig({
+        provider,
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        model: 'gemini-3.8-flash',
+        embeddingModel: 'gemini-embedding-001',
+      })
+    } else if (provider === 'ollama') {
+      setConfig({
+        provider,
+        baseUrl: 'http://127.0.0.1:11434/v1',
+        model: 'llama3.2',
+        embeddingModel: 'nomic-embed-text',
+      })
+    } else {
+      setConfig({
+        provider,
+        baseUrl: '',
+        model: '',
+        embeddingModel: '',
+      })
+    }
+  }
+
   return (
     <section className={styles.section} aria-labelledby="ai-title">
       <header className={styles.header}>
@@ -82,6 +154,18 @@ function AiSection() {
               <h3 className={styles.settingTitle}>{t('settings.aiProvider')}</h3>
               <p className={styles.settingDescription}>{t('settings.aiProviderDescription')}</p>
             </div>
+            <label className={styles.field}>
+              <span>{t('settings.aiProviderType')}</span>
+              <select
+                value={config.provider}
+                onChange={(event) => changeProvider(event.target.value as AiProviderConfig['provider'])}
+              >
+                <option value="openai">{t('settings.aiProviderOpenAI')}</option>
+                <option value="gemini">{t('settings.aiProviderGemini')}</option>
+                <option value="ollama">{t('settings.aiProviderOllama')}</option>
+                <option value="openai-compatible">{t('settings.aiProviderCompatible')}</option>
+              </select>
+            </label>
           </div>
           <label className={styles.field}>
             <span>{t('settings.aiBaseUrl')}</span>
@@ -95,12 +179,73 @@ function AiSection() {
           </label>
           <label className={styles.field}>
             <span>{t('settings.aiModel')}</span>
-            <input
-              value={config.model}
-              onChange={(event) => setConfig({ ...config, model: event.target.value })}
-              placeholder="gpt-4o-mini"
-              spellCheck={false}
-            />
+            {config.provider === 'gemini' && models.length > 0 ? (
+              <>
+                <select
+                  value={customModel ? '__custom__' : config.model}
+                  onChange={(event) => {
+                    if (event.target.value === '__custom__') {
+                      setCustomModel(true)
+                    } else {
+                      setCustomModel(false)
+                      setConfig({ ...config, model: event.target.value })
+                    }
+                  }}
+                >
+                  {!customModel && !models.some((model) => model.name === config.model) && (
+                    <option value={config.model}>
+                      {t('settings.aiModelNotListed', { model: config.model })}
+                    </option>
+                  )}
+                  {models.map((model) => (
+                    <option key={model.name} value={model.name}>{model.displayName}</option>
+                  ))}
+                  <option value="__custom__">{t('settings.aiCustomModel')}</option>
+                </select>
+                {customModel && (
+                  <input
+                    aria-label={t('settings.aiCustomModel')}
+                    value={config.model}
+                    onChange={(event) => setConfig({ ...config, model: event.target.value })}
+                    placeholder="gemini-3.8-flash"
+                    spellCheck={false}
+                  />
+                )}
+              </>
+            ) : (
+              <input
+                value={config.model}
+                onChange={(event) => setConfig({ ...config, model: event.target.value })}
+                placeholder="gpt-4o-mini"
+                spellCheck={false}
+              />
+            )}
+            {config.provider === 'gemini' && (
+              <>
+                <div className={styles.modelActions}>
+                  <button
+                    type="button"
+                    className={styles.secondary}
+                    onClick={() => setModelRefresh((refresh) => refresh + 1)}
+                    disabled={saving || modelsLoading || !configured}
+                  >
+                    {modelsLoading ? t('settings.aiModelsLoading') : t('settings.aiLoadModels')}
+                  </button>
+                  {models.length > 0 && (
+                    <span className={styles.modelCount}>
+                      {t('settings.aiModelsAvailable', { count: models.length })}
+                    </span>
+                  )}
+                  {modelsLoaded && !models.some((model) => model.name === config.model) && !customModel && (
+                    <span className={styles.modelError}>{t('settings.aiModelUnavailable')}</span>
+                  )}
+                  {!configured && (
+                    <span className={styles.modelCount}>{t('settings.aiModelRequiresKey')}</span>
+                  )}
+                </div>
+                {modelsError && <span className={styles.modelError} role="status">{modelsError}</span>}
+              </>
+            )}
           </label>
           <label className={styles.field}>
             <span>{t('settings.aiEmbeddingModel')}</span>
@@ -118,6 +263,7 @@ function AiSection() {
         </form>
       )}
 
+      {config?.provider !== 'ollama' && (
       <form className={styles.group} onSubmit={saveCredential}>
         <div className={styles.groupHeader}>
           <div>
@@ -152,6 +298,7 @@ function AiSection() {
           )}
         </div>
       </form>
+      )}
 
       {message && <p className={styles.feedback} role="status">{message}</p>}
     </section>

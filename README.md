@@ -63,6 +63,18 @@ modelo compatível com embeddings nas configurações do assistente. O índice �
 gravado localmente em `ai-library-index.json` e atualizado quando a biblioteca
 mudar. A primeira busca pode levar mais tempo enquanto o índice é criado.
 
+### Provedores
+
+O assistente aceita três configurações:
+
+- **OpenAI:** URL padrão `https://api.openai.com/v1`, com chave armazenada pelo
+  `safeStorage`.
+- **Ollama local:** URL padrão `http://127.0.0.1:11434/v1`, sem chave de API.
+- **Google Gemini:** URL compatível
+  `https://generativelanguage.googleapis.com/v1beta/openai`, com chave armazenada
+  pelo `safeStorage`.
+- **API compatível:** URL, modelo de chat e modelo de embeddings personalizados.
+
 Exemplo para o provedor oficial da OpenAI:
 
 - URL base: `https://api.openai.com/v1`
