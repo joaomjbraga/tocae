@@ -24,6 +24,9 @@ export interface AiDataPreferences {
   imageDescription: boolean
   videoAnalysis: boolean
   fileOrganizationPreview: boolean
+  fileOrganizationByGenre: boolean
+  fileOrganizationRename: boolean
+  fileOrganizationNamePattern: string
 }
 
 export interface AiOrganizationPlanEntry {

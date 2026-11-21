@@ -463,6 +463,59 @@ function AiSection() {
               <small>{t('settings.aiFileOrganizationPreviewDescription')}</small>
             </span>
           </label>
+          {dataPreferences.fileOrganizationPreview && (
+            <>
+              <label className={styles.toggleField}>
+                <input
+                  type="checkbox"
+                  checked={dataPreferences.fileOrganizationByGenre}
+                  disabled={saving}
+                  onChange={(event) => void saveDataPreferences({
+                    ...dataPreferences,
+                    fileOrganizationByGenre: event.target.checked,
+                  })}
+                />
+                <span className={styles.toggleCopy}>
+                  <strong>{t('settings.aiFileOrganizationByGenre')}</strong>
+                  <small>{t('settings.aiFileOrganizationByGenreDescription')}</small>
+                </span>
+              </label>
+              <label className={styles.toggleField}>
+                <input
+                  type="checkbox"
+                  checked={dataPreferences.fileOrganizationRename}
+                  disabled={saving}
+                  onChange={(event) => void saveDataPreferences({
+                    ...dataPreferences,
+                    fileOrganizationRename: event.target.checked,
+                  })}
+                />
+                <span className={styles.toggleCopy}>
+                  <strong>{t('settings.aiFileOrganizationRename')}</strong>
+                  <small>{t('settings.aiFileOrganizationRenameDescription')}</small>
+                </span>
+              </label>
+              {dataPreferences.fileOrganizationRename && (
+                <label className={styles.field}>
+                  <span>{t('settings.aiFileOrganizationNamePattern')}</span>
+                  <input
+                    type="text"
+                    value={dataPreferences.fileOrganizationNamePattern}
+                    maxLength={160}
+                    disabled={saving}
+                    onChange={(event) => {
+                      const namePattern = event.target.value
+                      setDataPreferences((current) => current
+                        ? { ...current, fileOrganizationNamePattern: namePattern }
+                        : current)
+                    }}
+                    onBlur={() => void saveDataPreferences(dataPreferences)}
+                  />
+                  <small>{t('settings.aiFileOrganizationNamePatternDescription')}</small>
+                </label>
+              )}
+            </>
+          )}
           <label className={styles.toggleField}>
             <input
               type="checkbox"

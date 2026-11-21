@@ -678,7 +678,10 @@ function validateAiDataPreferences(value: unknown): AiDataPreferences {
     typeof value.audioMoodAnalysis !== 'boolean' ||
     typeof value.imageDescription !== 'boolean' ||
     typeof value.videoAnalysis !== 'boolean' ||
-    typeof value.fileOrganizationPreview !== 'boolean'
+    typeof value.fileOrganizationPreview !== 'boolean' ||
+    typeof value.fileOrganizationByGenre !== 'boolean' ||
+    typeof value.fileOrganizationRename !== 'boolean' ||
+    typeof value.fileOrganizationNamePattern !== 'string'
   ) {
     throw new TypeError('As preferências de dados do Teco não são válidas.')
   }
@@ -690,6 +693,9 @@ function validateAiDataPreferences(value: unknown): AiDataPreferences {
     imageDescription: value.imageDescription,
     videoAnalysis: value.videoAnalysis,
     fileOrganizationPreview: value.fileOrganizationPreview,
+    fileOrganizationByGenre: value.fileOrganizationByGenre,
+    fileOrganizationRename: value.fileOrganizationRename,
+    fileOrganizationNamePattern: value.fileOrganizationNamePattern.slice(0, 160),
   }
 }
 
@@ -921,8 +927,12 @@ export function registerAiIpc(): void {
       {
         unknownArtist: translate(locale, 'assistant.organizationUnknownArtist'),
         unknownAlbum: translate(locale, 'assistant.organizationUnknownAlbum'),
+        unknownGenre: translate(locale, 'assistant.organizationUnknownGenre'),
         videoFolder: translate(locale, 'assistant.organizationVideoFolder'),
         imageFolder: translate(locale, 'assistant.organizationImageFolder'),
+        organizeByGenre: dataPreferences.fileOrganizationByGenre,
+        renameFiles: dataPreferences.fileOrganizationRename,
+        namePattern: dataPreferences.fileOrganizationNamePattern,
       },
     )
     return { ...plan, undoAvailable: organizationUndoMoves.length > 0 }
@@ -937,8 +947,12 @@ export function registerAiIpc(): void {
     const options = {
       unknownArtist: translate(locale, 'assistant.organizationUnknownArtist'),
       unknownAlbum: translate(locale, 'assistant.organizationUnknownAlbum'),
+      unknownGenre: translate(locale, 'assistant.organizationUnknownGenre'),
       videoFolder: translate(locale, 'assistant.organizationVideoFolder'),
       imageFolder: translate(locale, 'assistant.organizationImageFolder'),
+      organizeByGenre: dataPreferences.fileOrganizationByGenre,
+      renameFiles: dataPreferences.fileOrganizationRename,
+      namePattern: dataPreferences.fileOrganizationNamePattern,
     }
     const library = await getLibrarySnapshot()
     const preview = await buildOrganizationPlan(library, getMediaMetadata, options)
@@ -987,7 +1001,7 @@ export function registerAiIpc(): void {
       appliedItems: result.appliedItems,
       skippedItems: result.skippedItems,
       failedItems: result.failedItems,
-      undoAvailable: false,
+      undoAvailable: result.moves.length > 0,
     }
   })
   ipcMain.handle(IPC_CHANNELS.AI_AUDIO_MOOD_ANALYZE, (event, value: unknown) =>

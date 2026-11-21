@@ -97,6 +97,10 @@ prévia local de até 500 itens, agrupando áudio por artista/álbum e vídeo/im
 por tipo. Os itens prontos só são movidos após confirmação nativa; destinos
 existentes nunca são sobrescritos e os movimentos concluídos podem ser
 desfeitos após reiniciar a aplicação enquanto o destino continuar válido.
+Uma opção separada pode incluir o gênero no layout de áudio, usando
+`Gênero/Artista/Álbum` e `Gênero desconhecido` quando não houver gênero.
+Os áudios também podem ser renomeados por um padrão local, como
+`{artist} - {title}`, preservando a extensão original.
 
 Entre as funcionalidades planejadas estão:
 

@@ -23,5 +23,8 @@ export const DEFAULT_SETTINGS: Settings = {
     imageDescription: false,
     videoAnalysis: false,
     fileOrganizationPreview: false,
+    fileOrganizationByGenre: false,
+    fileOrganizationRename: false,
+    fileOrganizationNamePattern: '{artist} - {title}',
   },
 }

@@ -80,6 +80,18 @@ export async function readSettings(): Promise<Settings> {
           typeof aiData.fileOrganizationPreview === 'boolean'
             ? aiData.fileOrganizationPreview
             : DEFAULT_SETTINGS.aiData.fileOrganizationPreview,
+        fileOrganizationByGenre:
+          typeof aiData.fileOrganizationByGenre === 'boolean'
+            ? aiData.fileOrganizationByGenre
+            : DEFAULT_SETTINGS.aiData.fileOrganizationByGenre,
+        fileOrganizationRename:
+          typeof aiData.fileOrganizationRename === 'boolean'
+            ? aiData.fileOrganizationRename
+            : DEFAULT_SETTINGS.aiData.fileOrganizationRename,
+        fileOrganizationNamePattern:
+          typeof aiData.fileOrganizationNamePattern === 'string'
+            ? aiData.fileOrganizationNamePattern.slice(0, 160)
+            : DEFAULT_SETTINGS.aiData.fileOrganizationNamePattern,
       },
     }
   } catch (error) {

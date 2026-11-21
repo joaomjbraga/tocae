@@ -11,8 +11,12 @@ const RESERVED_WINDOWS_NAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i
 export interface OrganizationPlanOptions {
   unknownArtist: string
   unknownAlbum: string
+  unknownGenre: string
   videoFolder: string
   imageFolder: string
+  organizeByGenre: boolean
+  renameFiles: boolean
+  namePattern: string
 }
 
 interface PlannedEntry extends AiOrganizationPlanEntry {
@@ -62,6 +66,31 @@ function safeFileName(fileName: string): string {
   return `${name.slice(0, 120 - extension.length)}${extension}`
 }
 
+function applyNamePattern(
+  item: LibraryMediaItem,
+  metadata: MediaMetadata | undefined,
+  options: OrganizationPlanOptions,
+): string {
+  if (!options.renameFiles) return safeFileName(item.name)
+  const originalExtension = path.extname(item.name)
+  const values: Record<string, string> = {
+    artist: metadata?.artist ?? options.unknownArtist,
+    album: metadata?.album ?? options.unknownAlbum,
+    title: metadata?.title ?? path.basename(item.name, originalExtension),
+    genre: metadata?.genres?.map((value) => value.trim()).find(Boolean) ?? options.unknownGenre,
+    year: metadata?.year ? String(metadata.year) : '',
+  }
+  const baseName = options.namePattern
+    .replace(/\{(artist|album|title|genre|year)\}/gi, (token, key: string) =>
+      values[key.toLowerCase()] ?? token,
+    )
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
+    .replace(/\s+/g, ' ')
+    .replace(/[. ]+$/g, '')
+    .trim()
+  return safeFileName(`${baseName || path.basename(item.name, originalExtension)}${originalExtension}`)
+}
+
 async function mapWithConcurrency<T, R>(
   items: readonly T[],
   concurrency: number,
@@ -86,8 +115,17 @@ function targetSegments(
   metadata: MediaMetadata | undefined,
   options: OrganizationPlanOptions,
 ): string[] {
-  const fileName = safeFileName(item.name)
+  const fileName = applyNamePattern(item, metadata, options)
   if (item.type === 'audio') {
+    if (options.organizeByGenre) {
+      const genre = metadata?.genres?.map((value) => value.trim()).find(Boolean)
+      return [
+        safePathSegment(genre, options.unknownGenre),
+        safePathSegment(metadata?.artist, options.unknownArtist),
+        safePathSegment(metadata?.album, options.unknownAlbum),
+        fileName,
+      ]
+    }
     return [
       safePathSegment(metadata?.artist, options.unknownArtist),
       safePathSegment(metadata?.album, options.unknownAlbum),
@@ -184,7 +222,6 @@ export async function applyOrganizationPlan(
   options: OrganizationPlanOptions,
 ): Promise<OrganizationApplyResult> {
   const plan = await buildOrganizationPlan(library, getMediaMetadata, options)
-  const folders = new Map(library.folders.map((folder) => [folder.name, folder]))
   const moves: OrganizationMove[] = []
   let failedItems = 0
   let skippedItems = 0
@@ -194,12 +231,22 @@ export async function applyOrganizationPlan(
       skippedItems += 1
       continue
     }
-    const folder = folders.get(entry.folderName)
+    const item = library.items.find((candidate) =>
+      candidate.relativePath === entry.sourceRelativePath &&
+      library.folders.find((folder) =>
+        folder.id === candidate.folderId && folder.name === entry.folderName
+      ),
+    )
+    if (!item) {
+      failedItems += 1
+      continue
+    }
+    const folder = library.folders.find((candidate) => candidate.id === item.folderId)
     if (!folder) {
       failedItems += 1
       continue
     }
-    const sourcePath = path.resolve(folder.path, entry.sourceRelativePath)
+    const sourcePath = path.resolve(item.path)
     const destinationPath = path.resolve(folder.path, ...entry.targetRelativePath.split('/'))
     const relativeDestination = path.relative(folder.path, destinationPath)
     if (
@@ -246,11 +293,11 @@ export async function undoOrganizationMoves(
 
   for (const move of [...moves].reverse()) {
     try {
-      const sourceInfo = await lstat(move.destinationPath).catch((error) => {
+      const destinationInfo = await lstat(move.destinationPath).catch((error) => {
         if (isMissingFile(error)) return null
         throw error
       })
-      if (!sourceInfo?.isFile()) {
+      if (!destinationInfo?.isFile()) {
         skippedItems += 1
         continue
       }
@@ -261,7 +308,11 @@ export async function undoOrganizationMoves(
       await mkdir(path.dirname(move.sourcePath), { recursive: true })
       await rename(move.destinationPath, move.sourcePath)
       restoredItems += 1
-    } catch {
+    } catch (error) {
+      if (isMissingFile(error)) {
+        skippedItems += 1
+        continue
+      }
       failedItems += 1
       remainingMoves.push(move)
     }

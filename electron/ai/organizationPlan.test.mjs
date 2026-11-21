@@ -16,8 +16,12 @@ import {
 const options = {
   unknownArtist: 'Unknown Artist',
   unknownAlbum: 'Unknown Album',
+  unknownGenre: 'Unknown Genre',
   videoFolder: 'Videos',
   imageFolder: 'Images',
+  organizeByGenre: false,
+  renameFiles: false,
+  namePattern: '{artist} - {title}',
 }
 
 async function createLibrary(root, items) {
@@ -172,6 +176,77 @@ test('limits large previews and reports omitted library items', async () => {
   }
 })
 
+test('uses the first available genre before artist and album', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'tocae-organization-genre-'))
+  try {
+    const library = await createLibrary(root, [
+      { name: 'song.mp3', type: 'audio' },
+    ])
+    const plan = await buildOrganizationPlan(
+      library,
+      async () => ({
+        fileSize: 7,
+        modifiedAt: 1,
+        artist: 'Artist',
+        album: 'Album',
+        genres: ['Rock', 'Alternative'],
+      }),
+      { ...options, organizeByGenre: true },
+    )
+
+    assert.equal(plan.entries[0].targetRelativePath, 'Rock/Artist/Album/song.mp3')
+
+    const unknownPlan = await buildOrganizationPlan(
+      library,
+      async () => ({
+        fileSize: 7,
+        modifiedAt: 1,
+        artist: 'Artist',
+        album: 'Album',
+      }),
+      { ...options, organizeByGenre: true },
+    )
+    assert.equal(
+      unknownPlan.entries[0].targetRelativePath,
+      'Unknown Genre/Artist/Album/song.mp3',
+    )
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('applies a custom audio name pattern and preserves the extension', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'tocae-organization-name-'))
+  try {
+    const library = await createLibrary(root, [
+      { name: 'source.flac', type: 'audio' },
+    ])
+    const plan = await buildOrganizationPlan(
+      library,
+      async () => ({
+        fileSize: 7,
+        modifiedAt: 1,
+        artist: 'Artist / Name',
+        album: 'Album',
+        title: 'Song: Part 1',
+        year: 2026,
+      }),
+      {
+        ...options,
+        renameFiles: true,
+        namePattern: '{year} - {artist} - {title}',
+      },
+    )
+
+    assert.equal(
+      plan.entries[0].targetRelativePath,
+      'Artist _ Name/Album/2026 - Artist _ Name - Song_ Part 1.flac',
+    )
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 test('applies only ready items and can undo the moves', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'tocae-organization-apply-'))
   try {
@@ -239,6 +314,37 @@ test('persists organization moves for undo after a restart', async () => {
 
     await writeOrganizationUndoStore(journal, [])
     assert.deepEqual(await readOrganizationUndoStore(journal), [])
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('skips stale undo entries and preserves entries that failed temporarily', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'tocae-organization-undo-safety-'))
+  try {
+    const source = path.join(root, 'source.mp3')
+    const staleDestination = path.join(root, 'Stale', 'source.mp3')
+    const conflictDestination = path.join(root, 'Conflict', 'source.mp3')
+    await mkdir(path.dirname(conflictDestination), { recursive: true })
+    await writeFile(source, 'restored conflict check')
+    await writeFile(conflictDestination, 'existing conflict')
+
+    const stale = await undoOrganizationMoves([{
+      sourcePath: source,
+      destinationPath: staleDestination,
+    }])
+    assert.equal(stale.restoredItems, undefined)
+    assert.equal(stale.appliedItems, 0)
+    assert.equal(stale.skippedItems, 1)
+    assert.equal(stale.moves.length, 0)
+
+    await rm(source)
+    const conflict = await undoOrganizationMoves([{
+      sourcePath: source,
+      destinationPath: conflictDestination,
+    }])
+    assert.equal(conflict.appliedItems, 1)
+    assert.equal(conflict.skippedItems, 0)
   } finally {
     await rm(root, { recursive: true, force: true })
   }
