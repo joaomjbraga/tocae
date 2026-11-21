@@ -8,33 +8,33 @@
 
 O Teco é um assistente conversacional funcional, integrado ao processo principal do Electron e aos dados de reprodução do Tocaê. A integração inclui streaming, histórico de uma conversa, provedores configuráveis, ferramentas limitadas para consultar a biblioteca e a fila, controles básicos do player e propostas de playlist que exigem confirmação antes de substituir a fila.
 
-O Gemini usa o SDK oficial `@google/genai`, incluindo geração em streaming, descoberta de modelos, embeddings e chamadas de ferramentas. O fluxo mantém as partes originais do modelo necessárias para preservar `thoughtSignature`. O uso do SDK não significa que a Interactions API esteja integrada: a implementação atual usa `models.generateContentStream` e um ciclo manual de ferramentas, com até cinco turnos. Não foi feita chamada real ao Gemini nesta auditoria.
+O Gemini usa o SDK oficial `@google/genai`, incluindo geração em streaming, descoberta de modelos, embeddings e chamadas de ferramentas. O fluxo mantém as partes originais do modelo necessárias para preservar `thoughtSignature`. O uso do SDK não significa que a Interactions API esteja integrada: a implementação atual usa `models.generateContentStream` e um ciclo manual de ferramentas, com até cinco turnos. A auditoria inicial não fez chamada real ao Gemini; um smoke test posterior limitado está registrado na seção 11.
 
 **Resultado da matriz de 80 critérios:**
 
 | Estado | Quantidade | Definição |
 |---|---:|---|
-| Implementado | 17 (21,25%) | Fluxo funcional identificado no código; as limitações estão registradas quando relevantes. |
-| Parcial | 14 (17,5%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
-| Não implementado | 49 (61,25%) | Não foi encontrado fluxo integrado do Teco para o critério. |
+| Implementado | 21 (26,25%) | Fluxo funcional identificado no código; as limitações estão registradas quando relevantes. |
+| Parcial | 13 (16,25%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
+| Não implementado | 46 (57,5%) | Não foi encontrado fluxo integrado do Teco para o critério. |
 | Apenas interface / estrutura preparada | 0 | Não foi identificado critério cujo único suporte seja uma tela ou estrutura sem fluxo funcional. |
 
 O resultado não deve ser interpretado como percentual de qualidade ou prontidão: cada critério tem peso igual, e a classificação “parcial” não mede profundidade.
 
 ### Indicadores estimados
 
-Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **30%** (24/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
+Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **34,4%** (27,5/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
 
 | Área | Estimativa | Base |
 |---|---:|---|
 | Conversação e interface | 75–81% | Chat, streaming, provedores, ferramentas e fluxo principal existentes; contexto, sessões, persistência e cancelamento ainda limitados. |
 | Infraestrutura de IA | 70–80% | Separação Main/Preload/Renderer, adaptadores, IPC tipado e armazenamento seguro de credenciais; faltam limites de uso e validação real dos provedores. |
-| Busca da biblioteca | ~35% | Busca lexical, semântica e filtro por tipo existem; metadados ricos e atributos como artista, álbum e gênero não fazem parte da busca. |
+| Busca da biblioteca | ~70% | Busca textual e filtros por título, artista, álbum e gênero existem; a busca semântica ainda indexa apenas nome, caminho e tipo. |
 | Playlists | ~38% | O Teco propõe uma seleção a partir da biblioteca e, com confirmação, substitui a fila atual; não cria playlists nomeadas nem aplica preferências musicais. |
 | Controle do player | ~80% dos controles básicos | Play, pause, próximo e anterior estão disponíveis; volume e navegação da aplicação não estão expostos ao agente. |
 | Organização, recomendações, inteligência musical, vídeo e imagem | 0% | Nenhum fluxo de IA correspondente foi encontrado. |
 
-**Conclusão:** a base de conversa e integração é real, mas o Teco ainda não é um sistema de curadoria musical, organização automática ou análise multimodal. Os maiores riscos práticos são privacidade dos dados enviados ao provedor, arquivos locais de histórico/índice sem criptografia, limites insuficientes de contexto/custo e ausência de validação ao vivo do Gemini.
+**Conclusão:** a base de conversa e integração é real, mas o Teco ainda não é um sistema de curadoria musical, organização automática ou análise multimodal. Os maiores riscos práticos são privacidade dos dados enviados ao provedor, arquivos locais de histórico/índice sem criptografia e validação real limitada a um cenário com um modelo e estado simulado.
 
 ## 2. Matriz consolidada dos 80 critérios
 
@@ -43,7 +43,7 @@ Legenda: **I** = implementado; **P** = parcial; **N** = não implementado.
 | Grupo | I | P | N |
 |---|---:|---:|---:|
 | A. Conversação e interface | 8 | 5 | 0 |
-| B. Busca da biblioteca | 1 | 5 | 4 |
+| B. Busca da biblioteca | 5 | 4 | 1 |
 | C. Playlists | 2 | 2 | 4 |
 | D. Organização de arquivos | 0 | 0 | 8 |
 | E. Histórico de reprodução e favoritos | 0 | 0 | 6 |
@@ -52,7 +52,7 @@ Legenda: **I** = implementado; **P** = parcial; **N** = não implementado.
 | H. Análise de vídeo | 0 | 0 | 5 |
 | I. Análise de imagem | 0 | 0 | 6 |
 | J. Integração e ações | 6 | 2 | 3 |
-| **Total** | **17** | **14** | **49** |
+| **Total** | **21** | **13** | **46** |
 
 ## 3. Matriz detalhada
 
@@ -82,13 +82,13 @@ Cada linha registra o comportamento encontrado e a principal lacuna. “Não enc
 |---|---|---|---|
 | B1 | Busca da biblioteca por linguagem natural | P | O modelo pode acionar busca lexical ou semântica; não há tradução determinística de filtros complexos ou validação de intenção. |
 | B2 | Busca semântica | P | [semanticIndex.ts](../../electron/ai/semanticIndex.ts) persiste embeddings e calcula similaridade; o texto indexado é nome, caminho relativo e tipo, não conteúdo ou metadados musicais completos. |
-| B3 | Busca por título | P | [tools.ts](../../electron/ai/tools.ts) pesquisa nome/caminho; não usa título extraído de tags como campo independente. |
-| B4 | Busca por artista | N | O extrator de metadados pode obter campos de mídia, mas a busca exposta ao Teco não pesquisa a biblioteca por artista. |
-| B5 | Busca por álbum | N | Não há ferramenta ou índice de busca por álbum. |
-| B6 | Busca por gênero | N | Não há ferramenta ou índice de busca por gênero. |
+| B3 | Busca por título | I | [tools.ts](../../electron/ai/tools.ts) pesquisa título extraído e usa o nome do arquivo como fallback; os metadados são lidos sob demanda. |
+| B4 | Busca por artista | I | A busca estruturada compara o filtro com a tag de artista extraída pelo [metadata.ts](../../electron/media/metadata.ts). |
+| B5 | Busca por álbum | I | A busca estruturada compara o filtro com a tag de álbum extraída; pode combinar filtros de artista, título e gênero. |
+| B6 | Busca por gênero | I | A busca estruturada corresponde a qualquer gênero extraído, sem diferenciar caixa ou acentos. |
 | B7 | Filtro por tipo de mídia | I | A busca aceita filtro por tipo, incluindo áudio/vídeo/imagem, limitado aos itens registrados na biblioteca. |
 | B8 | Resposta contextual sobre resultados | P | O modelo pode explicar os resultados retornados pela ferramenta; os resultados têm contexto limitado e não existe ranking/racionalização musical abrangente. |
-| B9 | Filtros e refinamento | P | Há filtro de tipo e limite de resultados, mas não filtros combináveis por artista, álbum, duração, gênero ou outros metadados. |
+| B9 | Filtros e refinamento | P | Tipo, título, artista, álbum e gênero podem ser combinados; ainda não há filtros por duração nem ordenação/ranking musical dedicado. |
 | B10 | Recomendar itens relacionados na biblioteca | N | Similaridade textual/semântica da busca não equivale a uma recomendação integrada de itens relacionados ou baseada no gosto do usuário. |
 
 ### C. Playlists
@@ -224,16 +224,34 @@ Cada linha registra o comportamento encontrado e a principal lacuna. “Não enc
 
 | Capacidade | Implementação verificada | Limitação/observação |
 |---|---|---|
-| SDK | `@google/genai` no [provider.ts](../../electron/ai/provider.ts) | O pacote está no projeto; não foi feito teste real de rede/chave nesta auditoria. |
-| Geração | `models.generateContentStream` | Não usa `Interactions API`. |
+| SDK | `@google/genai` 2.32.0 no [provider.ts](../../electron/ai/provider.ts) | A versão instalada inclui `interactions.create`; a documentação lista suporte no SDK JS desde 2.3.0. |
+| Geração | `models.generateContentStream` | Não usa `Interactions API`; `generateContent` continua totalmente suportada, embora a Google recomende Interactions para novos desenvolvimentos. |
 | Instrução do sistema | `systemInstruction` separada do histórico | O escopo é orientação para o modelo, não uma barreira de autorização; a barreira efetiva são as ferramentas disponíveis. |
-| Chamada de ferramentas | Declarações Gemini e loop limitado no adaptador | Até cinco turnos de ferramenta; não há validação real de todos os modelos listados com `function calling`. |
-| `thoughtSignature` | Partes originais do modelo são preservadas ao continuar a conversa | Há teste de regressão mockado; não substitui validação contra a API. |
-| Modelos | Lista remota filtrada para capacidades de geração | Depende de chave válida, disponibilidade da API e modelos devolvidos pela conta/região. |
-| Embeddings | `models.embedContent`, usado pelo índice semântico | O índice contém apenas nome/caminho/tipo; cálculo pode continuar após cancelar a conversa. |
-| Erros e limites | Erros são normalizados no processo principal; timeout para conversa | Sem validação de latência, limites de quota, retry/backoff ou custos em conta real. |
+| Chamada de ferramentas | Declarações Gemini e loop client-side limitado no adaptador | Até cinco chamadas por solicitação; a aplicação executa ferramentas locais e devolve resultados ao modelo. |
+| Streaming | `generateContentStream` traduz chunks de texto para a interface | Interactions também oferece streaming, mas em eventos tipados de etapas; a adaptação e o comportamento de cancelamento precisariam de testes. |
+| `thoughtSignature` | Partes originais do modelo são preservadas ao continuar a conversa | Coberto por teste mockado e smoke test real de tool call; não comprova compatibilidade de todos os modelos. |
+| Modelos | Lista remota filtrada para capacidade `generateContent` | Se migrar, será necessário confirmar separadamente compatibilidade com Interactions para os modelos exibidos. |
+| Embeddings | `models.embedContent`, usado pelo índice semântico | Cancelamento propagado após o P1; o índice contém apenas nome/caminho/tipo. |
+| Erros e limites | Erros normalizados; limites de contexto/resposta e cancelamento aplicados | O smoke test não mede latência, quota ou custos em uso contínuo. |
 
-**Conclusão Gemini:** a migração ao SDK oficial está implementada no código e coberta por testes mockados. Não há evidência nesta auditoria de um teste de aceitação com chave real. A adoção da Interactions API é uma decisão/migração futura, não uma descrição da arquitetura atual.
+**Conclusão Gemini:** a migração ao SDK oficial está implementada e coberta por testes; um smoke test real posterior verificou streaming e chamada de ferramenta usando estado simulado. A adoção da Interactions API é uma decisão de arquitetura separada, não uma descrição da implementação atual.
+
+### Comparação e decisão de migração
+
+A comparação foi feita com a [visão geral da Interactions API](https://aistudio.google.com/docs/interactions-overview), o [guia oficial de migração](https://aistudio.google.com/docs/migrate-to-interactions) e os tipos da versão `@google/genai` 2.32.0 instalada no projeto.
+
+| Aspecto | `generateContentStream` atual | Interactions API |
+|---|---|---|
+| Suporte e recomendação | Continua totalmente suportada; a Google recomenda Interactions para novos desenvolvimentos. | Interface atual recomendada pela Google para fluxos agentic. |
+| Histórico | Teco mantém e limita o histórico local e envia o contexto necessário a cada solicitação. | `previous_interaction_id` permite estado no servidor, mas exige armazenamento da interação. |
+| Retenção | Não cria o estado de conversa da Interactions API. | `store` é `true` por padrão; a documentação informa retenção de 1 dia no nível gratuito e 55 dias no pago. `store: false` desativa o armazenamento da interação e não permite continuar com `previous_interaction_id`. |
+| Ferramentas locais | Loop client-side existente, com dispatcher restrito no processo principal. | Tool calls aparecem como etapas tipadas; o Tocaê ainda precisaria executar cada ferramenta localmente e devolver `function_result`. |
+| Streaming | Chunks de conteúdo consumidos diretamente pelo adaptador atual. | Eventos SSE tipados com etapas; requer tradução para os eventos já esperados pelo renderer e testes de cancelamento. |
+| Benefício para o Teco | Fluxo existente já satisfaz streaming, contexto local e ferramentas autorizadas. | Melhor observabilidade e formato mais estruturado; estado server-side não é necessário para o desenho atual. |
+
+**Decisão:** manter `generateContentStream` por enquanto e não migrar nesta etapa. A Interactions API é suportada pelo SDK instalado e parece tecnicamente viável, mas a principal vantagem de gestão de histórico server-side conflita com a política atual de manter o histórico e seus limites no Tocaê. Preservar isso exigiria `store: false` e reenvio do histórico local, reduzindo esse benefício; usar `store: true` introduziria retenção de conversa no Google por padrão. O fluxo atual também já passou por smoke test real, enquanto a migração acrescentaria um novo formato de eventos, etapas de ferramentas e comportamento de cancelamento sem benefício funcional comprovado para o usuário.
+
+Reavaliar a migração se o Teco precisar de observabilidade por etapa ou se a API atual deixar de atender. Antes disso, exigir teste de aceitação com `store: false`, streaming, tool call/result client-side, histórico local, cancelamento e compatibilidade dos modelos suportados. A configuração de armazenamento deve ser explícita; não depender do padrão `store: true`.
 
 ## 6. Segurança, privacidade e confiabilidade
 
@@ -309,12 +327,12 @@ As prioridades refletem risco e dependências. Nenhum item abaixo foi implementa
 2. **Propagar cancelamento e definir política de retries.** Compartilhar `AbortSignal` com embeddings; retries limitados apenas para falhas transitórias e operações seguras.
    - **Dependências:** distinguir erros transitórios de erros permanentes.
    - **Aceite:** cancelar interrompe geração e embedding; retries têm limite/backoff e não repetem efeitos de player.
-3. **Decidir e testar a API Gemini de longo prazo.** Comparar manter `generateContentStream` com migrar para Interactions API antes de mudar o fluxo.
-   - **Dependências:** requisitos de ferramentas, streaming, SDK e compatibilidade de modelos.
-   - **Aceite:** decisão arquitetural com teste de aceitação equivalente de streaming, tool call, histórico e cancelamento.
-4. **Melhorar busca do catálogo.** Indexar tags confiáveis como título/artista/álbum/gênero e permitir filtros estruturados.
-   - **Dependências:** normalização dos metadados e comportamento para tags ausentes/contraditórias.
-   - **Aceite:** testes de busca por cada campo com resultados ordenados e sem confundir texto do caminho com metadado.
+3. **Reavaliar a API Gemini de longo prazo (decisão atual: manter `generateContentStream`).** A comparação está registrada na seção 5; não migrar apenas por preferência de API enquanto o fluxo atual atender.
+   - **Dependências para uma migração futura:** benefício funcional claro, política explícita para retenção (`store: false` ou consentimento informado para armazenamento) e compatibilidade dos modelos em uso.
+   - **Aceite futuro:** teste equivalente de streaming, tool call/result client-side, histórico local, cancelamento, erros e limites; confirmar que nenhuma solicitação armazena interação por padrão inadvertidamente.
+4. **Melhorar busca do catálogo (implementado no acompanhamento).** A ferramenta permite filtros estruturados de título/artista/álbum/gênero; a busca semântica continua baseada em nome/caminho/tipo.
+   - **Dependência resolvida:** usa a extração local existente e ignora tags ausentes; filtros textuais normalizam caixa e diacríticos.
+   - **Aceite atendido:** testes cobrem filtros de tags combinados, busca por título e correspondência sem acentos; campos ausentes não contam como correspondência.
 
 ### P2 — Personalização e curadoria
 
@@ -345,7 +363,7 @@ As prioridades refletem risco e dependências. Nenhum item abaixo foi implementa
 - [core.ts](../../electron/ai/core.ts) — prompt, histórico em memória, timeout e fluxo de resposta.
 - [provider.ts](../../electron/ai/provider.ts) — SDK Gemini, adaptador OpenAI-compatible, streaming, embeddings e tool calls.
 - [index.ts](../../electron/ai/index.ts) — configuração, credenciais, IPC e execução de ferramentas.
-- [tools.ts](../../electron/ai/tools.ts) — catálogo e busca lexical.
+- [tools.ts](../../electron/ai/tools.ts) — catálogo e busca por nome, caminho e tags.
 - [historyStore.ts](../../electron/ai/historyStore.ts) e [semanticIndex.ts](../../electron/ai/semanticIndex.ts) — persistência local de histórico e índice.
 - [AssistantPage.tsx](../../src/features/ai/AssistantPage.tsx) e [AiSection.tsx](../../src/features/settings/AiSection.tsx) — chat e configuração.
 - [ai.test.mjs](../../electron/ai/ai.test.mjs) — testes do subsistema de IA.
@@ -363,6 +381,8 @@ As seguintes ações P0 foram implementadas após a avaliação original:
 - **Persistência do histórico:** erros de gravação agora são registrados e retornados à interface com uma mensagem explícita, distinguindo resposta gerada de histórico não salvo.
 - **Cancelamento e retries P1:** o sinal de cancelamento da conversa chega à execução da ferramenta e aos embeddings semânticos, incluindo lotes de indexação. Somente embeddings são repetidos: até duas tentativas adicionais com espera crescente para erros de rede/HTTP transitórios; cancelamento e erros permanentes não são repetidos. Geração do chat não é repetida para evitar duplicar ferramentas com efeitos colaterais.
 - **Smoke test Gemini real:** com autorização do usuário, a descoberta de modelos, streaming e uma chamada de ferramenta foram verificadas usando `gemini-3.1-flash-lite`. A ferramenta retornou estado simulado (`playing: false`, sem mídia atual); nenhum estado real do player ou conteúdo da biblioteca foi enviado. A chave não foi registrada em logs nem alterada.
+- **Busca estruturada do catálogo:** `search_library` aceita filtros por título, artista, álbum e gênero, combináveis entre si e com tipo/nome/caminho. As tags são extraídas apenas quando esses filtros são usados, em lotes concorrentes limitados; a busca por nome/caminho não faz leituras extras de metadados. Correspondências por texto ignoram caixa e diacríticos.
+- **Verificação da busca estruturada:** 26 testes específicos de IA passaram e o typecheck do projeto passou.
 - **Verificação local:** 58 testes passaram, junto com typecheck, lint CSS e build do Vite/Electron.
 
 O aviso de privacidade informa o usuário, mas não é um consentimento explícito por solicitação. O smoke test comprova um fluxo real com a conta/modelo testado, não disponibilidade contínua, latência ou compatibilidade de todos os modelos Gemini; a chamada pode ter consumido quota.

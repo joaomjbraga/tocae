@@ -225,7 +225,10 @@ const core = new AiCore(
       getLibrarySnapshot(),
       readPlaylist(),
     ])
-    return executeReadOnlyTool(name, args, library, playlist)
+    return executeReadOnlyTool(name, args, library, playlist, {
+      getMediaMetadata,
+      signal,
+    })
   },
 )
 let config: AiProviderConfig = { ...DEFAULT_AI_PROVIDER_CONFIG }

@@ -455,7 +455,7 @@ test('AI history persistence failures reject to the caller', async (t) => {
   await assert.rejects(writeAiHistoryFile(blockedFile, []))
 })
 
-test('AI read-only tools search the library and report the current playlist', () => {
+test('AI read-only tools search the library and report the current playlist', async () => {
   const library = {
     folders: [],
     unavailableFolderIds: [],
@@ -480,22 +480,65 @@ test('AI read-only tools search the library and report the current playlist', ()
     items: [{ id: '1', path: '/music/Blue.mp3', name: 'Blue.mp3' }],
     currentIndex: 0,
   }
+  const metadataByPath = {
+    '/music/Blue.mp3': {
+      fileSize: 1,
+      modifiedAt: 1,
+      title: 'Noite Azul',
+      artist: 'Beyoncé',
+      album: 'Cores',
+      genres: ['MPB', 'Pop'],
+    },
+  }
+  const getMediaMetadata = async (filePath) => metadataByPath[filePath] ?? {
+    fileSize: 1,
+    modifiedAt: 1,
+  }
 
   assert.equal(
-    executeReadOnlyTool('search_library', { query: 'blue', type: 'audio' }, library, playlist).matches.length,
+    (await executeReadOnlyTool(
+      'search_library',
+      { query: 'blue', type: 'audio' },
+      library,
+      playlist,
+    )).matches.length,
     1,
   )
   assert.equal(
-    executeReadOnlyTool('get_playlist', {}, library, playlist).current.name,
+    (await executeReadOnlyTool('get_playlist', {}, library, playlist)).current.name,
     'Blue.mp3',
   )
   assert.equal(
-    executeReadOnlyTool('get_current_media', {}, library, playlist).current.name,
+    (await executeReadOnlyTool('get_current_media', {}, library, playlist)).current.name,
     'Blue.mp3',
   )
-  assert.throws(
-    () => executeReadOnlyTool('remove_library', {}, library, playlist),
+  await assert.rejects(
+    executeReadOnlyTool('remove_library', {}, library, playlist),
     /não autorizada/,
+  )
+
+  const taggedMatches = await executeReadOnlyTool(
+    'search_library',
+    { artist: 'beyonce', album: 'cores', genre: 'mpb' },
+    library,
+    playlist,
+    { getMediaMetadata },
+  )
+  assert.equal(taggedMatches.matches.length, 1)
+  assert.equal(taggedMatches.matches[0].metadata.artist, 'Beyoncé')
+
+  const titleMatches = await executeReadOnlyTool(
+    'search_library',
+    { title: 'noite azul' },
+    library,
+    playlist,
+    { getMediaMetadata },
+  )
+  assert.equal(titleMatches.matches[0].metadata.title, 'Noite Azul')
+
+  await assert.rejects(
+    executeReadOnlyTool('search_library', {}, library, playlist),
+    /Informe um texto ou metadado/,
   )
 })
 
