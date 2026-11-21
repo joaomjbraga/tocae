@@ -7,6 +7,7 @@ import { registerMediaTracksIpc } from './media/tracks'
 import { registerYouTubeMusicIpc } from './integrations/youtubeMusic'
 import { registerDialogIpc } from './dialogs'
 import { registerPlaylistIpc } from './playlist'
+import { registerSavedPlaylistIpc } from './savedPlaylists'
 import { initializeLibrary, registerLibraryIpc } from './library'
 import { createMainWindow, focusMainWindow, registerWindowIpc } from './windows'
 import { initLocale, registerLocaleIpc } from './locale'
@@ -67,6 +68,7 @@ if (!gotTheLock) {
     registerMediaProtocol()
     registerCommandIpc()
     registerPlaylistIpc()
+    registerSavedPlaylistIpc()
     registerLibraryIpc()
     registerMediaMetadataIpc()
     registerMediaTracksIpc()

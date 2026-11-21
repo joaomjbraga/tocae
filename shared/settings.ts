@@ -18,5 +18,6 @@ export const DEFAULT_SETTINGS: Settings = {
   aiData: {
     allowFavorites: false,
     collectPlaybackHistory: false,
+    localRecommendations: false,
   },
 }

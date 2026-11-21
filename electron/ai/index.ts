@@ -38,6 +38,12 @@ import {
   recordListeningHistory,
 } from './listeningHistory'
 import {
+  buildRecommendations,
+  clearRecommendationFeedbackFile,
+  readRecommendationFeedbackFile,
+  setRecommendationFeedback as saveRecommendationFeedback,
+} from './recommendations'
+import {
   cosineSimilarity,
   libraryFingerprint,
   readSemanticIndex,
@@ -48,6 +54,7 @@ import {
 const CREDENTIAL_FILE_NAME = 'ai-credentials.json'
 const HISTORY_FILE_NAME = 'ai-history.json'
 const LISTENING_HISTORY_FILE_NAME = 'ai-listening-history.json'
+const RECOMMENDATION_FEEDBACK_FILE_NAME = 'ai-recommendation-feedback.json'
 const SEMANTIC_INDEX_FILE_NAME = 'ai-library-index.json'
 const EMBEDDING_BATCH_SIZE = 64
 const MAX_FAVORITE_PATHS_PER_REQUEST = 10_000
@@ -282,6 +289,10 @@ function listeningHistoryPath(): string {
   return path.join(app.getPath('userData'), LISTENING_HISTORY_FILE_NAME)
 }
 
+function recommendationFeedbackPath(): string {
+  return path.join(app.getPath('userData'), RECOMMENDATION_FEEDBACK_FILE_NAME)
+}
+
 function semanticIndexPath(): string {
   return path.join(app.getPath('userData'), SEMANTIC_INDEX_FILE_NAME)
 }
@@ -415,13 +426,15 @@ function validateAiDataPreferences(value: unknown): AiDataPreferences {
   if (
     !isRecord(value) ||
     typeof value.allowFavorites !== 'boolean' ||
-    typeof value.collectPlaybackHistory !== 'boolean'
+    typeof value.collectPlaybackHistory !== 'boolean' ||
+    typeof value.localRecommendations !== 'boolean'
   ) {
     throw new TypeError('As preferências de dados do Teco não são válidas.')
   }
   return {
     allowFavorites: value.allowFavorites,
     collectPlaybackHistory: value.collectPlaybackHistory,
+    localRecommendations: value.localRecommendations,
   }
 }
 
@@ -595,6 +608,50 @@ export function registerAiIpc(): void {
     validateSender(event)
     await initialize()
     await clearListeningHistoryFile(listeningHistoryPath())
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_RECOMMENDATIONS_GET, async (event, value: unknown) => {
+    validateSender(event)
+    await initialize()
+    if (!dataPreferences.localRecommendations) {
+      throw new Error('Ative as recomendações locais nas configurações do Teco para continuar.')
+    }
+    const favoritePaths = validateFavoritePaths(value)
+    const [library, feedback] = await Promise.all([
+      getLibrarySnapshot(),
+      readRecommendationFeedbackFile(recommendationFeedbackPath()),
+    ])
+    return buildRecommendations(library.items, favoritePaths, feedback, getMediaMetadata)
+  })
+  ipcMain.handle(
+    IPC_CHANNELS.AI_RECOMMENDATION_FEEDBACK_SET,
+    async (event, value: unknown, feedback: unknown) => {
+      validateSender(event)
+      await initialize()
+      if (!dataPreferences.localRecommendations) {
+        throw new Error('Ative as recomendações locais nas configurações do Teco para continuar.')
+      }
+      if (
+        typeof value !== 'string' ||
+        !path.isAbsolute(value) ||
+        (feedback !== 'like' && feedback !== 'dislike')
+      ) {
+        throw new TypeError('O feedback da recomendação não é válido.')
+      }
+      const library = await getLibrarySnapshot()
+      if (!library.items.some((item) => item.path === value && item.type === 'audio')) {
+        throw new Error('A faixa não está mais disponível na biblioteca.')
+      }
+      await saveRecommendationFeedback(
+        recommendationFeedbackPath(),
+        value,
+        feedback,
+      )
+    },
+  )
+  ipcMain.handle(IPC_CHANNELS.AI_RECOMMENDATIONS_CLEAR, async (event) => {
+    validateSender(event)
+    await initialize()
+    await clearRecommendationFeedbackFile(recommendationFeedbackPath())
   })
   ipcMain.handle(IPC_CHANNELS.AI_CONFIG_GET, async (event) => {
     validateSender(event)

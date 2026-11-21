@@ -3,6 +3,7 @@ import { ListVideo } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
 import { mediaTypeForPath } from '@shared/media'
 import type { MediaMetadata } from '@shared/media'
+import type { PlaylistItem } from '@shared/playlist'
 import AppBar, { type AppPage } from '../../components/AppBar'
 import Toast from '../../components/Toast'
 import PlaylistPanel from '../playlist/PlaylistPanel'
@@ -44,7 +45,7 @@ function PlayerScreen({
   const api = window.tocae
   const [activePage, setActivePage] = useState<AppPage>('library')
   const [playlistVisible, setPlaylistVisible] = useState(false)
-  const [playlistView, setPlaylistView] = useState<'queue' | 'folders'>('folders')
+  const [playlistView, setPlaylistView] = useState<'queue' | 'folders' | 'saved'>('folders')
   // O painel fica montado durante a saída para poder animar; `panelLeaving`
   // marca o estado intermediário.
   const [panelLeaving, setPanelLeaving] = useState(false)
@@ -144,6 +145,12 @@ function PlayerScreen({
       setPlaylistVisible(false)
     },
     [playlist.playIndex],
+  )
+  const handleSavedPlaylistAdd = useCallback(
+    (items: PlaylistItem[]) => {
+      playlist.addEntries(items.map((item) => ({ ...item, id: crypto.randomUUID() })))
+    },
+    [playlist.addEntries],
   )
 
   const handleLibraryItemPlay = useCallback(
@@ -470,6 +477,8 @@ function PlayerScreen({
                     onClear={handleClear}
                     onFilesSelected={playlist.addFiles}
                     onAnnounce={announce}
+                    onAddSavedPlaylist={handleSavedPlaylistAdd}
+                    savedPlaylistsActive={activePage === 'player' && playlistVisible}
                   />
                 )}
               </div>

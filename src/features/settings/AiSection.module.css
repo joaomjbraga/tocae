@@ -21,7 +21,7 @@
 .secondary:disabled { color:var(--text-disabled); cursor:default; }
 .modelCount { color:var(--text-muted); }
 .modelError { color:var(--text-danger); }
-.actions { display:flex; gap:8px; }
+.actions { display:flex; flex-wrap:wrap; gap:8px; }
 .primary,.danger { height:34px; display:inline-flex; align-items:center; justify-content:center; gap:7px; margin:0 14px; border:1px solid var(--border-surface); border-radius:8px; background:var(--accent-tint); color:var(--accent); cursor:pointer; }
 .danger { margin:0; background:transparent; color:var(--text-danger); }
 .actions .primary { margin:0 0 0 14px; }

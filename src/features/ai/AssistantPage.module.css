@@ -48,6 +48,66 @@
   display:flex; flex-direction:column; gap:8px; padding:22px 24px 18px;
   scrollbar-width:thin; scrollbar-color:var(--border-strong) transparent;
 }
+.recommendations {
+  flex:none;
+  padding:12px;
+  border:1px solid rgba(167,119,255,.2);
+  border-radius:14px;
+  background:rgba(167,119,255,.055);
+}
+.recommendationsHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.recommendationsHeader h2 { margin:0; color:var(--text-primary); font-size:13px; font-weight:650; }
+.recommendationsHeader p { margin:3px 0 0; color:var(--text-muted); font-size:10px; line-height:1.45; }
+.refreshRecommendations {
+  width:30px;
+  height:30px;
+  display:grid;
+  flex:none;
+  place-items:center;
+  border:1px solid var(--border-surface);
+  border-radius:9px;
+  background:var(--bg-surface);
+  color:var(--text-secondary);
+  cursor:pointer;
+}
+.refreshRecommendations:disabled { color:var(--text-disabled); cursor:default; }
+.recommendationList { display:grid; gap:6px; margin:10px 0 0; padding:0; list-style:none; }
+.recommendationItem {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:8px 9px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;
+  background:rgba(255,255,255,.035);
+}
+.recommendationCopy { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.recommendationCopy strong,.recommendationCopy span,.recommendationCopy small {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.recommendationCopy strong { color:var(--text-primary); font-size:12px; font-weight:600; }
+.recommendationCopy span { color:var(--text-secondary); font-size:10px; }
+.recommendationCopy small { color:var(--text-muted); font-size:10px; }
+.recommendationFeedback { display:flex; flex:none; gap:4px; }
+.recommendationFeedback button {
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border:1px solid transparent;
+  border-radius:8px;
+  background:transparent;
+  color:var(--text-muted);
+  cursor:pointer;
+}
+.recommendationFeedback button:hover { border-color:var(--border-surface); color:var(--text-primary); }
+.recommendationFeedback button:disabled { color:var(--text-disabled); cursor:default; }
+.recommendationEmpty,.recommendationError { margin:9px 0 0; font-size:11px; line-height:1.45; }
+.recommendationEmpty { color:var(--text-muted); }
+.recommendationError { color:var(--text-danger); }
 .empty {
   max-width:440px; margin:auto; text-align:center; color:var(--text-muted);
 }
@@ -107,6 +167,7 @@
 .error { margin:0 18px 8px; padding:8px 10px; border-radius:10px; background:rgba(232,142,142,.08); color:var(--text-danger); font-size:12px; }
 .playlistProposal {
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
   justify-content:space-between;
   gap:10px;
@@ -125,6 +186,23 @@
   white-space:nowrap;
 }
 .proposalCopy span { color:var(--text-muted); font-size:11px; }
+.proposalSaveForm { min-width:0; display:flex; flex:1 1 100%; gap:6px; }
+.proposalSaveForm input {
+  min-width:0;
+  flex:1;
+  height:32px;
+  padding:0 10px;
+  border:1px solid var(--border-surface);
+  border-radius:9px;
+  outline:none;
+  background:var(--bg-surface);
+  color:var(--text-primary);
+  font:inherit;
+  font-size:12px;
+}
+.proposalSaveForm input:focus { border-color:var(--accent); }
+.proposalSaveForm button { flex-shrink:0; }
+.proposalSaveForm button:disabled { opacity:.55; cursor:default; }
 .proposalActions { display:flex; gap:6px; flex:0 0 auto; }
 .privacyNotice {
   margin: 4px 14px 0;
@@ -186,4 +264,5 @@
   .message { max-width:90%; }
   .composer { margin:6px 8px 8px; border-radius:18px; }
   .playlistProposal { align-items:flex-start; flex-direction:column; margin-inline:8px; }
+  .recommendations { padding:9px; }
 }

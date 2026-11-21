@@ -141,6 +141,19 @@ function AiSection() {
     }
   }
 
+  async function clearRecommendations() {
+    setSaving(true)
+    setMessage(null)
+    try {
+      await window.tocae.ai.clearRecommendations()
+      setMessage(t('settings.aiRecommendationsCleared'))
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t('assistant.unknownError'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function changeProvider(provider: AiProviderConfig['provider']) {
     if (!config) return
     setCustomModel(false)
@@ -378,6 +391,21 @@ function AiSection() {
           <label className={styles.toggleField}>
             <input
               type="checkbox"
+              checked={dataPreferences.localRecommendations}
+              disabled={saving}
+              onChange={(event) => void saveDataPreferences({
+                ...dataPreferences,
+                localRecommendations: event.target.checked,
+              })}
+            />
+            <span className={styles.toggleCopy}>
+              <strong>{t('settings.aiLocalRecommendations')}</strong>
+              <small>{t('settings.aiLocalRecommendationsDescription')}</small>
+            </span>
+          </label>
+          <label className={styles.toggleField}>
+            <input
+              type="checkbox"
               checked={dataPreferences.collectPlaybackHistory}
               disabled={saving}
               onChange={(event) => void saveDataPreferences({
@@ -400,6 +428,15 @@ function AiSection() {
             >
               <Trash2 size={14} aria-hidden="true" />
               {t('settings.aiClearListeningHistory')}
+            </button>
+            <button
+              type="button"
+              className={styles.danger}
+              onClick={() => void clearRecommendations()}
+              disabled={saving}
+            >
+              <Trash2 size={14} aria-hidden="true" />
+              {t('settings.aiClearRecommendations')}
             </button>
           </div>
         </section>

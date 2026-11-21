@@ -5,12 +5,14 @@ import type { AppCommand, TocaeApi, YouTubeMusicStatus } from '@shared/ipc'
 import type { Locale } from '@shared/i18n'
 import type { MediaMetadata } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
-import type { PlaylistItem } from '@shared/playlist'
+import type { PlaylistItem, SavedPlaylist } from '@shared/playlist'
 import type {
   AiDataPreferences,
   AiModelOption,
   AiPlayerState,
   AiPlaylistProposal,
+  AiRecommendation,
+  AiRecommendationFeedback,
   AiProviderConfig,
   AiStatus,
 } from '@shared/ai'
@@ -25,6 +27,23 @@ const api: TocaeApi = {
   readPlaylist: () => ipcRenderer.invoke(IPC_CHANNELS.PLAYLIST_READ),
   writePlaylist: (items: PlaylistItem[], currentIndex: number) =>
     ipcRenderer.invoke(IPC_CHANNELS.PLAYLIST_WRITE, items, currentIndex),
+  savedPlaylists: {
+    list: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.SAVED_PLAYLISTS_LIST) as Promise<SavedPlaylist[]>,
+    create: (name: string, items: PlaylistItem[]) =>
+      ipcRenderer.invoke(
+        IPC_CHANNELS.SAVED_PLAYLISTS_CREATE,
+        name,
+        items,
+      ) as Promise<SavedPlaylist>,
+    update: (playlist: SavedPlaylist) =>
+      ipcRenderer.invoke(
+        IPC_CHANNELS.SAVED_PLAYLISTS_UPDATE,
+        playlist,
+      ) as Promise<SavedPlaylist>,
+    delete: (id: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SAVED_PLAYLISTS_DELETE, id) as Promise<boolean>,
+  },
   openMediaDialog: () => ipcRenderer.invoke(IPC_CHANNELS.MEDIA_PICK),
   openMediaFolderDialog: () => ipcRenderer.invoke(IPC_CHANNELS.MEDIA_FOLDER_PICK),
   showMediaInFolder: (filePath: string) =>
@@ -110,6 +129,19 @@ const api: TocaeApi = {
       ipcRenderer.invoke(IPC_CHANNELS.AI_PLAYBACK_RECORD, filePath, title),
     clearListeningHistory: () =>
       ipcRenderer.invoke(IPC_CHANNELS.AI_LISTENING_HISTORY_CLEAR),
+    getRecommendations: (favoritePaths: string[]) =>
+      ipcRenderer.invoke(
+        IPC_CHANNELS.AI_RECOMMENDATIONS_GET,
+        favoritePaths,
+      ) as Promise<AiRecommendation[]>,
+    setRecommendationFeedback: (filePath: string, feedback: AiRecommendationFeedback) =>
+      ipcRenderer.invoke(
+        IPC_CHANNELS.AI_RECOMMENDATION_FEEDBACK_SET,
+        filePath,
+        feedback,
+      ),
+    clearRecommendations: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_RECOMMENDATIONS_CLEAR),
     onStreamChunk(callback) {
       const listener = (_event: IpcRendererEvent, chunk: string) => callback(chunk)
       ipcRenderer.on(IPC_CHANNELS.AI_STREAM_CHUNK, listener)

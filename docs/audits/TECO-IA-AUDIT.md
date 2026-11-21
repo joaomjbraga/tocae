@@ -6,7 +6,7 @@
 
 ## 1. Resumo executivo
 
-O Teco é um assistente conversacional funcional, integrado ao processo principal do Electron e aos dados de reprodução do Tocaê. A integração inclui streaming, histórico de uma conversa, provedores configuráveis, ferramentas limitadas para consultar a biblioteca, a fila, favoritos e reproduções recentes (estes dois últimos com consentimentos separados e desativados por padrão), controles básicos do player e propostas de playlist que exigem confirmação antes de substituir a fila.
+O Teco é um assistente conversacional funcional, integrado ao processo principal do Electron e aos dados de reprodução do Tocaê. A integração inclui streaming, histórico de uma conversa, provedores configuráveis, ferramentas limitadas para consultar a biblioteca, a fila, favoritos e reproduções recentes (estes dois últimos com consentimentos separados e desativados por padrão), recomendações locais explicáveis com opt-in e feedback explícito, controles básicos do player e propostas que podem ser salvas como playlists locais nomeadas ou aplicadas à fila somente por ação explícita.
 
 O Gemini usa o SDK oficial `@google/genai`, incluindo geração em streaming, descoberta de modelos, embeddings e chamadas de ferramentas. O fluxo mantém as partes originais do modelo necessárias para preservar `thoughtSignature`. O uso do SDK não significa que a Interactions API esteja integrada: a implementação atual usa `models.generateContentStream` e um ciclo manual de ferramentas, com até cinco turnos. A auditoria inicial não fez chamada real ao Gemini; um smoke test posterior limitado está registrado na seção 11.
 
@@ -14,28 +14,29 @@ O Gemini usa o SDK oficial `@google/genai`, incluindo geração em streaming, de
 
 | Estado | Quantidade | Definição |
 |---|---:|---|
-| Implementado | 24 (30%) | Fluxo funcional identificado no código; as limitações estão registradas quando relevantes. |
-| Parcial | 14 (17,5%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
-| Não implementado | 42 (52,5%) | Não foi encontrado fluxo integrado do Teco para o critério. |
+| Implementado | 26 (32,5%) | Fluxo funcional identificado no código; as limitações estão registradas quando relevantes. |
+| Parcial | 16 (20%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
+| Não implementado | 38 (47,5%) | Não foi encontrado fluxo integrado do Teco para o critério. |
 | Apenas interface / estrutura preparada | 0 | Não foi identificado critério cujo único suporte seja uma tela ou estrutura sem fluxo funcional. |
 
 O resultado não deve ser interpretado como percentual de qualidade ou prontidão: cada critério tem peso igual, e a classificação “parcial” não mede profundidade.
 
 ### Indicadores estimados
 
-Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **38,75%** (31/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
+Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **42,5%** (34/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
 
 | Área | Estimativa | Base |
 |---|---:|---|
 | Conversação e interface | 75–81% | Chat, streaming, provedores, ferramentas e fluxo principal existentes; contexto, sessões, persistência e cancelamento ainda limitados. |
 | Infraestrutura de IA | 70–80% | Separação Main/Preload/Renderer, adaptadores, IPC tipado e armazenamento seguro de credenciais; faltam limites de uso e validação real dos provedores. |
 | Busca da biblioteca | ~70% | Busca textual e filtros por título, artista, álbum e gênero existem; a busca semântica ainda indexa apenas nome, caminho e tipo. |
-| Playlists | ~38% | O Teco propõe uma seleção a partir da biblioteca e, com confirmação, substitui a fila atual; não cria playlists nomeadas nem aplica preferências musicais. |
-| Favoritos e histórico | ~50% | Consulta favoritos e até 20 reproduções recentes sob demanda, com consentimentos separados; não calcula frequência, duração ou recomendações personalizadas. |
+| Playlists | ~60% | É possível salvar e editar playlists nomeadas localmente, inclusive propostas do Teco; a seleção automática continua lexical e não aplica preferências musicais. |
+| Favoritos e histórico | ~55% | Consulta favoritos e até 20 reproduções recentes sob demanda, com consentimentos separados; recomendações locais usam favoritos e avaliações explícitas, sem analisar o histórico de reprodução. |
+| Recomendações | ~42% | Sugestões locais limitadas a tags de artista, álbum e gênero, com justificativa e feedback; não há recomendação de artistas/álbuns ou análise sonora. |
 | Controle do player | ~80% dos controles básicos | Play, pause, próximo e anterior estão disponíveis; volume e navegação da aplicação não estão expostos ao agente. |
-| Organização, recomendações, inteligência musical, vídeo e imagem | 0% | Nenhum fluxo de IA correspondente foi encontrado. |
+| Organização, inteligência musical, vídeo e imagem | 0% | Nenhum fluxo de IA correspondente foi encontrado. |
 
-**Conclusão:** a base de conversa e integração é real, mas o Teco ainda não é um sistema de curadoria musical, organização automática ou análise multimodal. Os maiores riscos práticos são privacidade dos dados enviados ao provedor, arquivos locais de histórico/índice sem criptografia e validação real limitada a um cenário com um modelo e estado simulado.
+**Conclusão:** a base de conversa e integração é real e agora inclui curadoria local limitada, mas o Teco ainda não oferece curadoria musical abrangente, organização automática ou análise multimodal. Os maiores riscos práticos são privacidade dos dados enviados ao provedor, arquivos locais de histórico/índice/avaliações sem criptografia e validação real limitada a um cenário com um modelo e estado simulado.
 
 ## 2. Matriz consolidada dos 80 critérios
 
@@ -45,7 +46,7 @@ Legenda: **I** = implementado; **P** = parcial; **N** = não implementado.
 |---|---:|---:|---:|
 | A. Conversação e interface | 8 | 5 | 0 |
 | B. Busca da biblioteca | 5 | 4 | 1 |
-| C. Playlists | 2 | 2 | 4 |
+| C. Playlists | 3 | 1 | 4 |
 | D. Organização de arquivos | 0 | 0 | 8 |
 | E. Histórico de reprodução e favoritos | 3 | 1 | 2 |
 | F. Recomendações | 0 | 0 | 6 |
@@ -53,7 +54,7 @@ Legenda: **I** = implementado; **P** = parcial; **N** = não implementado.
 | H. Análise de vídeo | 0 | 0 | 5 |
 | I. Análise de imagem | 0 | 0 | 6 |
 | J. Integração e ações | 6 | 2 | 3 |
-| **Total** | **24** | **14** | **42** |
+| **Total** | **25** | **13** | **42** |
 
 ## 3. Matriz detalhada
 
@@ -96,7 +97,7 @@ Cada linha registra o comportamento encontrado e a principal lacuna. “Não enc
 
 | # | Critério | Estado | Evidência e comportamento / limitação |
 |---|---|---|---|
-| C1 | Criar playlist | P | `propose_playlist` monta uma proposta temporária; não cria nem persiste uma playlist nomeada. |
+| C1 | Criar playlist | I | O usuário pode salvar a fila atual ou uma proposta do Teco como playlist nomeada local e persistente, sem alterar a fila ao salvar. |
 | C2 | Selecionar itens automaticamente | P | A seleção usa correspondência lexical em nome/caminho/tipo e é limitada; não usa preferências, histórico ou compreensão musical aprofundada. |
 | C3 | Montar playlist por gênero | N | Não há busca integrada por gênero nem geração de playlist com esse atributo. |
 | C4 | Montar playlist por humor/contexto | N | Não há classificação de humor, contexto ou energia musical. |
@@ -127,18 +128,18 @@ Cada linha registra o comportamento encontrado e a principal lacuna. “Não enc
 | E3 | Consultar frequência/duração de reprodução | N | Não existe armazenamento ou ferramenta analítica de sessões de escuta. |
 | E4 | Ler favoritos existentes | I | Com consentimento separado, a ferramenta retorna nomes e tipos dos favoritos que ainda correspondem a itens da biblioteca; não retorna caminhos absolutos. |
 | E5 | Adicionar/remover favoritos por conversa | N | Não há ferramenta autorizada de mutação de favoritos. |
-| E6 | Usar histórico/favoritos para personalização | P | O Teco pode consultar esses dados sob demanda para responder ao usuário, mas não gera recomendações nem infere preferências automaticamente. |
+| E6 | Usar histórico/favoritos para personalização | P | Recomendações locais podem usar favoritos e avaliações explícitas; o histórico de reprodução não é usado para personalizar sugestões. |
 
 ### F. Recomendações
 
 | # | Critério | Estado | Evidência e comportamento / limitação |
 |---|---|---|---|
-| F1 | Recomendar músicas personalizadas | N | A busca e proposta de fila não mantêm perfil do usuário nem histórico de preferências. |
+| F1 | Recomendar músicas personalizadas | P | Recomendações locais opt-in usam até 50 faixas favoritas/curtidas como sinais, comparando tags de artista, álbum e gênero; não usam histórico nem enviam dados ao provedor. A análise avalia no máximo 300 candidatas por solicitação. |
 | F2 | Recomendar artistas | N | Não há recomendador de artistas. |
 | F3 | Recomendar álbuns | N | Não há recomendador de álbuns. |
-| F4 | Recomendar conteúdo semelhante | N | Busca semântica sobre nomes/caminhos não analisa similaridade sonora nem gera recomendações personalizadas. |
-| F5 | Aprender com feedback/curtidas | N | Não há coleta ou atualização de preferências do Teco. |
-| F6 | Explicar recomendações com sinais do usuário | N | Não há recomendações nem trilha de sinais de preferência para explicar. |
+| F4 | Recomendar conteúdo semelhante | P | Tags locais de artista, álbum e gênero são comparadas; não há análise de similaridade sonora. |
+| F5 | Aprender com feedback/curtidas | P | Curtidas viram sinais locais para sugestões seguintes e “não tenho interesse” exclui a faixa; não há perfil remoto ou ajuste automático de pesos. |
+| F6 | Explicar recomendações com sinais do usuário | I | Cada sugestão indica o artista/álbum/gênero correspondente e a faixa favorita ou curtida usada como sinal. O usuário pode desativar a função ou apagar avaliações. |
 
 ### G. Inteligência musical
 
@@ -340,12 +341,12 @@ As prioridades refletem risco e dependências; itens concluídos posteriormente 
 1. **Histórico e favoritos com consentimento (implementado no acompanhamento).** Leitura de favoritos e histórico local opt-in, separados do progresso de retomada.
    - **Dependências resolvidas:** controles independentes, retenção de 500 registros, armazenamento local sem caminhos absolutos e ação explícita de limpeza.
    - **Aceite atendido:** usuário pode consultar, apagar e desativar a coleta; ferramentas bloqueiam acesso sem autorização.
-2. **Playlists persistentes e editáveis.** Criar nome, revisar itens/ordem, editar e salvar sem substituir a fila implicitamente.
-   - **Dependências:** modelo de dados de playlists e UX de confirmação.
-   - **Aceite:** ações de salvar/aplicar são separadas, reversíveis quando possível e cobertas por testes.
-3. **Recomendações explicáveis.** Introduzir sinais explícitos do usuário antes de personalização automática.
-   - **Dependências:** histórico/favoritos consentidos e mecanismo de feedback.
-   - **Aceite:** recomendações indicam os sinais usados e podem ser desativadas/limpas.
+2. **Playlists persistentes e editáveis (implementado no acompanhamento).** Salvar a fila ou uma proposta do Teco como playlist nomeada e local.
+   - **Dependências resolvidas:** armazenamento separado da fila atual, edição do nome/ordem/itens e confirmação antes de excluir.
+   - **Aceite atendido:** salvar não substitui a fila; adicionar uma salva à fila é uma ação explícita de acréscimo.
+3. **Recomendações explicáveis (implementado no acompanhamento).** Sugestões determinísticas locais a partir de favoritos e avaliações explícitas, sem uso do histórico de reprodução ou envio ao provedor.
+   - **Dependências resolvidas:** opt-in independente, feedback de gostei/não tenho interesse, tags de artista/álbum/gênero e armazenamento local das avaliações.
+   - **Aceite atendido:** cada recomendação explica o sinal e o item relacionado; as sugestões podem ser desativadas e as avaliações apagadas nas configurações.
 
 ### P3 — Capacidades multimodais e organização avançada
 
@@ -370,6 +371,8 @@ As prioridades refletem risco e dependências; itens concluídos posteriormente 
 - [ai.test.mjs](../../electron/ai/ai.test.mjs) — testes do subsistema de IA.
 - [windows.ts](../../electron/windows.ts), [preload.ts](../../electron/preload.ts) e [ipc.ts](../../shared/ipc.ts) — limites entre renderer e processo principal.
 - [library.ts](../../electron/library.ts), [metadata.ts](../../electron/media/metadata.ts), [playlist.ts](../../electron/playlist.ts) e [playlistStore.ts](../../electron/playlistStore.ts) — catálogo, metadados e fila.
+- [savedPlaylistStore.ts](../../electron/savedPlaylistStore.ts) e [savedPlaylists.ts](../../electron/savedPlaylists.ts) — persistência e IPC das playlists nomeadas.
+- [SavedPlaylistsView.tsx](../../src/features/playlist/SavedPlaylistsView.tsx) — salvar, carregar para a fila, editar e excluir playlists persistidas.
 - [listeningHistory.ts](../../electron/ai/listeningHistory.ts) — persistência local opt-in do histórico recente, limitada e sem caminhos absolutos.
 - [playbackProgress.ts](../../src/features/player/playbackProgress.ts) e [favorites.ts](../../src/features/library/favorites.ts) — progresso e favoritos locais; o Teco só consulta favoritos com consentimento explícito.
 
@@ -385,7 +388,9 @@ As seguintes ações P0 foram implementadas após a avaliação original:
 - **Smoke test Gemini real:** com autorização do usuário, a descoberta de modelos, streaming e uma chamada de ferramenta foram verificadas usando `gemini-3.1-flash-lite`. A ferramenta retornou estado simulado (`playing: false`, sem mídia atual); nenhum estado real do player ou conteúdo da biblioteca foi enviado. A chave não foi registrada em logs nem alterada.
 - **Busca estruturada do catálogo:** `search_library` aceita filtros por título, artista, álbum e gênero, combináveis entre si e com tipo/nome/caminho. As tags são extraídas apenas quando esses filtros são usados, em lotes concorrentes limitados; a busca por nome/caminho não faz leituras extras de metadados. Correspondências por texto ignoram caixa e diacríticos.
 - **Consentimento para favoritos e histórico:** acesso a favoritos e coleta de reprodução local têm controles independentes, ambos desativados por padrão. O histórico mantém até 500 inícios de áudio/vídeo locais com nome, tipo e horário, sem caminho absoluto; a ferramenta retorna até 20 registros. Os dados ficam no perfil local sem criptografia, e resultados só chegam ao provedor quando o Teco usa a ferramenta. Desativar a coleta interrompe novos registros, mas não apaga os existentes; há ação separada para apagá-los.
-- **Verificação de favoritos e histórico:** os 28 casos de IA reportaram aprovação, incluindo consentimento, remoção de caminhos, limite de retenção e consulta limitada; o runtime Electron não encerrou espontaneamente após os casos. O painel Problems do VS Code não apontou erros. Typecheck, lint e build não puderam ser confirmados: `node`/`npm` não estão disponíveis no PATH.
+- **Playlists nomeadas:** o usuário pode salvar a fila atual ou uma proposta do Teco, editar nome/ordem/itens e acrescentar a playlist à fila sem substituí-la. Os dados ficam em `saved-playlists.json` no perfil local, incluindo caminhos absolutos necessários à reprodução; não são enviados ao provedor ao salvar. A exclusão exige confirmação.
+- **Verificação de playlists e recomendações:** os 4 testes do armazenamento de playlists passaram; o conjunto focado com playlists, fila e IA passou com 40/40 testes. Typecheck, lint CSS e build do Vite/Electron também passaram.
+- **Verificação de favoritos e histórico:** os 28 testes de IA fazem parte do conjunto focado aprovado e cobrem consentimento, remoção de caminhos, limite de retenção e consulta limitada.
 - **Verificação da busca estruturada:** 26 testes específicos de IA passaram e o typecheck do projeto passou.
 - **Verificação local:** 58 testes passaram, junto com typecheck, lint CSS e build do Vite/Electron.
 

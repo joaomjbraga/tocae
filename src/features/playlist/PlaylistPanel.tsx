@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, DragEvent, KeyboardEvent } from 'react'
 import {
   ChevronRight,
+  Bookmark,
   Folder,
   FolderOpen,
   GripVertical,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 import type { MessageKey, TranslationParams } from '@shared/i18n'
 import { useI18n } from '../../i18n'
+import SavedPlaylistsView from './SavedPlaylistsView'
 import styles from './PlaylistPanel.module.css'
 
 /** `--i` alimenta o atraso em cascata da animação de entrada das linhas. */
@@ -21,8 +23,8 @@ type DepthStyle = CSSProperties & { '--depth': string }
 type PlaylistPanelProps = {
   items: { id: string; name: string; path: string }[]
   currentIndex: number
-  view: 'queue' | 'folders'
-  onViewChange: (view: 'queue' | 'folders') => void
+  view: 'queue' | 'folders' | 'saved'
+  onViewChange: (view: 'queue' | 'folders' | 'saved') => void
   immersive: boolean
   /** `closing` marca a saída animada (o painel segue montado). */
   closing: boolean
@@ -35,6 +37,8 @@ type PlaylistPanelProps = {
   onClear: () => void
   onFilesSelected: (files: File[]) => void
   onAnnounce: (key: MessageKey, params?: TranslationParams) => void
+  onAddSavedPlaylist: (items: PlaylistPanelProps['items']) => void
+  savedPlaylistsActive: boolean
 }
 
 type FolderItem = { item: PlaylistPanelProps['items'][number]; index: number }
@@ -127,6 +131,8 @@ function PlaylistPanel({
   onClear,
   onFilesSelected,
   onAnnounce,
+  onAddSavedPlaylist,
+  savedPlaylistsActive,
 }: PlaylistPanelProps) {
   const { t } = useI18n()
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set())
@@ -330,8 +336,10 @@ function PlaylistPanel({
       <header className={styles.header}>
         <h2 className={styles.title}>
           <ListVideo size={14} />
-          {t('playlist.title')}
-          {items.length > 0 && <span className={styles.count}>{items.length}</span>}
+          {view === 'saved' ? t('playlist.savedTitle') : t('playlist.title')}
+          {view !== 'saved' && items.length > 0 && (
+            <span className={styles.count}>{items.length}</span>
+          )}
         </h2>
         <div className={styles.viewToggle} role="group" aria-label={t('playlist.viewMode')}>
           <button
@@ -354,10 +362,27 @@ function PlaylistPanel({
           >
             <Folder size={14} aria-hidden="true" />
           </button>
+          <button
+            type="button"
+            className={`${styles.viewButton} ${view === 'saved' ? styles.viewButtonActive : ''}`}
+            onClick={() => onViewChange('saved')}
+            aria-label={t('playlist.savedView')}
+            aria-pressed={view === 'saved'}
+            title={t('playlist.savedView')}
+          >
+            <Bookmark size={14} aria-hidden="true" />
+          </button>
         </div>
       </header>
 
-      {loading ? (
+      {view === 'saved' ? (
+        <SavedPlaylistsView
+          queueItems={items}
+          onAddToQueue={onAddSavedPlaylist}
+          onAnnounce={onAnnounce}
+          active={savedPlaylistsActive}
+        />
+      ) : loading ? (
         <ul className={styles.skeleton} aria-label={t('playlist.loading')} aria-busy="true">
           {[0, 1, 2].map((slot) => (
             <li key={slot} className={styles.skeletonRow}>
@@ -445,7 +470,7 @@ function PlaylistPanel({
         </ol>
       )}
 
-      {items.length > 0 && (
+      {items.length > 0 && view !== 'saved' && (
         <footer className={styles.footer}>
           <button type="button" className={styles.clear} onClick={onClear}>
             <Trash2 size={14} />

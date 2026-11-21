@@ -1,0 +1,213 @@
+.savedView,
+.editor {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.createForm,
+.editor {
+  gap: var(--space-2);
+}
+
+.createForm {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.nameField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+}
+
+.nameField input {
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.nameField input:focus {
+  border-color: var(--accent);
+}
+
+.primaryAction,
+.secondaryAction {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--text-2xs);
+  cursor: pointer;
+}
+
+.primaryAction {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+
+.secondaryAction {
+  background: var(--bg-chip);
+  color: var(--text-body);
+}
+
+.primaryAction:disabled,
+.secondaryAction:disabled,
+.iconButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.savedList,
+.editItems {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: var(--space-1) 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.savedRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.savedInfo {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.savedInfo strong,
+.editItemName {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.savedInfo span {
+  flex-shrink: 0;
+  color: var(--text-subtle);
+  font-size: var(--text-2xs);
+}
+
+.savedActions,
+.itemActions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.iconButton {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--bg-chip);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled) {
+  border-color: var(--border-control);
+  color: var(--text-primary);
+}
+
+.iconButton.danger {
+  color: var(--text-danger);
+}
+
+.savedActions .iconButton {
+  width: 30px;
+  height: 28px;
+}
+
+.deletePrompt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.deletePrompt span {
+  flex: 1;
+  color: var(--text-danger);
+  font-size: var(--text-2xs);
+}
+
+.editor {
+  padding: var(--space-2) var(--space-3);
+}
+
+.editor > .nameField {
+  flex: 0 0 auto;
+}
+
+.editItems {
+  padding: 0;
+}
+
+.editItem {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.editItemName {
+  flex: 1;
+}
+
+.editorActions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.editorActions > button {
+  flex: 1;
+}
+
+.notice,
+.error {
+  margin: auto;
+  padding: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.error {
+  margin: 0;
+  color: var(--text-danger);
+}

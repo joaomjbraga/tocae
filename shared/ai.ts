@@ -17,11 +17,27 @@ export interface AiProviderConfig {
 export interface AiDataPreferences {
   allowFavorites: boolean
   collectPlaybackHistory: boolean
+  localRecommendations: boolean
 }
 
 export interface AiRequestContext {
   favoritePaths: string[]
 }
+
+export interface AiRecommendation {
+  path: string
+  name: string
+  title: string
+  artist?: string
+  reason: {
+    kind: 'artist' | 'album' | 'genre'
+    value: string
+    basedOn: string
+    signal: 'favorite' | 'liked'
+  }
+}
+
+export type AiRecommendationFeedback = 'like' | 'dislike'
 
 export const AI_LIMITS = {
   userMessageBytes: 8 * 1024,

@@ -24,6 +24,12 @@ import {
   readListeningHistoryFile,
   recordListeningHistory,
 } from './listeningHistory.ts'
+import {
+  buildRecommendations,
+  clearRecommendationFeedbackFile,
+  readRecommendationFeedbackFile,
+  setRecommendationFeedback,
+} from './recommendations.ts'
 import { executeReadOnlyTool } from './tools.ts'
 import {
   cosineSimilarity,
@@ -538,6 +544,78 @@ test('Teco listening history is bounded, ordered by recent play, and clearable',
 
   await clearListeningHistoryFile(file)
   assert.deepEqual(await readListeningHistoryFile(file), [])
+})
+
+test('local recommendations explain favorite and liked-track signals', async () => {
+  const items = [
+    { path: '/music/favorite.mp3', name: 'Favorite.mp3', type: 'audio' },
+    { path: '/music/artist-match.mp3', name: 'Artist match.mp3', type: 'audio' },
+    { path: '/music/album-match.mp3', name: 'Album match.mp3', type: 'audio' },
+    { path: '/music/liked.mp3', name: 'Liked.mp3', type: 'audio' },
+    { path: '/music/liked-match.mp3', name: 'Liked match.mp3', type: 'audio' },
+    { path: '/music/disliked.mp3', name: 'Disliked.mp3', type: 'audio' },
+    { path: '/music/video.mp4', name: 'Video.mp4', type: 'video' },
+  ]
+  const metadata = new Map([
+    ['/music/favorite.mp3', { title: 'Favorita', artist: 'Beyoncé', album: 'Lemonade', genres: ['Pop'] }],
+    ['/music/artist-match.mp3', { title: 'Outra faixa', artist: 'Beyonce', album: 'Other', genres: [] }],
+    ['/music/album-match.mp3', { title: 'Faixa do álbum', artist: 'Outro', album: 'Lemonade', genres: [] }],
+    ['/music/liked.mp3', { title: 'Curtida', artist: 'The Weeknd', album: 'Dawn FM', genres: ['R&B'] }],
+    ['/music/liked-match.mp3', { title: 'Relacionado à curtida', artist: 'The Weeknd', album: 'Other', genres: [] }],
+    ['/music/disliked.mp3', { title: 'Não sugerir', artist: 'Beyoncé', album: 'Other', genres: [] }],
+    ['/music/video.mp4', { title: 'Vídeo', artist: 'Beyoncé', album: 'Lemonade', genres: ['Pop'] }],
+  ])
+  const recommendations = await buildRecommendations(
+    items,
+    ['/music/favorite.mp3'],
+    [
+      { path: '/music/liked.mp3', feedback: 'like', updatedAt: 1 },
+      { path: '/music/disliked.mp3', feedback: 'dislike', updatedAt: 2 },
+    ],
+    async (filePath) => ({
+      fileSize: 1,
+      modifiedAt: 1,
+      ...metadata.get(filePath),
+    }),
+  )
+
+  assert.deepEqual(
+    recommendations.map(({ path: filePath }) => filePath),
+    ['/music/artist-match.mp3', '/music/liked-match.mp3', '/music/album-match.mp3'],
+  )
+  assert.equal(recommendations[0].reason.kind, 'artist')
+  assert.equal(recommendations[0].reason.signal, 'favorite')
+  assert.equal(recommendations[1].reason.signal, 'liked')
+  assert.equal(recommendations[2].reason.kind, 'album')
+
+  let metadataCalls = 0
+  assert.deepEqual(
+    await buildRecommendations(items, [], [], async () => {
+      metadataCalls += 1
+      throw new Error('Metadata should not be read without signals')
+    }),
+    [],
+  )
+  assert.equal(metadataCalls, 0)
+})
+
+test('recommendation feedback persists, replaces prior ratings, and can be cleared', async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'tocae-recommendations-'))
+  t.after(() => rm(directory, { recursive: true, force: true }))
+  const file = path.join(directory, 'feedback.json')
+
+  await setRecommendationFeedback(file, '/music/track.mp3', 'like')
+  await setRecommendationFeedback(file, '/music/track.mp3', 'dislike')
+  const [storedFeedback] = await readRecommendationFeedbackFile(file)
+  assert.equal(storedFeedback.path, '/music/track.mp3')
+  assert.equal(storedFeedback.feedback, 'dislike')
+  assert.ok(Number.isFinite(storedFeedback.updatedAt))
+  assert.throws(
+    () => setRecommendationFeedback(file, 'track.mp3', 'like'),
+    /caminho.*não é válido/i,
+  )
+  await clearRecommendationFeedbackFile(file)
+  assert.deepEqual(await readRecommendationFeedbackFile(file), [])
 })
 
 test('AI read-only tools search the library and report the current playlist', async () => {

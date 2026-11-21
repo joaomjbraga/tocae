@@ -2,12 +2,14 @@ import type { Locale } from './i18n'
 import type { LibrarySnapshot } from './library'
 import type { MediaMetadata } from './media'
 import type { MediaTrack } from './mediaTracks'
-import type { PersistedPlaylist, PlaylistItem } from './playlist'
+import type { PersistedPlaylist, PlaylistItem, SavedPlaylist } from './playlist'
 import type {
   AiModelOption,
   AiDataPreferences,
   AiPlayerState,
   AiPlaylistProposal,
+  AiRecommendation,
+  AiRecommendationFeedback,
   AiProviderConfig,
   AiStatus,
 } from './ai'
@@ -16,6 +18,10 @@ export const IPC_CHANNELS = {
   COMMAND: 'app:command',
   PLAYLIST_READ: 'playlist:read',
   PLAYLIST_WRITE: 'playlist:write',
+  SAVED_PLAYLISTS_LIST: 'saved-playlists:list',
+  SAVED_PLAYLISTS_CREATE: 'saved-playlists:create',
+  SAVED_PLAYLISTS_UPDATE: 'saved-playlists:update',
+  SAVED_PLAYLISTS_DELETE: 'saved-playlists:delete',
   MEDIA_PICK: 'media:pick',
   MEDIA_FOLDER_PICK: 'media-folder:pick',
   MEDIA_METADATA_GET: 'media:metadata:get',
@@ -64,6 +70,9 @@ export const IPC_CHANNELS = {
   AI_DATA_PREFERENCES_SET: 'ai:data-preferences:set',
   AI_PLAYBACK_RECORD: 'ai:playback:record',
   AI_LISTENING_HISTORY_CLEAR: 'ai:listening-history:clear',
+  AI_RECOMMENDATIONS_GET: 'ai:recommendations:get',
+  AI_RECOMMENDATION_FEEDBACK_SET: 'ai:recommendation-feedback:set',
+  AI_RECOMMENDATIONS_CLEAR: 'ai:recommendations:clear',
   AI_PLAYLIST_PROPOSAL_GET: 'ai:playlist-proposal:get',
   AI_PLAYLIST_PROPOSAL_APPLY: 'ai:playlist-proposal:apply',
   AI_PLAYLIST_PROPOSAL_CLEAR: 'ai:playlist-proposal:clear',
@@ -118,6 +127,12 @@ export interface TocaeApi {
   notifyRendererReady(): void
   readPlaylist(): Promise<PersistedPlaylist>
   writePlaylist(items: PlaylistItem[], currentIndex: number): Promise<void>
+  savedPlaylists: {
+    list(): Promise<SavedPlaylist[]>
+    create(name: string, items: PlaylistItem[]): Promise<SavedPlaylist>
+    update(playlist: SavedPlaylist): Promise<SavedPlaylist>
+    delete(id: string): Promise<boolean>
+  }
   openMediaDialog(): Promise<void>
   openMediaFolderDialog(): Promise<void>
   showMediaInFolder(filePath: string): Promise<void>
@@ -171,6 +186,9 @@ export interface TocaeApi {
     setDataPreferences(preferences: AiDataPreferences): Promise<AiDataPreferences>
     recordPlayback(filePath: string, title: string): Promise<void>
     clearListeningHistory(): Promise<void>
+    getRecommendations(favoritePaths: string[]): Promise<AiRecommendation[]>
+    setRecommendationFeedback(path: string, feedback: AiRecommendationFeedback): Promise<void>
+    clearRecommendations(): Promise<void>
     onStreamChunk(callback: (chunk: string) => void): () => void
     setPlayerState(state: AiPlayerState): Promise<AiPlayerState>
     getPlayerState(): Promise<AiPlayerState>

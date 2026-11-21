@@ -60,6 +60,10 @@ export async function readSettings(): Promise<Settings> {
           typeof aiData.collectPlaybackHistory === 'boolean'
             ? aiData.collectPlaybackHistory
             : DEFAULT_SETTINGS.aiData.collectPlaybackHistory,
+        localRecommendations:
+          typeof aiData.localRecommendations === 'boolean'
+            ? aiData.localRecommendations
+            : DEFAULT_SETTINGS.aiData.localRecommendations,
       },
     }
   } catch (error) {
