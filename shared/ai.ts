@@ -14,6 +14,18 @@ export interface AiProviderConfig {
   embeddingModel?: string
 }
 
+export const AI_LIMITS = {
+  userMessageBytes: 8 * 1024,
+  contextBytes: 48 * 1024,
+  historyBytes: 64 * 1024,
+  historyMessages: 50,
+  toolResultBytes: 8 * 1024,
+  toolResultsBytes: 16 * 1024,
+  toolCalls: 5,
+  responseBytes: 16 * 1024,
+  outputTokens: 2048,
+} as const
+
 export interface AiModelOption {
   name: string
   displayName: string

@@ -117,6 +117,8 @@ export const ptBRMessages = {
   'assistant.title': 'Teco',
   'assistant.privacyNotice':
     'Privacidade: suas mensagens e dados da biblioteca/fila usados na resposta (nomes, caminhos e metadados) podem ser enviados a {provider} ({endpoint}). Evite incluir informações pessoais.',
+  'assistant.contextNotice':
+    'Limites: mensagens até {userMessageKiB} KiB, contexto por envio até {contextKiB} KiB e respostas até {outputTokens} tokens. O histórico é limitado a {historyKiB} KiB; mensagens antigas podem ser omitidas do contexto ou removidas do histórico.',
   'assistant.description': 'Ajuda com a biblioteca, a fila e a reprodução no Tocaê.',
   'assistant.placeholder': 'Pergunte sobre o Tocaê...',
   'assistant.notConfigured': 'Configure o provedor e a chave de API nas configurações.',
@@ -124,6 +126,7 @@ export const ptBRMessages = {
   'assistant.send': 'Enviar mensagem',
   'assistant.cancel': 'Cancelar solicitação',
   'assistant.clear': 'Limpar conversa',
+  'assistant.messageTooLong': 'A mensagem excede o limite de {maxKiB} KiB. Reduza o texto e tente novamente.',
   'assistant.processing': 'Processando...',
   'assistant.emptyTitle': 'Como posso ajudar?',
   'assistant.emptyDescription':

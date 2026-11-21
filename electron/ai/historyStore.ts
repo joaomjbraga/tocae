@@ -1,8 +1,7 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { AiMessage } from '@shared/ai'
-
-const MAX_HISTORY_MESSAGES = 50
+import { limitAiHistory } from './limits.ts'
 
 export function isAiMessage(value: unknown): value is AiMessage {
   if (typeof value !== 'object' || value === null) return false
@@ -31,7 +30,7 @@ export async function readAiHistoryFile(file: string): Promise<AiMessage[]> {
     if (typeof parsed !== 'object' || parsed === null || !('messages' in parsed)) return []
     const messages = (parsed as { messages?: unknown }).messages
     if (!Array.isArray(messages)) return []
-    return messages.filter(isAiMessage).slice(-MAX_HISTORY_MESSAGES)
+    return limitAiHistory(messages.filter(isAiMessage))
   } catch (error) {
     console.warn('Could not parse AI history; using an empty conversation', error)
     return []
@@ -47,7 +46,7 @@ export async function writeAiHistoryFile(
   await writeFile(
     tempFile,
     JSON.stringify(
-      { version: 1, messages: messages.filter(isAiMessage).slice(-MAX_HISTORY_MESSAGES) },
+      { version: 1, messages: limitAiHistory(messages.filter(isAiMessage)) },
       null,
       2,
     ),

@@ -111,6 +111,8 @@ export const enMessages: Messages = {
   'assistant.title': 'Teco',
   'assistant.privacyNotice':
     'Privacy: your messages and library/queue data used in the response (names, paths, and metadata) may be sent to {provider} ({endpoint}). Avoid including personal information.',
+  'assistant.contextNotice':
+    'Limits: messages up to {userMessageKiB} KiB, context per request up to {contextKiB} KiB, and responses up to {outputTokens} tokens. History is limited to {historyKiB} KiB; older messages may be omitted from context or removed from retained history.',
   'assistant.description': 'Help with your Tocaê library, queue, and playback.',
   'assistant.placeholder': 'Ask about Tocaê...',
   'assistant.notConfigured': 'Configure the provider and API key in settings.',
@@ -118,6 +120,7 @@ export const enMessages: Messages = {
   'assistant.send': 'Send message',
   'assistant.cancel': 'Cancel request',
   'assistant.clear': 'Clear conversation',
+  'assistant.messageTooLong': 'The message exceeds the {maxKiB} KiB limit. Shorten it and try again.',
   'assistant.processing': 'Processing...',
   'assistant.emptyTitle': 'How can I help?',
   'assistant.emptyDescription':

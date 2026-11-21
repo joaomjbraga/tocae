@@ -359,7 +359,9 @@ As seguintes ações P0 foram implementadas após a avaliação original:
 
 - **Aviso de privacidade antes do envio:** o chat informa que mensagens e dados da biblioteca/fila (nomes, caminhos e metadados) podem ser enviados ao provedor, identificando o provedor e endpoint.
 - **Proteção de endpoints e credenciais:** URLs remotas HTTP são rejeitadas tanto ao salvar quanto ao carregar configuração; HTTP permanece permitido para loopback, necessário a servidores locais. Credenciais agora são cifradas e armazenadas por provedor, a chave legada é migrada para o provedor configurado, e Ollama nunca recebe uma chave antiga. Chamadas HTTP-compatible também não seguem redirecionamentos.
+- **Limites P1 de contexto e custo:** entrada limitada a 8 KiB, contexto por envio a 48 KiB, histórico retido a 64 KiB/50 mensagens, resultados de ferramentas a 8 KiB cada e 16 KiB no total, cinco chamadas de ferramenta por pedido e resposta limitada a 2.048 tokens/16 KiB. Mensagens antigas são omitidas do contexto e o chat informa os limites.
+- **Persistência do histórico:** erros de gravação agora são registrados e retornados à interface com uma mensagem explícita, distinguindo resposta gerada de histórico não salvo.
 - **Smoke test Gemini real:** com autorização do usuário, a descoberta de modelos, streaming e uma chamada de ferramenta foram verificadas usando `gemini-3.1-flash-lite`. A ferramenta retornou estado simulado (`playing: false`, sem mídia atual); nenhum estado real do player ou conteúdo da biblioteca foi enviado. A chave não foi registrada em logs nem alterada.
-- **Verificação local:** 48 testes passaram, junto com typecheck, lint CSS e build do Vite/Electron.
+- **Verificação local:** 52 testes passaram, junto com typecheck, lint CSS e build do Vite/Electron.
 
 O aviso de privacidade informa o usuário, mas não é um consentimento explícito por solicitação. O smoke test comprova um fluxo real com a conta/modelo testado, não disponibilidade contínua, latência ou compatibilidade de todos os modelos Gemini; a chamada pode ter consumido quota.

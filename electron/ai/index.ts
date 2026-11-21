@@ -268,7 +268,7 @@ function persistHistory(): Promise<void> {
   historyWriteQueue = write.catch((error) => {
     console.warn('Could not persist AI history', error)
   })
-  return historyWriteQueue
+  return write
 }
 
 async function readCredentials(): Promise<AiCredentials> {
@@ -524,7 +524,13 @@ export function registerAiIpc(): void {
       await core.send(value, config, (chunk) => {
         event.sender.send(IPC_CHANNELS.AI_STREAM_CHUNK, chunk)
       })
-      await persistHistory()
+      try {
+        await persistHistory()
+      } catch {
+        throw new AiRequestError(
+          'A resposta foi gerada, mas não foi possível salvar o histórico. Verifique o espaço disponível e as permissões.',
+        )
+      }
       return status()
     } catch (error) {
       throw normalizeError(error)

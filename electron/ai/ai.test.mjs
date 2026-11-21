@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { AiCore, AiRequestError } from './core.ts'
@@ -135,6 +135,7 @@ test('Gemini sends the system instruction separately from conversation content',
   )
 
   assert.equal(request.config.systemInstruction, 'Stay within the Tocaê app.')
+  assert.equal(request.config.maxOutputTokens, 2048)
   assert.deepEqual(request.contents, [{ role: 'user', parts: [{ text: 'What is playing?' }] }])
 })
 
@@ -269,6 +270,92 @@ test('AI core supports cancellation', async () => {
   await assert.rejects(pending, /cancel/i)
 })
 
+test('AI core rejects oversized user messages before calling the provider', async () => {
+  let calls = 0
+  const core = new AiCore(() => {
+    calls += 1
+    return { async sendStream() {} }
+  })
+
+  await assert.rejects(
+    core.send('x'.repeat(8 * 1024 + 1), config),
+    /limite de 8 KiB/,
+  )
+  assert.equal(calls, 0)
+  assert.deepEqual(core.getHistory(), [])
+})
+
+test('AI core caps output and tool result sizes', async () => {
+  const oversizedOutputCore = new AiCore(() => ({
+    async sendStream(_messages, _signal, onChunk) {
+      onChunk('x'.repeat(16 * 1024 + 1))
+    },
+  }))
+  await assert.rejects(
+    oversizedOutputCore.send('Respond briefly', config),
+    /resposta excedeu o limite/,
+  )
+
+  const oversizedToolCore = new AiCore(
+    () => ({
+      async sendStream(_messages, _signal, _onChunk, _tools, executeTool) {
+        await executeTool('get_playlist', {})
+      },
+    }),
+    [{ type: 'function', function: { name: 'get_playlist', description: 'Get queue', parameters: {} } }],
+    async () => ({ items: ['x'.repeat(8 * 1024)] }),
+  )
+  await assert.rejects(
+    oversizedToolCore.send('Summarize my queue', config),
+    /resultados das ferramentas excederam/,
+  )
+
+  const toolCallLimitCore = new AiCore(
+    () => ({
+      async sendStream(_messages, _signal, _onChunk, _tools, executeTool) {
+        for (let index = 0; index < 6; index += 1) {
+          await executeTool('get_playlist', {})
+        }
+      },
+    }),
+    [{ type: 'function', function: { name: 'get_playlist', description: 'Get queue', parameters: {} } }],
+    async () => null,
+  )
+  await assert.rejects(
+    toolCallLimitCore.send('Summarize my queue', config),
+    /limite de chamadas de ferramentas/,
+  )
+})
+
+test('AI core omits older messages when the provider context reaches its byte limit', async () => {
+  let sentMessages
+  const core = new AiCore(() => ({
+    async sendStream(messages, _signal, onChunk) {
+      sentMessages = messages
+      onChunk('Done')
+    },
+  }))
+  core.restoreHistory(Array.from({ length: 20 }, (_, index) => ({
+    id: String(index),
+    role: index % 2 === 0 ? 'user' : 'assistant',
+    content: `message-${index} ${'x'.repeat(4 * 1024)}`,
+    createdAt: index,
+  })))
+
+  await core.send('Latest request', config)
+
+  assert.equal(sentMessages.at(-1).content, 'Latest request')
+  assert.ok(sentMessages[0].content.includes('Mensagens antigas foram omitidas'))
+  assert.ok(sentMessages.length < 21)
+  assert.ok(Buffer.byteLength(JSON.stringify(sentMessages), 'utf8') <= 48 * 1024)
+  assert.ok(
+    core.getHistory().reduce(
+      (total, message) => total + Buffer.byteLength(JSON.stringify(message), 'utf8'),
+      0,
+    ) <= 64 * 1024,
+  )
+})
+
 test('OpenAI-compatible provider sends Chat Completions and normalizes the response', async () => {
   const originalFetch = globalThis.fetch
   let chunks = ''
@@ -277,6 +364,7 @@ test('OpenAI-compatible provider sends Chat Completions and normalizes the respo
     assert.equal(options.method, 'POST')
     assert.equal(options.redirect, 'error')
     assert.equal(JSON.parse(options.body).model, 'test-model')
+    assert.equal(JSON.parse(options.body).max_tokens, 2048)
     const body =
       'data: {"choices":[{"delta":{"content":"Real provider "}}]}\n' +
       'data: {"choices":[{"delta":{"content":"response"}}]}\n' +
@@ -330,6 +418,15 @@ test('AI history file persists, filters invalid entries, and clears', async (t) 
 
   await clearAiHistoryFile(file)
   assert.deepEqual(await readAiHistoryFile(file), [])
+})
+
+test('AI history persistence failures reject to the caller', async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'tocae-ai-history-failure-'))
+  t.after(() => rm(directory, { recursive: true, force: true }))
+  const blockedFile = path.join(directory, 'history')
+  await mkdir(blockedFile)
+
+  await assert.rejects(writeAiHistoryFile(blockedFile, []))
 })
 
 test('AI read-only tools search the library and report the current playlist', () => {

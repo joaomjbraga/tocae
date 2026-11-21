@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import type { AiMessage, AiProviderConfig } from '@shared/ai'
-import type { AiProvider, AiToolDefinition } from './provider'
+import type { AiProvider, AiProviderMessage, AiToolDefinition } from './provider'
+import { AI_LIMITS, limitAiHistory } from './limits.ts'
 
-const MAX_HISTORY_MESSAGES = 50
 const REQUEST_TIMEOUT_MS = 60_000
 const TECO_SYSTEM_INSTRUCTION = `Você é o Teco, assistente integrado ao reprodutor multimídia Tocaê.
 Seu escopo é exclusivamente o Tocaê: uso do reprodutor, biblioteca local de mídias, fila, reprodução, recursos, configurações e solução de problemas do aplicativo.
@@ -35,7 +35,7 @@ export class AiCore {
 
   restoreHistory(messages: AiMessage[]): void {
     if (this.busy) throw new AiRequestError('Não é possível restaurar o histórico durante uma solicitação.')
-    this.messages = messages.slice(-MAX_HISTORY_MESSAGES).map((message) => ({ ...message }))
+    this.messages = limitAiHistory(messages).map((message) => ({ ...message }))
   }
 
   isBusy(): boolean {
@@ -58,6 +58,11 @@ export class AiCore {
     if (this.busy) throw new AiRequestError('Uma solicitação já está em andamento.')
     const normalized = content.trim()
     if (!normalized) throw new AiRequestError('Digite uma mensagem.')
+    if (Buffer.byteLength(normalized, 'utf8') > AI_LIMITS.userMessageBytes) {
+      throw new AiRequestError(
+        `A mensagem excede o limite de ${AI_LIMITS.userMessageBytes / 1024} KiB. Reduza o texto e tente novamente.`,
+      )
+    }
 
     const provider = this.providerFactory(config)
     if (!provider) throw new AiRequestError('Configure uma chave de API válida.')
@@ -68,27 +73,64 @@ export class AiCore {
       content: normalized,
       createdAt: Date.now(),
     }
-    this.messages = [...this.messages, userMessage].slice(-MAX_HISTORY_MESSAGES)
+    const nextHistory = limitAiHistory([...this.messages, userMessage])
+    const providerMessages = buildProviderMessages(nextHistory, this.tools)
+    this.messages = nextHistory
     this.busy = true
-    this.controller = new AbortController()
-    const timeout = setTimeout(() => this.controller?.abort(), REQUEST_TIMEOUT_MS)
+    const controller = new AbortController()
+    this.controller = controller
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+    let responseLimitExceeded = false
 
     try {
       let text = ''
+      let responseBytes = 0
+      let toolResultBytes = 0
+      let toolCallCount = 0
+      const executeTool = this.executeTool
       await provider.sendStream(
-        [
-          { role: 'system', content: TECO_SYSTEM_INSTRUCTION },
-          ...this.messages.map((message) => ({ role: message.role, content: message.content })),
-        ],
-        this.controller.signal,
+        providerMessages,
+        controller.signal,
         (chunk) => {
+          responseBytes += Buffer.byteLength(chunk, 'utf8')
+          if (responseBytes > AI_LIMITS.responseBytes) {
+            responseLimitExceeded = true
+            controller.abort()
+            throw new AiRequestError('A resposta excedeu o limite de 16 KiB.')
+          }
           text += chunk
           onChunk(chunk)
         },
         this.tools,
-        this.executeTool,
+        executeTool
+          ? async (name, args) => {
+              toolCallCount += 1
+              if (toolCallCount > AI_LIMITS.toolCalls) {
+                throw new AiRequestError('A solicitação excedeu o limite de chamadas de ferramentas.')
+              }
+              const result = await executeTool(name, args)
+              let serialized: string | undefined
+              try {
+                serialized = JSON.stringify(result)
+              } catch {
+                throw new AiRequestError('A ferramenta retornou um resultado inválido.')
+              }
+              if (typeof serialized !== 'string') {
+                throw new AiRequestError('A ferramenta retornou um resultado inválido.')
+              }
+              const resultBytes = Buffer.byteLength(serialized, 'utf8')
+              if (
+                resultBytes > AI_LIMITS.toolResultBytes ||
+                toolResultBytes + resultBytes > AI_LIMITS.toolResultsBytes
+              ) {
+                throw new AiRequestError('Os resultados das ferramentas excederam o limite de tamanho.')
+              }
+              toolResultBytes += resultBytes
+              return result
+            }
+          : undefined,
       )
-      if (this.controller.signal.aborted) throw new AiRequestError('Solicitação cancelada.')
+      if (controller.signal.aborted) throw new AiRequestError('Solicitação cancelada.')
 
       const assistantMessage: AiMessage = {
         id: randomUUID(),
@@ -96,10 +138,13 @@ export class AiCore {
         content: text,
         createdAt: Date.now(),
       }
-      this.messages = [...this.messages, assistantMessage].slice(-MAX_HISTORY_MESSAGES)
+      this.messages = limitAiHistory([...this.messages, assistantMessage])
       return assistantMessage
     } catch (error) {
-      if (this.controller.signal.aborted) {
+      if (responseLimitExceeded) {
+        throw error
+      }
+      if (controller.signal.aborted) {
         throw new AiRequestError('Solicitação cancelada ou excedeu o tempo limite.')
       }
       throw error
@@ -109,6 +154,39 @@ export class AiCore {
       this.busy = false
     }
   }
+}
+
+function buildProviderMessages(
+  history: readonly AiMessage[],
+  tools: readonly AiToolDefinition[],
+): AiProviderMessage[] {
+  const context = history.slice()
+  let omittedMessages = false
+  const makeMessages = (): AiProviderMessage[] => [
+    {
+      role: 'system',
+      content: omittedMessages
+        ? `${TECO_SYSTEM_INSTRUCTION}\n\nMensagens antigas foram omitidas para respeitar o limite de contexto.`
+        : TECO_SYSTEM_INSTRUCTION,
+    },
+    ...context.map(({ role, content }) => ({ role, content })),
+  ]
+  const fits = () => {
+    const messageBytes = Buffer.byteLength(JSON.stringify(makeMessages()), 'utf8')
+    const toolBytes = Buffer.byteLength(JSON.stringify(tools), 'utf8')
+    return messageBytes + toolBytes <= AI_LIMITS.contextBytes
+  }
+
+  while (context.length > 1 && !fits()) {
+    const removeCount =
+      context[0].role === 'user' && context[1]?.role === 'assistant' ? 2 : 1
+    context.splice(0, removeCount)
+    omittedMessages = true
+  }
+  if (!fits()) {
+    throw new AiRequestError('A mensagem atual excede o limite de contexto da solicitação.')
+  }
+  return makeMessages()
 }
 
 export class AiRequestError extends Error {}

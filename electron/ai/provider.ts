@@ -1,4 +1,5 @@
 import type { AiModelOption, AiProviderConfig } from '@shared/ai'
+import { AI_LIMITS } from '../../shared/ai.ts'
 import {
   GoogleGenAI,
   createPartFromFunctionResponse,
@@ -101,6 +102,7 @@ export class GeminiSdkProvider implements AiProvider {
           ...(systemInstruction ? { systemInstruction } : {}),
           abortSignal: signal,
           automaticContinuation: false,
+          maxOutputTokens: AI_LIMITS.outputTokens,
           ...(tools.length > 0
             ? {
                 tools: [{
@@ -251,6 +253,7 @@ export class OpenAiCompatibleProvider implements AiProvider {
           model: this.config.model,
           messages: conversation,
           stream: true,
+          max_tokens: AI_LIMITS.outputTokens,
           ...(tools.length > 0 ? { tools } : {}),
         }),
         signal,

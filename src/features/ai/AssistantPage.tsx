@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent, ReactNode } from 'react'
 import { Send, Square, Trash2 } from 'lucide-react'
+import { AI_LIMITS } from '@shared/ai'
 import type { AiMessage, AiPlaylistProposal, AiStatus } from '@shared/ai'
 import { useI18n } from '../../i18n'
 import styles from './AssistantPage.module.css'
@@ -122,6 +123,12 @@ function AssistantPage() {
     event.preventDefault()
     const content = message.trim()
     if (!content || status?.busy) return
+    if (new TextEncoder().encode(content).byteLength > AI_LIMITS.userMessageBytes) {
+      setError(t('assistant.messageTooLong', {
+        maxKiB: AI_LIMITS.userMessageBytes / 1024,
+      }))
+      return
+    }
     setError(null)
     setMessage('')
     setStreamingText('')
@@ -257,9 +264,19 @@ function AssistantPage() {
       )}
 
       {status && (
-        <p className={styles.privacyNotice} role="note">
-          {t('assistant.privacyNotice', { provider: providerName, endpoint })}
-        </p>
+        <>
+          <p className={styles.privacyNotice} role="note">
+            {t('assistant.privacyNotice', { provider: providerName, endpoint })}
+          </p>
+          <p className={styles.contextNotice} role="note">
+            {t('assistant.contextNotice', {
+              userMessageKiB: AI_LIMITS.userMessageBytes / 1024,
+              contextKiB: AI_LIMITS.contextBytes / 1024,
+              historyKiB: AI_LIMITS.historyBytes / 1024,
+              outputTokens: AI_LIMITS.outputTokens,
+            })}
+          </p>
+        </>
       )}
 
       <form className={styles.composer} onSubmit={send}>
