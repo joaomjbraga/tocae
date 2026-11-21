@@ -1,12 +1,12 @@
 # Auditoria técnica do Teco IA
 
-**Data:** 2026-03-19  
+**Data:** 2026-11-20
 **Escopo:** implementação existente no repositório, com foco na integração de IA do Tocaê.  
 **Tipo:** auditoria documental baseada em código e testes; não é teste de penetração nem validação com serviços externos.
 
 ## 1. Resumo executivo
 
-O Teco é um assistente conversacional funcional, integrado ao processo principal do Electron e aos dados de reprodução do Tocaê. A integração inclui streaming, histórico de uma conversa, provedores configuráveis, ferramentas limitadas para consultar a biblioteca, a fila, favoritos e reproduções recentes (estes dois últimos com consentimentos separados e desativados por padrão), recomendações locais explicáveis com opt-in e feedback explícito, controles básicos do player e propostas que podem ser salvas como playlists locais nomeadas ou aplicadas à fila somente por ação explícita.
+O Teco é um assistente conversacional funcional, integrado ao processo principal do Electron e aos dados de reprodução do Tocaê. A integração inclui streaming, histórico de uma conversa, provedores configuráveis, ferramentas limitadas para consultar a biblioteca, a fila, favoritos e reproduções recentes (estes dois últimos com consentimentos separados e desativados por padrão), recomendações locais explicáveis com opt-in e feedback explícito, análise sob demanda do humor do áudio via Gemini com consentimento a cada envio, controles básicos do player e propostas que podem ser salvas como playlists locais nomeadas ou aplicadas à fila somente por ação explícita.
 
 O Gemini usa o SDK oficial `@google/genai`, incluindo geração em streaming, descoberta de modelos, embeddings e chamadas de ferramentas. O fluxo mantém as partes originais do modelo necessárias para preservar `thoughtSignature`. O uso do SDK não significa que a Interactions API esteja integrada: a implementação atual usa `models.generateContentStream` e um ciclo manual de ferramentas, com até cinco turnos. A auditoria inicial não fez chamada real ao Gemini; um smoke test posterior limitado está registrado na seção 11.
 
@@ -15,15 +15,15 @@ O Gemini usa o SDK oficial `@google/genai`, incluindo geração em streaming, de
 | Estado | Quantidade | Definição |
 |---|---:|---|
 | Implementado | 26 (32,5%) | Fluxo funcional identificado no código; as limitações estão registradas quando relevantes. |
-| Parcial | 16 (20%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
-| Não implementado | 38 (47,5%) | Não foi encontrado fluxo integrado do Teco para o critério. |
+| Parcial | 19 (23,75%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
+| Não implementado | 35 (43,75%) | Não foi encontrado fluxo integrado do Teco para o critério. |
 | Apenas interface / estrutura preparada | 0 | Não foi identificado critério cujo único suporte seja uma tela ou estrutura sem fluxo funcional. |
 
 O resultado não deve ser interpretado como percentual de qualidade ou prontidão: cada critério tem peso igual, e a classificação “parcial” não mede profundidade.
 
 ### Indicadores estimados
 
-Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **42,5%** (34/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
+Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **44,375%** (35,5/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
 
 | Área | Estimativa | Base |
 |---|---:|---|
@@ -33,10 +33,11 @@ Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” 
 | Playlists | ~60% | É possível salvar e editar playlists nomeadas localmente, inclusive propostas do Teco; a seleção automática continua lexical e não aplica preferências musicais. |
 | Favoritos e histórico | ~55% | Consulta favoritos e até 20 reproduções recentes sob demanda, com consentimentos separados; recomendações locais usam favoritos e avaliações explícitas, sem analisar o histórico de reprodução. |
 | Recomendações | ~42% | Sugestões locais limitadas a tags de artista, álbum e gênero, com justificativa e feedback; não há recomendação de artistas/álbuns ou análise sonora. |
+| Análise musical | ~21% | Análise qualitativa e sob demanda de humor, energia, instrumentos e ritmo aproximado em áudio enviado ao Gemini com consentimento por arquivo; não calcula BPM nem grava tags. |
 | Controle do player | ~80% dos controles básicos | Play, pause, próximo e anterior estão disponíveis; volume e navegação da aplicação não estão expostos ao agente. |
-| Organização, inteligência musical, vídeo e imagem | 0% | Nenhum fluxo de IA correspondente foi encontrado. |
+| Organização automática, análise de vídeo e imagem | 0% | Nenhum fluxo de IA correspondente foi encontrado. |
 
-**Conclusão:** a base de conversa e integração é real e agora inclui curadoria local limitada, mas o Teco ainda não oferece curadoria musical abrangente, organização automática ou análise multimodal. Os maiores riscos práticos são privacidade dos dados enviados ao provedor, arquivos locais de histórico/índice/avaliações sem criptografia e validação real limitada a um cenário com um modelo e estado simulado.
+**Conclusão:** a base de conversa e integração é real e inclui curadoria local limitada e classificação qualitativa de áudio. O Teco ainda não oferece curadoria musical abrangente, organização automática nem análise de vídeo/imagem; a análise de áudio depende do Gemini e foi smoke-tested em uma amostra autorizada. Os maiores riscos práticos são privacidade dos dados enviados ao provedor e arquivos locais de histórico/índice/avaliações sem criptografia.
 
 ## 2. Matriz consolidada dos 80 critérios
 
@@ -145,9 +146,9 @@ Cada linha registra o comportamento encontrado e a principal lacuna. “Não enc
 
 | # | Critério | Estado | Evidência e comportamento / limitação |
 |---|---|---|---|
-| G1 | Reconhecer humor/energia a partir do áudio | N | Não há análise de áudio por IA. |
-| G2 | Reconhecer BPM/ritmo | N | Não há análise de BPM ou ritmo integrada ao Teco. |
-| G3 | Reconhecer instrumentos | N | Não há classificação de instrumentos. |
+| G1 | Reconhecer humor/energia a partir do áudio | P | O fluxo opt-in pede ao Gemini uma estimativa qualitativa do clima e da energia de uma faixa atual da biblioteca; um smoke test autorizado retornou classificação plausível, não persistida. |
+| G2 | Reconhecer BPM/ritmo | P | O modelo estimou cerca de 120 BPM na amostra, mas não há cálculo de BPM nem análise local de sinal; o valor é apenas uma estimativa. |
+| G3 | Reconhecer instrumentos | P | O Gemini descreveu instrumentos perceptíveis na amostra; a classificação é qualitativa e não foi verificada localmente. |
 | G4 | Transcrever ou entender letras | N | Não há transcrição nem análise de letras. |
 | G5 | Detectar segmentos/estrutura da faixa | N | Não há análise de estrutura musical. |
 | G6 | Classificar ou enriquecer tags automaticamente | N | Extração local de metadados não é classificação musical por IA nem grava tags. |
@@ -350,9 +351,9 @@ As prioridades refletem risco e dependências; itens concluídos posteriormente 
 
 ### P3 — Capacidades multimodais e organização avançada
 
-1. **Análise de áudio, imagem e vídeo**, começando por um caso de uso único e opcional, sem enviar mídia sem consentimento.
-   - **Dependências:** avaliação de custo, formatos/tamanho, política de retenção e seleção de provedor.
-   - **Aceite:** processamento tem limites, aviso de transmissão, cancelamento e testes com amostras locais autorizadas.
+1. **Análise de áudio, imagem e vídeo (parcial: análise de humor do áudio).** O primeiro caso de uso analisa uma faixa atual da biblioteca com o Gemini.
+   - **Resolvido neste passo:** opt-in independente, confirmação nativa a cada envio, formatos limitados, teto de 10 MiB, cancelamento e sem persistência do áudio/resultado no Tocaê.
+   - **Pendente:** imagem/vídeo, testar formatos/modelos adicionais e revisar comportamento/retenção conforme políticas atualizadas do provedor.
 2. **Organização de arquivos com pré-visualização.**
    - **Dependências:** operações de filesystem, recuperação/undo e consentimento explícito.
    - **Aceite:** nenhuma mutação ocorre sem plano legível e confirmação; erros parciais não são apresentados como sucesso.
@@ -364,6 +365,7 @@ As prioridades refletem risco e dependências; itens concluídos posteriormente 
 
 - [core.ts](../../electron/ai/core.ts) — prompt, histórico em memória, timeout e fluxo de resposta.
 - [provider.ts](../../electron/ai/provider.ts) — SDK Gemini, adaptador OpenAI-compatible, streaming, embeddings e tool calls.
+- [recommendations.ts](../../electron/ai/recommendations.ts) — recomendações locais e persistência de feedback explícito.
 - [index.ts](../../electron/ai/index.ts) — configuração, credenciais, IPC e execução de ferramentas.
 - [tools.ts](../../electron/ai/tools.ts) — catálogo e busca por nome, caminho, tags, favoritos e histórico recente.
 - [historyStore.ts](../../electron/ai/historyStore.ts) e [semanticIndex.ts](../../electron/ai/semanticIndex.ts) — persistência local de histórico e índice.
@@ -389,8 +391,9 @@ As seguintes ações P0 foram implementadas após a avaliação original:
 - **Busca estruturada do catálogo:** `search_library` aceita filtros por título, artista, álbum e gênero, combináveis entre si e com tipo/nome/caminho. As tags são extraídas apenas quando esses filtros são usados, em lotes concorrentes limitados; a busca por nome/caminho não faz leituras extras de metadados. Correspondências por texto ignoram caixa e diacríticos.
 - **Consentimento para favoritos e histórico:** acesso a favoritos e coleta de reprodução local têm controles independentes, ambos desativados por padrão. O histórico mantém até 500 inícios de áudio/vídeo locais com nome, tipo e horário, sem caminho absoluto; a ferramenta retorna até 20 registros. Os dados ficam no perfil local sem criptografia, e resultados só chegam ao provedor quando o Teco usa a ferramenta. Desativar a coleta interrompe novos registros, mas não apaga os existentes; há ação separada para apagá-los.
 - **Playlists nomeadas:** o usuário pode salvar a fila atual ou uma proposta do Teco, editar nome/ordem/itens e acrescentar a playlist à fila sem substituí-la. Os dados ficam em `saved-playlists.json` no perfil local, incluindo caminhos absolutos necessários à reprodução; não são enviados ao provedor ao salvar. A exclusão exige confirmação.
-- **Verificação de playlists e recomendações:** os 4 testes do armazenamento de playlists passaram; o conjunto focado com playlists, fila e IA passou com 40/40 testes. Typecheck, lint CSS e build do Vite/Electron também passaram.
-- **Verificação de favoritos e histórico:** os 28 testes de IA fazem parte do conjunto focado aprovado e cobrem consentimento, remoção de caminhos, limite de retenção e consulta limitada.
+- **Verificação de playlists, recomendações e análise de áudio:** os 4 testes do armazenamento de playlists passaram; o conjunto focado com playlists, fila e IA passou com 41/41 testes. Typecheck, lint CSS e build do Vite/Electron passaram.
+- **Smoke test de áudio autorizado:** uma amostra local foi analisada pelo Gemini `gemini-3.1-flash-lite` após confirmação. O retorno incluiu estimativas de gênero, clima, energia, instrumentos e ritmo; nenhum caminho, nome do arquivo ou letra foi registrado. A saída não foi persistida pelo Tocaê e não é ground truth.
+- **Verificação de favoritos, recomendações e áudio:** os 31 testes de IA fazem parte do conjunto focado aprovado e cobrem consentimento, limites locais, feedback, envio de áudio fixture em mock e cancelamento.
 - **Verificação da busca estruturada:** 26 testes específicos de IA passaram e o typecheck do projeto passou.
 - **Verificação local:** 58 testes passaram, junto com typecheck, lint CSS e build do Vite/Electron.
 

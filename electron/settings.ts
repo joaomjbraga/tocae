@@ -64,6 +64,10 @@ export async function readSettings(): Promise<Settings> {
           typeof aiData.localRecommendations === 'boolean'
             ? aiData.localRecommendations
             : DEFAULT_SETTINGS.aiData.localRecommendations,
+        audioMoodAnalysis:
+          typeof aiData.audioMoodAnalysis === 'boolean'
+            ? aiData.audioMoodAnalysis
+            : DEFAULT_SETTINGS.aiData.audioMoodAnalysis,
       },
     }
   } catch (error) {

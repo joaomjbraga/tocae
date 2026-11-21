@@ -48,16 +48,16 @@
   display:flex; flex-direction:column; gap:8px; padding:22px 24px 18px;
   scrollbar-width:thin; scrollbar-color:var(--border-strong) transparent;
 }
-.recommendations {
+.recommendations,.audioMood {
   flex:none;
   padding:12px;
   border:1px solid rgba(167,119,255,.2);
   border-radius:14px;
   background:rgba(167,119,255,.055);
 }
-.recommendationsHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.recommendationsHeader h2 { margin:0; color:var(--text-primary); font-size:13px; font-weight:650; }
-.recommendationsHeader p { margin:3px 0 0; color:var(--text-muted); font-size:10px; line-height:1.45; }
+.recommendationsHeader,.audioMoodHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.recommendationsHeader h2,.audioMoodHeader h2 { margin:0; color:var(--text-primary); font-size:13px; font-weight:650; }
+.recommendationsHeader p,.audioMoodHeader p { margin:3px 0 0; color:var(--text-muted); font-size:10px; line-height:1.45; }
 .refreshRecommendations {
   width:30px;
   height:30px;
@@ -108,6 +108,29 @@
 .recommendationEmpty,.recommendationError { margin:9px 0 0; font-size:11px; line-height:1.45; }
 .recommendationEmpty { color:var(--text-muted); }
 .recommendationError { color:var(--text-danger); }
+.audioMoodAction { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; }
+.audioMoodAction > span { min-width:0; overflow:hidden; color:var(--text-secondary); font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
+.audioMoodButton {
+  min-height:30px;
+  display:inline-flex;
+  flex:none;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  border:1px solid rgba(167,119,255,.3);
+  border-radius:9px;
+  padding:0 10px;
+  background:rgba(167,119,255,.14);
+  color:var(--text-primary);
+  cursor:pointer;
+  font:inherit;
+  font-size:11px;
+}
+.audioMoodButton:disabled { color:var(--text-disabled); cursor:default; opacity:.65; }
+.audioMoodResult { margin-top:10px; padding-top:9px; border-top:1px solid rgba(255,255,255,.08); }
+.audioMoodResult strong { color:var(--text-primary); font-size:11px; }
+.audioMoodResult span { display:block; margin-top:3px; color:var(--text-muted); font-size:10px; }
+.audioMoodResult p { margin:5px 0 0; color:var(--text-secondary); font-size:11px; line-height:1.5; white-space:pre-wrap; }
 .empty {
   max-width:440px; margin:auto; text-align:center; color:var(--text-muted);
 }
@@ -264,5 +287,6 @@
   .message { max-width:90%; }
   .composer { margin:6px 8px 8px; border-radius:18px; }
   .playlistProposal { align-items:flex-start; flex-direction:column; margin-inline:8px; }
-  .recommendations { padding:9px; }
+  .recommendations,.audioMood { padding:9px; }
+  .audioMoodAction { align-items:flex-start; flex-direction:column; }
 }

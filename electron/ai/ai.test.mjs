@@ -153,6 +153,36 @@ test('Gemini sends the system instruction separately from conversation content',
   assert.deepEqual(request.contents, [{ role: 'user', parts: [{ text: 'What is playing?' }] }])
 })
 
+test('Gemini audio analysis sends bounded audio with a non-lyrical classification prompt', async () => {
+  const provider = new GeminiSdkProvider({
+    provider: 'gemini',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-2.5-flash',
+  }, 'test-key')
+  const audio = Buffer.from('audio bytes')
+  const controller = new AbortController()
+  let request
+  provider.ai.models.generateContent = async (value) => {
+    request = value
+    return { text: 'Gênero provável: jazz; clima tranquilo.' }
+  }
+
+  const result = await provider.analyzeAudioMood(
+    audio,
+    'audio/mpeg',
+    controller.signal,
+    'pt-BR',
+  )
+
+  assert.equal(result, 'Gênero provável: jazz; clima tranquilo.')
+  assert.equal(request.model, 'gemini-2.5-flash')
+  assert.equal(request.config.abortSignal, controller.signal)
+  assert.equal(request.config.maxOutputTokens, 512)
+  assert.equal(request.contents[0].parts[0].inlineData.mimeType, 'audio/mpeg')
+  assert.equal(request.contents[0].parts[0].inlineData.data, audio.toString('base64'))
+  assert.match(request.contents[0].parts[1].text, /Não transcreva nem cite letras/)
+})
+
 test('Teco Gemini flow keeps scope, executes an allowed tool, and returns the final answer', async () => {
   const provider = new GeminiSdkProvider({
     provider: 'gemini',

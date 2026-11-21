@@ -142,6 +142,10 @@ const api: TocaeApi = {
       ),
     clearRecommendations: () =>
       ipcRenderer.invoke(IPC_CHANNELS.AI_RECOMMENDATIONS_CLEAR),
+    analyzeAudioMood: (filePath: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_AUDIO_MOOD_ANALYZE, filePath) as Promise<string | null>,
+    cancelAudioMoodAnalysis: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_AUDIO_MOOD_CANCEL),
     onStreamChunk(callback) {
       const listener = (_event: IpcRendererEvent, chunk: string) => callback(chunk)
       ipcRenderer.on(IPC_CHANNELS.AI_STREAM_CHUNK, listener)

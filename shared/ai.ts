@@ -18,6 +18,7 @@ export interface AiDataPreferences {
   allowFavorites: boolean
   collectPlaybackHistory: boolean
   localRecommendations: boolean
+  audioMoodAnalysis: boolean
 }
 
 export interface AiRequestContext {

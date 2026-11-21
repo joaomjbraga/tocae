@@ -406,6 +406,21 @@ function AiSection() {
           <label className={styles.toggleField}>
             <input
               type="checkbox"
+              checked={dataPreferences.audioMoodAnalysis}
+              disabled={saving}
+              onChange={(event) => void saveDataPreferences({
+                ...dataPreferences,
+                audioMoodAnalysis: event.target.checked,
+              })}
+            />
+            <span className={styles.toggleCopy}>
+              <strong>{t('settings.aiAudioMoodAnalysis')}</strong>
+              <small>{t('settings.aiAudioMoodAnalysisDescription')}</small>
+            </span>
+          </label>
+          <label className={styles.toggleField}>
+            <input
+              type="checkbox"
               checked={dataPreferences.collectPlaybackHistory}
               disabled={saving}
               onChange={(event) => void saveDataPreferences({

@@ -1,4 +1,5 @@
 import type { AiModelOption, AiProviderConfig } from '@shared/ai'
+import type { Locale } from '@shared/i18n'
 import { AI_LIMITS } from '../../shared/ai.ts'
 import {
   GoogleGenAI,
@@ -82,6 +83,43 @@ export class GeminiSdkProvider implements AiProvider {
       throw new AiProviderError('O Gemini não retornou todos os vetores esperados.')
     }
     return vectors
+  }
+
+  async analyzeAudioMood(
+    audio: Uint8Array,
+    mimeType: string,
+    signal: AbortSignal,
+    locale: Locale,
+  ): Promise<string> {
+    const prompt = locale === 'pt-BR'
+      ? 'Analise este áudio musical e descreva brevemente o gênero provável, o clima, a energia, os instrumentos perceptíveis e o ritmo aproximado. Não transcreva nem cite letras. Diferencie observações de estimativas e sinalize incertezas.'
+      : 'Analyze this music audio and briefly describe its likely genre, mood, energy, perceptible instruments, and approximate rhythm. Do not transcribe or quote lyrics. Distinguish observations from estimates and state uncertainty.'
+    const response = await this.ai.models.generateContent({
+      model: this.config.model,
+      contents: [{
+        role: 'user',
+        parts: [
+          {
+            inlineData: {
+              mimeType,
+              data: Buffer.from(audio).toString('base64'),
+            },
+          },
+          { text: prompt },
+        ],
+      }],
+      config: {
+        abortSignal: signal,
+        maxOutputTokens: 512,
+        temperature: 0.2,
+      },
+    })
+    const result = response.text?.trim()
+    if (!result) throw new AiProviderError('O Gemini não retornou uma análise do áudio.')
+    if (Buffer.byteLength(result, 'utf8') > 8 * 1024) {
+      throw new AiProviderError('A análise de áudio excedeu o limite de tamanho.')
+    }
+    return result
   }
 
   async sendStream(

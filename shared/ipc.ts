@@ -73,6 +73,8 @@ export const IPC_CHANNELS = {
   AI_RECOMMENDATIONS_GET: 'ai:recommendations:get',
   AI_RECOMMENDATION_FEEDBACK_SET: 'ai:recommendation-feedback:set',
   AI_RECOMMENDATIONS_CLEAR: 'ai:recommendations:clear',
+  AI_AUDIO_MOOD_ANALYZE: 'ai:audio-mood:analyze',
+  AI_AUDIO_MOOD_CANCEL: 'ai:audio-mood:cancel',
   AI_PLAYLIST_PROPOSAL_GET: 'ai:playlist-proposal:get',
   AI_PLAYLIST_PROPOSAL_APPLY: 'ai:playlist-proposal:apply',
   AI_PLAYLIST_PROPOSAL_CLEAR: 'ai:playlist-proposal:clear',
@@ -189,6 +191,8 @@ export interface TocaeApi {
     getRecommendations(favoritePaths: string[]): Promise<AiRecommendation[]>
     setRecommendationFeedback(path: string, feedback: AiRecommendationFeedback): Promise<void>
     clearRecommendations(): Promise<void>
+    analyzeAudioMood(filePath: string): Promise<string | null>
+    cancelAudioMoodAnalysis(): Promise<void>
     onStreamChunk(callback: (chunk: string) => void): () => void
     setPlayerState(state: AiPlayerState): Promise<AiPlayerState>
     getPlayerState(): Promise<AiPlayerState>

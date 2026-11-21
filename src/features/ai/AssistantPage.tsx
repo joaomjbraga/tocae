@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent, ReactNode } from 'react'
 import { RefreshCw, Send, Square, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react'
 import { AI_LIMITS } from '@shared/ai'
+import { mediaTypeForPath } from '@shared/media'
 import type {
   AiMessage,
   AiPlaylistProposal,
@@ -82,6 +83,14 @@ function AssistantPage() {
   const [recommendationsLoading, setRecommendationsLoading] = useState(false)
   const [recommendationError, setRecommendationError] = useState<string | null>(null)
   const [feedbackPath, setFeedbackPath] = useState<string | null>(null)
+  const [currentAudio, setCurrentAudio] = useState<{ path: string; name: string } | null>(null)
+  const [audioMoodBusy, setAudioMoodBusy] = useState(false)
+  const [audioMoodResult, setAudioMoodResult] = useState<{
+    path: string
+    name: string
+    text: string
+  } | null>(null)
+  const [audioMoodError, setAudioMoodError] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const providerName = status
@@ -117,11 +126,32 @@ function AssistantPage() {
     }
   }, [status?.dataPreferences.localRecommendations, t])
 
+  const refreshCurrentAudio = useCallback(async () => {
+    try {
+      const playlist = await window.tocae.readPlaylist()
+      const current = playlist.currentIndex >= 0
+        ? playlist.items[playlist.currentIndex]
+        : null
+      setCurrentAudio(
+        current && mediaTypeForPath(current.path) === 'audio'
+          ? { path: current.path, name: current.name }
+          : null,
+      )
+      setAudioMoodError(null)
+    } catch (reason) {
+      setAudioMoodError(providerErrorMessage(reason) || t('assistant.unknownError'))
+    }
+  }, [t])
+
   useEffect(() => {
     void window.tocae.ai.getStatus()
       .then(setStatus)
       .catch((reason: unknown) => setError(providerErrorMessage(reason) || t('assistant.unknownError')))
   }, [t])
+
+  useEffect(() => {
+    void refreshCurrentAudio()
+  }, [refreshCurrentAudio])
 
   useEffect(() => {
     void refreshRecommendations()
@@ -190,7 +220,7 @@ function AssistantPage() {
   async function send(event: FormEvent) {
     event.preventDefault()
     const content = message.trim()
-    if (!content || status?.busy) return
+    if (!content || status?.busy || audioMoodBusy) return
     if (new TextEncoder().encode(content).byteLength > AI_LIMITS.userMessageBytes) {
       setError(t('assistant.messageTooLong', {
         maxKiB: AI_LIMITS.userMessageBytes / 1024,
@@ -266,6 +296,33 @@ function AssistantPage() {
     }
   }
 
+  async function analyzeCurrentAudio() {
+    if (!currentAudio || audioMoodBusy || status?.busy) return
+    setAudioMoodBusy(true)
+    setAudioMoodResult(null)
+    setAudioMoodError(null)
+    try {
+      const result = await window.tocae.ai.analyzeAudioMood(currentAudio.path)
+      setAudioMoodResult(
+        result
+          ? { path: currentAudio.path, name: currentAudio.name, text: result }
+          : null,
+      )
+    } catch (reason) {
+      setAudioMoodError(providerErrorMessage(reason) || t('assistant.unknownError'))
+    } finally {
+      setAudioMoodBusy(false)
+    }
+  }
+
+  async function cancelAudioMoodAnalysis() {
+    try {
+      await window.tocae.ai.cancelAudioMoodAnalysis()
+    } catch (reason) {
+      setAudioMoodError(providerErrorMessage(reason) || t('assistant.unknownError'))
+    }
+  }
+
   function recommendationReason(recommendation: AiRecommendation): string {
     const key = {
       artist: 'assistant.recommendationReasonArtist',
@@ -303,6 +360,66 @@ function AssistantPage() {
       </header>
 
       <div className={styles.conversation} aria-live="polite">
+        {status?.dataPreferences.audioMoodAnalysis && (
+          <section className={styles.audioMood} aria-labelledby="audio-mood-title">
+            <header className={styles.audioMoodHeader}>
+              <div>
+                <h2 id="audio-mood-title">{t('assistant.audioMoodTitle')}</h2>
+                <p>{t('assistant.audioMoodDescription')}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.refreshRecommendations}
+                onClick={() => void refreshCurrentAudio()}
+                disabled={audioMoodBusy}
+                aria-label={t('assistant.audioMoodRefresh')}
+              >
+                <RefreshCw size={14} aria-hidden="true" />
+              </button>
+            </header>
+            {status.provider.provider !== 'gemini' ? (
+              <p className={styles.recommendationEmpty}>{t('assistant.audioMoodGeminiOnly')}</p>
+            ) : !status.configured ? (
+              <p className={styles.recommendationEmpty}>{t('assistant.audioMoodNeedsGemini')}</p>
+            ) : !currentAudio ? (
+              <p className={styles.recommendationEmpty}>{t('assistant.audioMoodNoTrack')}</p>
+            ) : (
+              <div className={styles.audioMoodAction}>
+                <span>{t('assistant.audioMoodSelected', { name: currentAudio.name })}</span>
+                {audioMoodBusy ? (
+                  <button
+                    type="button"
+                    className={styles.audioMoodButton}
+                    onClick={() => void cancelAudioMoodAnalysis()}
+                  >
+                    <Square size={13} fill="currentColor" aria-hidden="true" />
+                    {t('assistant.audioMoodCancel')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.audioMoodButton}
+                    onClick={() => void analyzeCurrentAudio()}
+                    disabled={status.busy}
+                  >
+                    {t('assistant.audioMoodSend')}
+                  </button>
+                )}
+              </div>
+            )}
+            {audioMoodError && <p className={styles.recommendationError} role="alert">{audioMoodError}</p>}
+            {audioMoodBusy && (
+              <p className={styles.recommendationEmpty} role="status">{t('assistant.audioMoodAnalyzing')}</p>
+            )}
+            {audioMoodResult && currentAudio?.path === audioMoodResult.path && (
+              <div className={styles.audioMoodResult}>
+                <strong>{t('assistant.audioMoodResultTitle')}</strong>
+                <span>{audioMoodResult.name}</span>
+                <p>{audioMoodResult.text}</p>
+              </div>
+            )}
+          </section>
+        )}
         {status?.dataPreferences.localRecommendations && (
           <section className={styles.recommendations} aria-labelledby="recommendations-title">
             <header className={styles.recommendationsHeader}>
@@ -475,14 +592,14 @@ function AssistantPage() {
           aria-label={t('assistant.inputLabel')}
           aria-keyshortcuts="Enter"
           rows={2}
-          disabled={status?.busy}
+          disabled={status?.busy || audioMoodBusy}
         />
         {status?.busy ? (
           <button type="button" className={styles.sendButton} onClick={() => void cancel()} aria-label={t('assistant.cancel')}>
             <Square size={15} fill="currentColor" aria-hidden="true" />
           </button>
         ) : (
-          <button type="submit" className={styles.sendButton} aria-label={t('assistant.send')} disabled={!message.trim() || !status?.configured}>
+          <button type="submit" className={styles.sendButton} aria-label={t('assistant.send')} disabled={!message.trim() || !status?.configured || audioMoodBusy}>
             <Send size={16} aria-hidden="true" />
           </button>
         )}

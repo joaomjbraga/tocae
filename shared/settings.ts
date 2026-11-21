@@ -19,5 +19,6 @@ export const DEFAULT_SETTINGS: Settings = {
     allowFavorites: false,
     collectPlaybackHistory: false,
     localRecommendations: false,
+    audioMoodAnalysis: false,
   },
 }

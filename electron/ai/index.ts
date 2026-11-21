@@ -1,6 +1,6 @@
-import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, safeStorage } from 'electron'
 import type { IpcMainInvokeEvent } from 'electron'
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { IPC_CHANNELS } from '@shared/ipc'
@@ -13,6 +13,7 @@ import type {
 } from '@shared/ai'
 import { DEFAULT_AI_PROVIDER_CONFIG } from '@shared/ai'
 import { mediaTypeForPath } from '@shared/media'
+import { translate } from '@shared/i18n'
 import { DEFAULT_SETTINGS } from '@shared/settings'
 import { readSettings, writeSettings } from '../settings'
 import { AiCore, AiRequestError } from './core'
@@ -31,6 +32,7 @@ import { readPlaylist, writePlaylist } from '../playlist'
 import { AI_TOOL_DEFINITIONS, executeReadOnlyTool } from './tools'
 import { getMediaMetadata } from '../media/metadata'
 import { sendCommand } from '../commands'
+import { getAppLocale } from '../locale'
 import {
   clearListeningHistoryFile,
   MAX_LISTENING_HISTORY_NAME_LENGTH,
@@ -59,7 +61,10 @@ const SEMANTIC_INDEX_FILE_NAME = 'ai-library-index.json'
 const EMBEDDING_BATCH_SIZE = 64
 const MAX_FAVORITE_PATHS_PER_REQUEST = 10_000
 const MAX_FAVORITE_PATH_CONTEXT_BYTES = 1024 * 1024
+const MAX_AUDIO_MOOD_INPUT_BYTES = 10 * 1024 * 1024
+const AUDIO_MOOD_TIMEOUT_MS = 90_000
 let historyWriteQueue: Promise<void> = Promise.resolve()
+let audioMoodController: AbortController | null = null
 const core = new AiCore(
   createConfiguredProvider,
   AI_TOOL_DEFINITIONS,
@@ -293,6 +298,27 @@ function recommendationFeedbackPath(): string {
   return path.join(app.getPath('userData'), RECOMMENDATION_FEEDBACK_FILE_NAME)
 }
 
+function audioMoodMimeType(filePath: string): string | null {
+  const mimeTypes: Record<string, string> = {
+    '.mp3': 'audio/mpeg',
+    '.wav': 'audio/wav',
+    '.flac': 'audio/flac',
+    '.ogg': 'audio/ogg',
+    '.oga': 'audio/ogg',
+    '.aac': 'audio/aac',
+    '.m4a': 'audio/mp4',
+  }
+  return mimeTypes[path.extname(filePath).toLowerCase()] ?? null
+}
+
+function samePath(left: string, right: string): boolean {
+  const normalizedLeft = path.resolve(left)
+  const normalizedRight = path.resolve(right)
+  return process.platform === 'win32'
+    ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
+    : normalizedLeft === normalizedRight
+}
+
 function semanticIndexPath(): string {
   return path.join(app.getPath('userData'), SEMANTIC_INDEX_FILE_NAME)
 }
@@ -427,7 +453,8 @@ function validateAiDataPreferences(value: unknown): AiDataPreferences {
     !isRecord(value) ||
     typeof value.allowFavorites !== 'boolean' ||
     typeof value.collectPlaybackHistory !== 'boolean' ||
-    typeof value.localRecommendations !== 'boolean'
+    typeof value.localRecommendations !== 'boolean' ||
+    typeof value.audioMoodAnalysis !== 'boolean'
   ) {
     throw new TypeError('As preferências de dados do Teco não são válidas.')
   }
@@ -435,6 +462,7 @@ function validateAiDataPreferences(value: unknown): AiDataPreferences {
     allowFavorites: value.allowFavorites,
     collectPlaybackHistory: value.collectPlaybackHistory,
     localRecommendations: value.localRecommendations,
+    audioMoodAnalysis: value.audioMoodAnalysis,
   }
 }
 
@@ -652,6 +680,108 @@ export function registerAiIpc(): void {
     validateSender(event)
     await initialize()
     await clearRecommendationFeedbackFile(recommendationFeedbackPath())
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_AUDIO_MOOD_ANALYZE, async (event, value: unknown) => {
+    validateSender(event)
+    await initialize()
+    if (audioMoodController) {
+      throw new Error('Já existe uma análise de áudio em andamento.')
+    }
+    const controller = new AbortController()
+    audioMoodController = controller
+    let timeout: ReturnType<typeof setTimeout> | null = null
+    try {
+      if (!dataPreferences.audioMoodAnalysis) {
+        throw new Error('Ative a análise de áudio nas configurações do Teco para continuar.')
+      }
+      if (config.provider !== 'gemini') {
+        throw new Error('A análise de áudio está disponível apenas com o provedor Gemini.')
+      }
+      const analysisConfig = { ...config }
+      const apiKey = credentialForProvider(credentialCache, 'gemini')
+      if (!apiKey) throw new Error('Configure uma chave de API do Gemini antes de analisar áudio.')
+      if (typeof value !== 'string' || !path.isAbsolute(value)) {
+        throw new TypeError('Selecione uma faixa de áudio válida.')
+      }
+      const resolvedPath = path.resolve(value)
+      const mimeType = audioMoodMimeType(resolvedPath)
+      if (!mimeType) {
+        throw new Error('Formato não suportado. Use MP3, WAV, FLAC, OGG, AAC ou M4A.')
+      }
+      const library = await getLibrarySnapshot()
+      if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
+      if (!library.items.some(
+        (item) => item.type === 'audio' && samePath(item.path, resolvedPath),
+      )) {
+        throw new Error('A faixa precisa estar na biblioteca local do Tocaê.')
+      }
+      const fileInfo = await stat(resolvedPath)
+      if (!fileInfo.isFile()) throw new Error('O caminho selecionado não é um arquivo.')
+      if (fileInfo.size === 0 || fileInfo.size > MAX_AUDIO_MOOD_INPUT_BYTES) {
+        throw new Error('O áudio precisa ter entre 1 byte e 10 MiB para ser analisado.')
+      }
+
+      const owner = BrowserWindow.fromWebContents(event.sender)
+      if (!owner) throw new Error('Não foi possível confirmar a janela que solicitou a análise.')
+      const locale = getAppLocale()
+      const confirmation = await dialog.showMessageBox(owner, {
+        type: 'warning',
+        title: translate(locale, 'assistant.audioMoodConsentTitle'),
+        message: translate(locale, 'assistant.audioMoodConsentMessage', {
+          name: path.basename(resolvedPath),
+        }),
+        detail: translate(locale, 'assistant.audioMoodConsentDetail', {
+          sizeMiB: (fileInfo.size / (1024 * 1024)).toFixed(1),
+        }),
+        buttons: [
+          translate(locale, 'assistant.audioMoodConsentConfirm'),
+          translate(locale, 'assistant.audioMoodConsentCancel'),
+        ],
+        defaultId: 1,
+        cancelId: 1,
+        noLink: true,
+      })
+      if (confirmation.response !== 0) return null
+      if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
+      if (!dataPreferences.audioMoodAnalysis) {
+        throw new Error('A análise de áudio foi desativada antes do envio.')
+      }
+      if (
+        config.provider !== 'gemini' ||
+        config.model !== analysisConfig.model ||
+        credentialForProvider(credentialCache, 'gemini') !== apiKey
+      ) {
+        throw new Error('A configuração do Gemini mudou. Confirme a análise novamente.')
+      }
+
+      const currentInfo = await stat(resolvedPath)
+      if (
+        !currentInfo.isFile() ||
+        currentInfo.size !== fileInfo.size ||
+        currentInfo.mtimeMs !== fileInfo.mtimeMs
+      ) {
+        throw new Error('O arquivo mudou depois da confirmação. Selecione-o novamente para analisar.')
+      }
+      const audio = await readFile(resolvedPath)
+      if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
+      timeout = setTimeout(() => controller.abort(), AUDIO_MOOD_TIMEOUT_MS)
+      const provider = new GeminiSdkProvider(analysisConfig, apiKey)
+      return await provider.analyzeAudioMood(
+        audio,
+        mimeType,
+        controller.signal,
+        locale,
+      )
+    } catch (error) {
+      throw normalizeError(error)
+    } finally {
+      if (timeout) clearTimeout(timeout)
+      if (audioMoodController === controller) audioMoodController = null
+    }
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_AUDIO_MOOD_CANCEL, (event) => {
+    validateSender(event)
+    audioMoodController?.abort()
   })
   ipcMain.handle(IPC_CHANNELS.AI_CONFIG_GET, async (event) => {
     validateSender(event)
