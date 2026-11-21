@@ -68,6 +68,10 @@ export async function readSettings(): Promise<Settings> {
           typeof aiData.audioMoodAnalysis === 'boolean'
             ? aiData.audioMoodAnalysis
             : DEFAULT_SETTINGS.aiData.audioMoodAnalysis,
+        imageDescription:
+          typeof aiData.imageDescription === 'boolean'
+            ? aiData.imageDescription
+            : DEFAULT_SETTINGS.aiData.imageDescription,
       },
     }
   } catch (error) {

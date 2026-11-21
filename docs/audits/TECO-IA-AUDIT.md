@@ -6,7 +6,7 @@
 
 ## 1. Resumo executivo
 
-O Teco é um assistente conversacional funcional, integrado ao processo principal do Electron e aos dados de reprodução do Tocaê. A integração inclui streaming, histórico de uma conversa, provedores configuráveis, ferramentas limitadas para consultar a biblioteca, a fila, favoritos e reproduções recentes (estes dois últimos com consentimentos separados e desativados por padrão), recomendações locais explicáveis com opt-in e feedback explícito, análise sob demanda do humor do áudio via Gemini com consentimento a cada envio, controles básicos do player e propostas que podem ser salvas como playlists locais nomeadas ou aplicadas à fila somente por ação explícita.
+O Teco é um assistente conversacional funcional, integrado ao processo principal do Electron e aos dados de reprodução do Tocaê. A integração inclui streaming, histórico de uma conversa, provedores configuráveis, ferramentas limitadas para consultar a biblioteca, a fila, favoritos e reproduções recentes (estes dois últimos com consentimentos separados e desativados por padrão), recomendações locais explicáveis com opt-in e feedback explícito, análise sob demanda do humor do áudio e descrição de imagens da fila via Gemini após confirmação a cada envio, controles básicos do player e propostas que podem ser salvas como playlists locais nomeadas ou aplicadas à fila somente por ação explícita.
 
 O Gemini usa o SDK oficial `@google/genai`, incluindo geração em streaming, descoberta de modelos, embeddings e chamadas de ferramentas. O fluxo mantém as partes originais do modelo necessárias para preservar `thoughtSignature`. O uso do SDK não significa que a Interactions API esteja integrada: a implementação atual usa `models.generateContentStream` e um ciclo manual de ferramentas, com até cinco turnos. A auditoria inicial não fez chamada real ao Gemini; um smoke test posterior limitado está registrado na seção 11.
 
@@ -15,15 +15,15 @@ O Gemini usa o SDK oficial `@google/genai`, incluindo geração em streaming, de
 | Estado | Quantidade | Definição |
 |---|---:|---|
 | Implementado | 26 (32,5%) | Fluxo funcional identificado no código; as limitações estão registradas quando relevantes. |
-| Parcial | 19 (23,75%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
-| Não implementado | 35 (43,75%) | Não foi encontrado fluxo integrado do Teco para o critério. |
+| Parcial | 20 (25%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
+| Não implementado | 34 (42,5%) | Não foi encontrado fluxo integrado do Teco para o critério. |
 | Apenas interface / estrutura preparada | 0 | Não foi identificado critério cujo único suporte seja uma tela ou estrutura sem fluxo funcional. |
 
 O resultado não deve ser interpretado como percentual de qualidade ou prontidão: cada critério tem peso igual, e a classificação “parcial” não mede profundidade.
 
 ### Indicadores estimados
 
-Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **44,375%** (35,5/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
+Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **45%** (36/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
 
 | Área | Estimativa | Base |
 |---|---:|---|
@@ -35,9 +35,10 @@ Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” 
 | Recomendações | ~42% | Sugestões locais limitadas a tags de artista, álbum e gênero, com justificativa e feedback; não há recomendação de artistas/álbuns ou análise sonora. |
 | Análise musical | ~21% | Análise qualitativa e sob demanda de humor, energia, instrumentos e ritmo aproximado em áudio enviado ao Gemini com consentimento por arquivo; não calcula BPM nem grava tags. |
 | Controle do player | ~80% dos controles básicos | Play, pause, próximo e anterior estão disponíveis; volume e navegação da aplicação não estão expostos ao agente. |
-| Organização automática, análise de vídeo e imagem | 0% | Nenhum fluxo de IA correspondente foi encontrado. |
+| Organização automática e análise de vídeo | 0% | Nenhum fluxo de IA correspondente foi encontrado. |
+| Descrição de imagens | ~8% | Uma descrição sob demanda da imagem atual da fila, condicionada a opt-in e confirmação por envio; sem OCR, busca visual ou contexto de imagem no chat. |
 
-**Conclusão:** a base de conversa e integração é real e inclui curadoria local limitada e classificação qualitativa de áudio. O Teco ainda não oferece curadoria musical abrangente, organização automática nem análise de vídeo/imagem; a análise de áudio depende do Gemini e foi smoke-tested em uma amostra autorizada. Os maiores riscos práticos são privacidade dos dados enviados ao provedor e arquivos locais de histórico/índice/avaliações sem criptografia.
+**Conclusão:** a base de conversa e integração é real e inclui curadoria local limitada, classificação qualitativa de áudio e uma descrição visual limitada. O Teco ainda não oferece curadoria musical abrangente, organização automática nem análise de vídeo; a análise de áudio depende do Gemini e foi smoke-tested em uma amostra autorizada. A descrição de imagem ainda não foi testada com um serviço externo. Os maiores riscos práticos são privacidade dos dados enviados ao provedor e arquivos locais de histórico/índice/avaliações sem criptografia.
 
 ## 2. Matriz consolidada dos 80 critérios
 
@@ -50,12 +51,12 @@ Legenda: **I** = implementado; **P** = parcial; **N** = não implementado.
 | C. Playlists | 3 | 1 | 4 |
 | D. Organização de arquivos | 0 | 0 | 8 |
 | E. Histórico de reprodução e favoritos | 3 | 1 | 2 |
-| F. Recomendações | 0 | 0 | 6 |
-| G. Inteligência musical | 0 | 0 | 7 |
+| F. Recomendações | 1 | 3 | 2 |
+| G. Inteligência musical | 0 | 3 | 4 |
 | H. Análise de vídeo | 0 | 0 | 5 |
-| I. Análise de imagem | 0 | 0 | 6 |
+| I. Análise de imagem | 0 | 1 | 5 |
 | J. Integração e ações | 6 | 2 | 3 |
-| **Total** | **25** | **13** | **42** |
+| **Total** | **26** | **20** | **34** |
 
 ## 3. Matriz detalhada
 
@@ -168,7 +169,7 @@ Cada linha registra o comportamento encontrado e a principal lacuna. “Não enc
 
 | # | Critério | Estado | Evidência e comportamento / limitação |
 |---|---|---|---|
-| I1 | Descrever imagens da biblioteca | N | A busca pode listar itens por tipo, mas não envia pixels de imagem ao modelo para descrição. |
+| I1 | Descrever imagens da biblioteca | P | Com opt-in independente, a imagem atual da fila pode ser enviada ao Gemini após confirmação nativa por envio; aceita JPEG, PNG e WebP até 10 MiB. O resultado fica apenas em memória na tela e não foi testado com serviço externo. |
 | I2 | Reconhecer objetos/cenas | N | Não há ferramenta de visão computacional para o Teco. |
 | I3 | OCR em imagens | N | Não há extração de texto de imagem integrada. |
 | I4 | Pesquisar imagens por conteúdo visual | N | O índice semântico usa campos textuais do item, não embeddings visuais. |
@@ -351,9 +352,10 @@ As prioridades refletem risco e dependências; itens concluídos posteriormente 
 
 ### P3 — Capacidades multimodais e organização avançada
 
-1. **Análise de áudio, imagem e vídeo (parcial: análise de humor do áudio).** O primeiro caso de uso analisa uma faixa atual da biblioteca com o Gemini.
+1. **Análise de áudio, imagem e vídeo (parcial: análise de humor do áudio e descrição de imagem).** Os fluxos analisam a mídia atual da fila com o Gemini.
    - **Resolvido neste passo:** opt-in independente, confirmação nativa a cada envio, formatos limitados, teto de 10 MiB, cancelamento e sem persistência do áudio/resultado no Tocaê.
-   - **Pendente:** imagem/vídeo, testar formatos/modelos adicionais e revisar comportamento/retenção conforme políticas atualizadas do provedor.
+   - **Resolvido neste passo:** descrição opt-in de imagem atual da fila, confirmação nativa por envio, JPEG/PNG/WebP até 10 MiB e resultado não persistido.
+   - **Pendente:** análise de vídeo, smoke test real de imagem, testar formatos/modelos adicionais e revisar comportamento/retenção conforme políticas atualizadas do provedor.
 2. **Organização de arquivos com pré-visualização.**
    - **Dependências:** operações de filesystem, recuperação/undo e consentimento explícito.
    - **Aceite:** nenhuma mutação ocorre sem plano legível e confirmação; erros parciais não são apresentados como sucesso.

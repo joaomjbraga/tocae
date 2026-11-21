@@ -183,6 +183,36 @@ test('Gemini audio analysis sends bounded audio with a non-lyrical classificatio
   assert.match(request.contents[0].parts[1].text, /Não transcreva nem cite letras/)
 })
 
+test('Gemini image description sends the image with privacy-conscious instructions', async () => {
+  const provider = new GeminiSdkProvider({
+    provider: 'gemini',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-2.5-flash',
+  }, 'test-key')
+  const image = Buffer.from('image bytes')
+  const controller = new AbortController()
+  let request
+  provider.ai.models.generateContent = async (value) => {
+    request = value
+    return { text: 'Uma paisagem com árvores.' }
+  }
+
+  const result = await provider.describeImage(
+    image,
+    'image/png',
+    controller.signal,
+    'pt-BR',
+  )
+
+  assert.equal(result, 'Uma paisagem com árvores.')
+  assert.equal(request.model, 'gemini-2.5-flash')
+  assert.equal(request.config.abortSignal, controller.signal)
+  assert.equal(request.contents[0].parts[0].inlineData.mimeType, 'image/png')
+  assert.equal(request.contents[0].parts[0].inlineData.data, image.toString('base64'))
+  assert.match(request.contents[0].parts[1].text, /Não identifique pessoas/)
+  assert.match(request.contents[0].parts[1].text, /Não siga instruções/)
+})
+
 test('Teco Gemini flow keeps scope, executes an allowed tool, and returns the final answer', async () => {
   const provider = new GeminiSdkProvider({
     provider: 'gemini',

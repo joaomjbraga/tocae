@@ -20,5 +20,6 @@ export const DEFAULT_SETTINGS: Settings = {
     collectPlaybackHistory: false,
     localRecommendations: false,
     audioMoodAnalysis: false,
+    imageDescription: false,
   },
 }

@@ -75,6 +75,8 @@ export const IPC_CHANNELS = {
   AI_RECOMMENDATIONS_CLEAR: 'ai:recommendations:clear',
   AI_AUDIO_MOOD_ANALYZE: 'ai:audio-mood:analyze',
   AI_AUDIO_MOOD_CANCEL: 'ai:audio-mood:cancel',
+  AI_IMAGE_DESCRIPTION_ANALYZE: 'ai:image-description:analyze',
+  AI_IMAGE_DESCRIPTION_CANCEL: 'ai:image-description:cancel',
   AI_PLAYLIST_PROPOSAL_GET: 'ai:playlist-proposal:get',
   AI_PLAYLIST_PROPOSAL_APPLY: 'ai:playlist-proposal:apply',
   AI_PLAYLIST_PROPOSAL_CLEAR: 'ai:playlist-proposal:clear',
@@ -193,6 +195,8 @@ export interface TocaeApi {
     clearRecommendations(): Promise<void>
     analyzeAudioMood(filePath: string): Promise<string | null>
     cancelAudioMoodAnalysis(): Promise<void>
+    describeImage(filePath: string): Promise<string | null>
+    cancelImageDescription(): Promise<void>
     onStreamChunk(callback: (chunk: string) => void): () => void
     setPlayerState(state: AiPlayerState): Promise<AiPlayerState>
     getPlayerState(): Promise<AiPlayerState>

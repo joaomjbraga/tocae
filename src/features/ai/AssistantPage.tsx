@@ -83,7 +83,11 @@ function AssistantPage() {
   const [recommendationsLoading, setRecommendationsLoading] = useState(false)
   const [recommendationError, setRecommendationError] = useState<string | null>(null)
   const [feedbackPath, setFeedbackPath] = useState<string | null>(null)
-  const [currentAudio, setCurrentAudio] = useState<{ path: string; name: string } | null>(null)
+  const [currentMedia, setCurrentMedia] = useState<{
+    path: string
+    name: string
+    type: 'audio' | 'image'
+  } | null>(null)
   const [audioMoodBusy, setAudioMoodBusy] = useState(false)
   const [audioMoodResult, setAudioMoodResult] = useState<{
     path: string
@@ -91,6 +95,13 @@ function AssistantPage() {
     text: string
   } | null>(null)
   const [audioMoodError, setAudioMoodError] = useState<string | null>(null)
+  const [imageDescriptionBusy, setImageDescriptionBusy] = useState(false)
+  const [imageDescriptionResult, setImageDescriptionResult] = useState<{
+    path: string
+    name: string
+    text: string
+  } | null>(null)
+  const [imageDescriptionError, setImageDescriptionError] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const providerName = status
@@ -104,6 +115,9 @@ function AssistantPage() {
   const endpoint = status?.provider.provider === 'gemini'
     ? 'https://generativelanguage.googleapis.com'
     : status?.provider.baseUrl ?? ''
+  const currentAudio = currentMedia?.type === 'audio' ? currentMedia : null
+  const currentImage = currentMedia?.type === 'image' ? currentMedia : null
+  const mediaAnalysisBusy = audioMoodBusy || imageDescriptionBusy
 
   const refreshRecommendations = useCallback(async () => {
     if (!status?.dataPreferences.localRecommendations) {
@@ -126,20 +140,23 @@ function AssistantPage() {
     }
   }, [status?.dataPreferences.localRecommendations, t])
 
-  const refreshCurrentAudio = useCallback(async () => {
+  const refreshCurrentMedia = useCallback(async () => {
     try {
       const playlist = await window.tocae.readPlaylist()
       const current = playlist.currentIndex >= 0
         ? playlist.items[playlist.currentIndex]
         : null
-      setCurrentAudio(
-        current && mediaTypeForPath(current.path) === 'audio'
-          ? { path: current.path, name: current.name }
+      const type = current ? mediaTypeForPath(current.path) : null
+      setCurrentMedia(
+        current && (type === 'audio' || type === 'image')
+          ? { path: current.path, name: current.name, type }
           : null,
       )
       setAudioMoodError(null)
+      setImageDescriptionError(null)
     } catch (reason) {
       setAudioMoodError(providerErrorMessage(reason) || t('assistant.unknownError'))
+      setImageDescriptionError(providerErrorMessage(reason) || t('assistant.unknownError'))
     }
   }, [t])
 
@@ -150,8 +167,8 @@ function AssistantPage() {
   }, [t])
 
   useEffect(() => {
-    void refreshCurrentAudio()
-  }, [refreshCurrentAudio])
+    void refreshCurrentMedia()
+  }, [refreshCurrentMedia])
 
   useEffect(() => {
     void refreshRecommendations()
@@ -220,7 +237,7 @@ function AssistantPage() {
   async function send(event: FormEvent) {
     event.preventDefault()
     const content = message.trim()
-    if (!content || status?.busy || audioMoodBusy) return
+    if (!content || status?.busy || mediaAnalysisBusy) return
     if (new TextEncoder().encode(content).byteLength > AI_LIMITS.userMessageBytes) {
       setError(t('assistant.messageTooLong', {
         maxKiB: AI_LIMITS.userMessageBytes / 1024,
@@ -297,7 +314,7 @@ function AssistantPage() {
   }
 
   async function analyzeCurrentAudio() {
-    if (!currentAudio || audioMoodBusy || status?.busy) return
+    if (!currentAudio || mediaAnalysisBusy || status?.busy) return
     setAudioMoodBusy(true)
     setAudioMoodResult(null)
     setAudioMoodError(null)
@@ -320,6 +337,37 @@ function AssistantPage() {
       await window.tocae.ai.cancelAudioMoodAnalysis()
     } catch (reason) {
       setAudioMoodError(providerErrorMessage(reason) || t('assistant.unknownError'))
+    }
+  }
+
+  async function describeCurrentImage() {
+    if (!currentImage || mediaAnalysisBusy || status?.busy) return
+    setImageDescriptionBusy(true)
+    setImageDescriptionResult(null)
+    setImageDescriptionError(null)
+    try {
+      const result = await window.tocae.ai.describeImage(currentImage.path)
+      setImageDescriptionResult(
+        result
+          ? { path: currentImage.path, name: currentImage.name, text: result }
+          : null,
+      )
+    } catch (reason) {
+      setImageDescriptionError(
+        providerErrorMessage(reason) || t('assistant.unknownError'),
+      )
+    } finally {
+      setImageDescriptionBusy(false)
+    }
+  }
+
+  async function cancelImageDescription() {
+    try {
+      await window.tocae.ai.cancelImageDescription()
+    } catch (reason) {
+      setImageDescriptionError(
+        providerErrorMessage(reason) || t('assistant.unknownError'),
+      )
     }
   }
 
@@ -370,8 +418,8 @@ function AssistantPage() {
               <button
                 type="button"
                 className={styles.refreshRecommendations}
-                onClick={() => void refreshCurrentAudio()}
-                disabled={audioMoodBusy}
+                onClick={() => void refreshCurrentMedia()}
+                disabled={mediaAnalysisBusy}
                 aria-label={t('assistant.audioMoodRefresh')}
               >
                 <RefreshCw size={14} aria-hidden="true" />
@@ -400,7 +448,7 @@ function AssistantPage() {
                     type="button"
                     className={styles.audioMoodButton}
                     onClick={() => void analyzeCurrentAudio()}
-                    disabled={status.busy}
+                    disabled={status.busy || mediaAnalysisBusy}
                   >
                     {t('assistant.audioMoodSend')}
                   </button>
@@ -416,6 +464,70 @@ function AssistantPage() {
                 <strong>{t('assistant.audioMoodResultTitle')}</strong>
                 <span>{audioMoodResult.name}</span>
                 <p>{audioMoodResult.text}</p>
+              </div>
+            )}
+          </section>
+        )}
+        {status?.dataPreferences.imageDescription && (
+          <section className={styles.audioMood} aria-labelledby="image-description-title">
+            <header className={styles.audioMoodHeader}>
+              <div>
+                <h2 id="image-description-title">{t('assistant.imageDescriptionTitle')}</h2>
+                <p>{t('assistant.imageDescriptionDescription')}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.refreshRecommendations}
+                onClick={() => void refreshCurrentMedia()}
+                disabled={mediaAnalysisBusy}
+                aria-label={t('assistant.imageDescriptionRefresh')}
+              >
+                <RefreshCw size={14} aria-hidden="true" />
+              </button>
+            </header>
+            {status.provider.provider !== 'gemini' ? (
+              <p className={styles.recommendationEmpty}>{t('assistant.imageDescriptionGeminiOnly')}</p>
+            ) : !status.configured ? (
+              <p className={styles.recommendationEmpty}>{t('assistant.imageDescriptionNeedsGemini')}</p>
+            ) : !currentImage ? (
+              <p className={styles.recommendationEmpty}>{t('assistant.imageDescriptionNoImage')}</p>
+            ) : (
+              <div className={styles.audioMoodAction}>
+                <span>{t('assistant.imageDescriptionSelected', { name: currentImage.name })}</span>
+                {imageDescriptionBusy ? (
+                  <button
+                    type="button"
+                    className={styles.audioMoodButton}
+                    onClick={() => void cancelImageDescription()}
+                  >
+                    <Square size={13} fill="currentColor" aria-hidden="true" />
+                    {t('assistant.imageDescriptionCancel')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.audioMoodButton}
+                    onClick={() => void describeCurrentImage()}
+                    disabled={status.busy || mediaAnalysisBusy}
+                  >
+                    {t('assistant.imageDescriptionSend')}
+                  </button>
+                )}
+              </div>
+            )}
+            {imageDescriptionError && (
+              <p className={styles.recommendationError} role="alert">{imageDescriptionError}</p>
+            )}
+            {imageDescriptionBusy && (
+              <p className={styles.recommendationEmpty} role="status">
+                {t('assistant.imageDescriptionAnalyzing')}
+              </p>
+            )}
+            {imageDescriptionResult && currentImage?.path === imageDescriptionResult.path && (
+              <div className={styles.audioMoodResult}>
+                <strong>{t('assistant.imageDescriptionResultTitle')}</strong>
+                <span>{imageDescriptionResult.name}</span>
+                <p>{imageDescriptionResult.text}</p>
               </div>
             )}
           </section>
@@ -592,14 +704,14 @@ function AssistantPage() {
           aria-label={t('assistant.inputLabel')}
           aria-keyshortcuts="Enter"
           rows={2}
-          disabled={status?.busy || audioMoodBusy}
+          disabled={status?.busy || mediaAnalysisBusy}
         />
         {status?.busy ? (
           <button type="button" className={styles.sendButton} onClick={() => void cancel()} aria-label={t('assistant.cancel')}>
             <Square size={15} fill="currentColor" aria-hidden="true" />
           </button>
         ) : (
-          <button type="submit" className={styles.sendButton} aria-label={t('assistant.send')} disabled={!message.trim() || !status?.configured || audioMoodBusy}>
+          <button type="submit" className={styles.sendButton} aria-label={t('assistant.send')} disabled={!message.trim() || !status?.configured || mediaAnalysisBusy}>
             <Send size={16} aria-hidden="true" />
           </button>
         )}

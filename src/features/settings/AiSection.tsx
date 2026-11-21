@@ -421,6 +421,21 @@ function AiSection() {
           <label className={styles.toggleField}>
             <input
               type="checkbox"
+              checked={dataPreferences.imageDescription}
+              disabled={saving}
+              onChange={(event) => void saveDataPreferences({
+                ...dataPreferences,
+                imageDescription: event.target.checked,
+              })}
+            />
+            <span className={styles.toggleCopy}>
+              <strong>{t('settings.aiImageDescription')}</strong>
+              <small>{t('settings.aiImageDescriptionDescription')}</small>
+            </span>
+          </label>
+          <label className={styles.toggleField}>
+            <input
+              type="checkbox"
               checked={dataPreferences.collectPlaybackHistory}
               disabled={saving}
               onChange={(event) => void saveDataPreferences({

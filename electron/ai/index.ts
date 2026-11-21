@@ -14,6 +14,7 @@ import type {
 import { DEFAULT_AI_PROVIDER_CONFIG } from '@shared/ai'
 import { mediaTypeForPath } from '@shared/media'
 import { translate } from '@shared/i18n'
+import type { Locale } from '@shared/i18n'
 import { DEFAULT_SETTINGS } from '@shared/settings'
 import { readSettings, writeSettings } from '../settings'
 import { AiCore, AiRequestError } from './core'
@@ -62,9 +63,10 @@ const EMBEDDING_BATCH_SIZE = 64
 const MAX_FAVORITE_PATHS_PER_REQUEST = 10_000
 const MAX_FAVORITE_PATH_CONTEXT_BYTES = 1024 * 1024
 const MAX_AUDIO_MOOD_INPUT_BYTES = 10 * 1024 * 1024
-const AUDIO_MOOD_TIMEOUT_MS = 90_000
+const MAX_IMAGE_DESCRIPTION_INPUT_BYTES = 10 * 1024 * 1024
+const MEDIA_ANALYSIS_TIMEOUT_MS = 90_000
 let historyWriteQueue: Promise<void> = Promise.resolve()
-let audioMoodController: AbortController | null = null
+let mediaAnalysisController: AbortController | null = null
 const core = new AiCore(
   createConfiguredProvider,
   AI_TOOL_DEFINITIONS,
@@ -311,12 +313,141 @@ function audioMoodMimeType(filePath: string): string | null {
   return mimeTypes[path.extname(filePath).toLowerCase()] ?? null
 }
 
+function imageDescriptionMimeType(filePath: string): string | null {
+  const mimeTypes: Record<string, string> = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.webp': 'image/webp',
+  }
+  return mimeTypes[path.extname(filePath).toLowerCase()] ?? null
+}
+
 function samePath(left: string, right: string): boolean {
   const normalizedLeft = path.resolve(left)
   const normalizedRight = path.resolve(right)
   return process.platform === 'win32'
     ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
     : normalizedLeft === normalizedRight
+}
+
+interface ConfirmedMediaAnalysisOptions {
+  type: 'audio' | 'image'
+  isEnabled: () => boolean
+  disabledMessage: string
+  maxBytes: number
+  mimeTypeForPath: (filePath: string) => string | null
+  unsupportedFormatMessage: string
+  sizeLimitMessage: string
+  consent: {
+    title: (locale: Locale) => string
+    message: (locale: Locale, name: string) => string
+    detail: (locale: Locale, sizeMiB: string) => string
+    confirm: (locale: Locale) => string
+    cancel: (locale: Locale) => string
+  }
+  analyze: (
+    provider: GeminiSdkProvider,
+    media: Uint8Array,
+    mimeType: string,
+    signal: AbortSignal,
+    locale: Locale,
+  ) => Promise<string>
+}
+
+async function analyzeLibraryMediaWithConsent(
+  event: IpcMainInvokeEvent,
+  value: unknown,
+  options: ConfirmedMediaAnalysisOptions,
+): Promise<string | null> {
+  validateSender(event)
+  await initialize()
+  if (mediaAnalysisController) {
+    throw new Error('Já existe uma análise multimodal em andamento.')
+  }
+  const controller = new AbortController()
+  mediaAnalysisController = controller
+  let timeout: ReturnType<typeof setTimeout> | null = null
+
+  try {
+    if (!options.isEnabled()) throw new Error(options.disabledMessage)
+    if (config.provider !== 'gemini') {
+      throw new Error('A análise multimodal está disponível apenas com o provedor Gemini.')
+    }
+    const analysisConfig = { ...config }
+    const apiKey = credentialForProvider(credentialCache, 'gemini')
+    if (!apiKey) throw new Error('Configure uma chave de API do Gemini antes da análise.')
+    if (typeof value !== 'string' || !path.isAbsolute(value)) {
+      throw new TypeError('Selecione uma mídia válida da biblioteca.')
+    }
+
+    const resolvedPath = path.resolve(value)
+    const mimeType = options.mimeTypeForPath(resolvedPath)
+    if (!mimeType) throw new Error(options.unsupportedFormatMessage)
+    const library = await getLibrarySnapshot()
+    if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
+    if (!library.items.some(
+      (item) => item.type === options.type && samePath(item.path, resolvedPath),
+    )) {
+      throw new Error('A mídia precisa estar na biblioteca local do Tocaê.')
+    }
+    const fileInfo = await stat(resolvedPath)
+    if (!fileInfo.isFile()) throw new Error('O caminho selecionado não é um arquivo.')
+    if (fileInfo.size === 0 || fileInfo.size > options.maxBytes) {
+      throw new Error(options.sizeLimitMessage)
+    }
+
+    const owner = BrowserWindow.fromWebContents(event.sender)
+    if (!owner) throw new Error('Não foi possível confirmar a janela que solicitou a análise.')
+    const locale = getAppLocale()
+    const confirmation = await dialog.showMessageBox(owner, {
+      type: 'warning',
+      title: options.consent.title(locale),
+      message: options.consent.message(locale, path.basename(resolvedPath)),
+      detail: options.consent.detail(
+        locale,
+        (fileInfo.size / (1024 * 1024)).toFixed(1),
+      ),
+      buttons: [
+        options.consent.confirm(locale),
+        options.consent.cancel(locale),
+      ],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true,
+    })
+    if (confirmation.response !== 0) return null
+    if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
+    if (!options.isEnabled()) {
+      throw new Error('A análise foi desativada antes do envio.')
+    }
+    if (
+      config.provider !== 'gemini' ||
+      config.model !== analysisConfig.model ||
+      credentialForProvider(credentialCache, 'gemini') !== apiKey
+    ) {
+      throw new Error('A configuração do Gemini mudou. Confirme a análise novamente.')
+    }
+
+    const currentInfo = await stat(resolvedPath)
+    if (
+      !currentInfo.isFile() ||
+      currentInfo.size !== fileInfo.size ||
+      currentInfo.mtimeMs !== fileInfo.mtimeMs
+    ) {
+      throw new Error('O arquivo mudou depois da confirmação. Selecione-o novamente para analisar.')
+    }
+    const media = await readFile(resolvedPath)
+    if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
+    timeout = setTimeout(() => controller.abort(), MEDIA_ANALYSIS_TIMEOUT_MS)
+    const provider = new GeminiSdkProvider(analysisConfig, apiKey)
+    return await options.analyze(provider, media, mimeType, controller.signal, locale)
+  } catch (error) {
+    throw normalizeError(error)
+  } finally {
+    if (timeout) clearTimeout(timeout)
+    if (mediaAnalysisController === controller) mediaAnalysisController = null
+  }
 }
 
 function semanticIndexPath(): string {
@@ -454,7 +585,8 @@ function validateAiDataPreferences(value: unknown): AiDataPreferences {
     typeof value.allowFavorites !== 'boolean' ||
     typeof value.collectPlaybackHistory !== 'boolean' ||
     typeof value.localRecommendations !== 'boolean' ||
-    typeof value.audioMoodAnalysis !== 'boolean'
+    typeof value.audioMoodAnalysis !== 'boolean' ||
+    typeof value.imageDescription !== 'boolean'
   ) {
     throw new TypeError('As preferências de dados do Teco não são válidas.')
   }
@@ -463,6 +595,7 @@ function validateAiDataPreferences(value: unknown): AiDataPreferences {
     collectPlaybackHistory: value.collectPlaybackHistory,
     localRecommendations: value.localRecommendations,
     audioMoodAnalysis: value.audioMoodAnalysis,
+    imageDescription: value.imageDescription,
   }
 }
 
@@ -681,107 +814,57 @@ export function registerAiIpc(): void {
     await initialize()
     await clearRecommendationFeedbackFile(recommendationFeedbackPath())
   })
-  ipcMain.handle(IPC_CHANNELS.AI_AUDIO_MOOD_ANALYZE, async (event, value: unknown) => {
-    validateSender(event)
-    await initialize()
-    if (audioMoodController) {
-      throw new Error('Já existe uma análise de áudio em andamento.')
-    }
-    const controller = new AbortController()
-    audioMoodController = controller
-    let timeout: ReturnType<typeof setTimeout> | null = null
-    try {
-      if (!dataPreferences.audioMoodAnalysis) {
-        throw new Error('Ative a análise de áudio nas configurações do Teco para continuar.')
-      }
-      if (config.provider !== 'gemini') {
-        throw new Error('A análise de áudio está disponível apenas com o provedor Gemini.')
-      }
-      const analysisConfig = { ...config }
-      const apiKey = credentialForProvider(credentialCache, 'gemini')
-      if (!apiKey) throw new Error('Configure uma chave de API do Gemini antes de analisar áudio.')
-      if (typeof value !== 'string' || !path.isAbsolute(value)) {
-        throw new TypeError('Selecione uma faixa de áudio válida.')
-      }
-      const resolvedPath = path.resolve(value)
-      const mimeType = audioMoodMimeType(resolvedPath)
-      if (!mimeType) {
-        throw new Error('Formato não suportado. Use MP3, WAV, FLAC, OGG, AAC ou M4A.')
-      }
-      const library = await getLibrarySnapshot()
-      if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
-      if (!library.items.some(
-        (item) => item.type === 'audio' && samePath(item.path, resolvedPath),
-      )) {
-        throw new Error('A faixa precisa estar na biblioteca local do Tocaê.')
-      }
-      const fileInfo = await stat(resolvedPath)
-      if (!fileInfo.isFile()) throw new Error('O caminho selecionado não é um arquivo.')
-      if (fileInfo.size === 0 || fileInfo.size > MAX_AUDIO_MOOD_INPUT_BYTES) {
-        throw new Error('O áudio precisa ter entre 1 byte e 10 MiB para ser analisado.')
-      }
-
-      const owner = BrowserWindow.fromWebContents(event.sender)
-      if (!owner) throw new Error('Não foi possível confirmar a janela que solicitou a análise.')
-      const locale = getAppLocale()
-      const confirmation = await dialog.showMessageBox(owner, {
-        type: 'warning',
-        title: translate(locale, 'assistant.audioMoodConsentTitle'),
-        message: translate(locale, 'assistant.audioMoodConsentMessage', {
-          name: path.basename(resolvedPath),
-        }),
-        detail: translate(locale, 'assistant.audioMoodConsentDetail', {
-          sizeMiB: (fileInfo.size / (1024 * 1024)).toFixed(1),
-        }),
-        buttons: [
-          translate(locale, 'assistant.audioMoodConsentConfirm'),
-          translate(locale, 'assistant.audioMoodConsentCancel'),
-        ],
-        defaultId: 1,
-        cancelId: 1,
-        noLink: true,
-      })
-      if (confirmation.response !== 0) return null
-      if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
-      if (!dataPreferences.audioMoodAnalysis) {
-        throw new Error('A análise de áudio foi desativada antes do envio.')
-      }
-      if (
-        config.provider !== 'gemini' ||
-        config.model !== analysisConfig.model ||
-        credentialForProvider(credentialCache, 'gemini') !== apiKey
-      ) {
-        throw new Error('A configuração do Gemini mudou. Confirme a análise novamente.')
-      }
-
-      const currentInfo = await stat(resolvedPath)
-      if (
-        !currentInfo.isFile() ||
-        currentInfo.size !== fileInfo.size ||
-        currentInfo.mtimeMs !== fileInfo.mtimeMs
-      ) {
-        throw new Error('O arquivo mudou depois da confirmação. Selecione-o novamente para analisar.')
-      }
-      const audio = await readFile(resolvedPath)
-      if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
-      timeout = setTimeout(() => controller.abort(), AUDIO_MOOD_TIMEOUT_MS)
-      const provider = new GeminiSdkProvider(analysisConfig, apiKey)
-      return await provider.analyzeAudioMood(
-        audio,
-        mimeType,
-        controller.signal,
-        locale,
-      )
-    } catch (error) {
-      throw normalizeError(error)
-    } finally {
-      if (timeout) clearTimeout(timeout)
-      if (audioMoodController === controller) audioMoodController = null
-    }
-  })
+  ipcMain.handle(IPC_CHANNELS.AI_AUDIO_MOOD_ANALYZE, (event, value: unknown) =>
+    analyzeLibraryMediaWithConsent(event, value, {
+      type: 'audio',
+      isEnabled: () => dataPreferences.audioMoodAnalysis,
+      disabledMessage: 'Ative a análise de áudio nas configurações do Teco para continuar.',
+      maxBytes: MAX_AUDIO_MOOD_INPUT_BYTES,
+      mimeTypeForPath: audioMoodMimeType,
+      unsupportedFormatMessage: 'Formato não suportado. Use MP3, WAV, FLAC, OGG, AAC ou M4A.',
+      sizeLimitMessage: 'O áudio precisa ter entre 1 byte e 10 MiB para ser analisado.',
+      consent: {
+        title: (locale) => translate(locale, 'assistant.audioMoodConsentTitle'),
+        message: (locale, name) =>
+          translate(locale, 'assistant.audioMoodConsentMessage', { name }),
+        detail: (locale, sizeMiB) =>
+          translate(locale, 'assistant.audioMoodConsentDetail', { sizeMiB }),
+        confirm: (locale) => translate(locale, 'assistant.audioMoodConsentConfirm'),
+        cancel: (locale) => translate(locale, 'assistant.audioMoodConsentCancel'),
+      },
+      analyze: (provider, media, mimeType, signal, locale) =>
+        provider.analyzeAudioMood(media, mimeType, signal, locale),
+    }),
+  )
   ipcMain.handle(IPC_CHANNELS.AI_AUDIO_MOOD_CANCEL, (event) => {
     validateSender(event)
-    audioMoodController?.abort()
+    mediaAnalysisController?.abort()
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_IMAGE_DESCRIPTION_ANALYZE, (event, value: unknown) =>
+    analyzeLibraryMediaWithConsent(event, value, {
+      type: 'image',
+      isEnabled: () => dataPreferences.imageDescription,
+      disabledMessage: 'Ative a descrição de imagem nas configurações do Teco para continuar.',
+      maxBytes: MAX_IMAGE_DESCRIPTION_INPUT_BYTES,
+      mimeTypeForPath: imageDescriptionMimeType,
+      unsupportedFormatMessage: 'Formato não suportado. Use JPEG, PNG ou WebP.',
+      sizeLimitMessage: 'A imagem precisa ter entre 1 byte e 10 MiB para ser analisada.',
+      consent: {
+        title: (locale) => translate(locale, 'assistant.imageDescriptionConsentTitle'),
+        message: (locale, name) =>
+          translate(locale, 'assistant.imageDescriptionConsentMessage', { name }),
+        detail: (locale, sizeMiB) =>
+          translate(locale, 'assistant.imageDescriptionConsentDetail', { sizeMiB }),
+        confirm: (locale) => translate(locale, 'assistant.imageDescriptionConsentConfirm'),
+        cancel: (locale) => translate(locale, 'assistant.imageDescriptionConsentCancel'),
+      },
+      analyze: (provider, media, mimeType, signal, locale) =>
+        provider.describeImage(media, mimeType, signal, locale),
+    }),
+  )
+  ipcMain.handle(IPC_CHANNELS.AI_IMAGE_DESCRIPTION_CANCEL, (event) => {
+    validateSender(event)
+    mediaAnalysisController?.abort()
   })
   ipcMain.handle(IPC_CHANNELS.AI_CONFIG_GET, async (event) => {
     validateSender(event)

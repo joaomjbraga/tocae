@@ -19,6 +19,7 @@ export interface AiDataPreferences {
   collectPlaybackHistory: boolean
   localRecommendations: boolean
   audioMoodAnalysis: boolean
+  imageDescription: boolean
 }
 
 export interface AiRequestContext {
