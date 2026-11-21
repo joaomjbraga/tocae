@@ -36,10 +36,10 @@ Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” 
 | Análise musical | ~21% | Análise qualitativa e sob demanda de humor, energia, instrumentos e ritmo aproximado em áudio enviado ao Gemini com consentimento por arquivo; não calcula BPM nem grava tags. |
 | Controle do player | ~80% dos controles básicos | Play, pause, próximo e anterior estão disponíveis; volume e navegação da aplicação não estão expostos ao agente. |
 | Análise de vídeo | ~20% | Resumo de até 8 quadros extraídos localmente de vídeos com até 10 minutos, sob opt-in e confirmação por envio; não analisa áudio, transcreve falas nem cria capítulos. |
-| Organização automática | ~38% | Prévia local por metadados/tipo, aplicação confirmada, proteção contra sobrescrita e desfazer; ainda não renomeia arquivos nem usa gênero/IA. |
+| Organização automática | ~63% | Prévia local por metadados/tipo/gênero, aplicação confirmada, renomeação por padrão, proteção contra sobrescrita e desfazer; ainda não infere gênero por IA nem aceita operações em linguagem natural. |
 | Descrição de imagens | ~8% | Uma descrição sob demanda da imagem atual da fila, condicionada a opt-in e confirmação por envio; sem OCR, busca visual ou contexto de imagem no chat. |
 
-**Conclusão:** a base de conversa e integração é real e inclui curadoria local limitada, classificação qualitativa de áudio, descrição de imagem, resumo limitado de quadros de vídeo e organização local confirmada. O Teco ainda não oferece curadoria musical abrangente, renomeação automática ou organização por gênero. A análise de áudio depende do Gemini e foi smoke-tested em uma amostra autorizada. Imagens e quadros de vídeo ainda não foram enviados a um serviço externo. Os maiores riscos práticos são privacidade dos dados enviados ao provedor e arquivos locais de histórico/índice/avaliações sem criptografia.
+**Conclusão:** a base de conversa e integração é real e inclui curadoria local limitada, classificação qualitativa de áudio, descrição de imagem, resumo limitado de quadros de vídeo e organização local confirmada por gênero e padrão de nome. A análise de áudio depende do Gemini e foi smoke-tested em uma amostra autorizada. Imagens e quadros de vídeo ainda não foram enviados a um serviço externo. Os maiores riscos práticos são privacidade dos dados enviados ao provedor e arquivos locais de histórico/índice/avaliações sem criptografia.
 
 ## 2. Matriz consolidada dos 80 critérios
 
@@ -120,7 +120,7 @@ Cada linha registra o comportamento encontrado e a principal lacuna. “Não enc
 | D5 | Organizar por álbum | I | O plano local usa o álbum extraído para construir a segunda pasta de áudio. |
 | D6 | Organizar por gênero | I | Uma opção opt-in usa o primeiro gênero local no layout `Gênero/Artista/Álbum`; gêneros ausentes vão para `Gênero desconhecido`. |
 | D7 | Detectar duplicatas e agir sobre elas | P | Destinos existentes e nomes duplicados são detectados e ignorados pela aplicação; não há remoção ou substituição segura de duplicatas. |
-| D8 | Pré-visualizar e confirmar operações de organização | I | O plano mostra destinos, conflitos e itens já organizados; a aplicação exige confirmação nativa, evita sobrescrita e permite desfazer nesta sessão. |
+| D8 | Pré-visualizar e confirmar operações de organização | I | O plano mostra destinos, conflitos e itens já organizados; a aplicação exige confirmação nativa, evita sobrescrita e permite desfazer enquanto o histórico local permanecer válido. |
 
 ### E. Histórico de reprodução e favoritos
 
@@ -299,14 +299,13 @@ Os 13 testes específicos de IA incluem descoberta de modelos Gemini (mock), ins
 
 ## 8. Dívida documental
 
-O trecho de IA do [README.md](../../README.md) não está totalmente alinhado à implementação:
+O README foi alinhado à implementação:
 
-- descreve Gemini como endpoint compatível com OpenAI, enquanto o código atual usa `@google/genai`;
-- descreve três configurações/provedores, enquanto a configuração da aplicação inclui também OpenAI-compatible;
-- declara recursos como envio, streaming, histórico, busca e proposta de playlist ainda “em desenvolvimento”, apesar de fluxos correspondentes estarem implementados;
-- deve distinguir busca semântica por texto do item de entendimento semântico do conteúdo de áudio/vídeo/imagem.
-
-Revisar o README é recomendado para evitar prometer capacidades inexistentes ou ocultar as disponíveis; não foi alterado como parte desta auditoria.
+- Gemini usa o SDK oficial `@google/genai`;
+- a configuração inclui OpenAI, Ollama, Gemini e API OpenAI-compatible;
+- envio, streaming, histórico, busca, playlists e organização são apresentados como recursos disponíveis;
+- busca semântica é descrita como indexação textual do nome/caminho/tipo, não como entendimento semântico do conteúdo;
+- organização documenta gênero, renomeação por padrão, confirmação e desfazer.
 
 ## 9. Roadmap recomendado
 
@@ -413,5 +412,6 @@ As seguintes ações P0 foram implementadas após a avaliação original:
 - **Renomeação personalizada:** opção opt-in usa um padrão local para áudios, preserva a extensão e aplica sanitização aos nomes.
 - **Desfazer robusto:** entradas vencidas são removidas do histórico e entradas que falham temporariamente permanecem disponíveis para nova tentativa.
 - **Verificação atual:** 80 testes passaram; typecheck, lint CSS e build de produção Vite/Electron passaram. A prévia cobre metadados, gênero, renomeação, conflitos, aplicação, desfazer persistente e limpeza de entradas vencidas.
+- **Auditoria de release:** os pacotes Linux existentes passaram na verificação ASAR; não foram encontrados código-fonte, arquivos `.env` ou metadados Git dentro de `app.asar`.
 
 O aviso de privacidade da conversa informa o usuário, mas não pede confirmação a cada envio. Os consentimentos de favoritos e histórico são controles separados nas configurações. O smoke test comprova um fluxo real com a conta/modelo testado, não disponibilidade contínua, latência ou compatibilidade de todos os modelos Gemini; a chamada pode ter consumido quota.

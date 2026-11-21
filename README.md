@@ -44,8 +44,7 @@ A integração utiliza a interface oficial do serviço. O Tocaê não extrai mú
 ### Inteligência artificial
 
 O Tocaê inclui um assistente conversacional integrado ao processo principal do Electron.
-Esta primeira versão utiliza um adaptador compatível com a API de Chat Completions
-no formato OpenAI.
+Atualmente usa adaptadores separados para Gemini SDK, OpenAI-compatible e Ollama.
 
 #### Configuração
 
@@ -65,13 +64,12 @@ mudar. A primeira busca pode levar mais tempo enquanto o índice é criado.
 
 ### Provedores
 
-O assistente aceita três configurações:
+O assistente aceita quatro configurações:
 
 - **OpenAI:** URL padrão `https://api.openai.com/v1`, com chave armazenada pelo
   `safeStorage`.
 - **Ollama local:** URL padrão `http://127.0.0.1:11434/v1`, sem chave de API.
-- **Google Gemini:** URL compatível
-  `https://generativelanguage.googleapis.com/v1beta/openai`, com chave armazenada
+- **Google Gemini:** usa o SDK oficial `@google/genai` com chave armazenada
   pelo `safeStorage`.
 - **API compatível:** URL, modelo de chat e modelo de embeddings personalizados.
 
@@ -107,7 +105,6 @@ Entre as funcionalidades planejadas estão:
 - **Assistente inteligente:** interaja com o Tocaê por meio de linguagem natural para encontrar e explorar conteúdos.
 - **Busca semântica:** localize músicas, vídeos e imagens a partir de descrições e características do conteúdo.
 - **Playlists inteligentes:** crie listas de reprodução considerando gêneros, estilos musicais, preferências e contexto.
-- **Recomendações personalizadas:** descubra conteúdos relacionados às preferências e aos hábitos de reprodução.
 
 Essas funcionalidades ainda estão em desenvolvimento. A disponibilidade dependerá da implementação e da evolução do módulo de inteligência artificial.
 
