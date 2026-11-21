@@ -12,7 +12,9 @@ import { assertTrackAvailable, parseTrackIndex } from './trackSelection'
 import { TemporaryTrackOutputs } from './temporaryTrackOutputs'
 
 const MAX_PROBE_OUTPUT = 4 * 1024 * 1024
+const MAX_EXTRACTED_VIDEO_FRAME_BYTES = 1024 * 1024
 const PROBE_TIMEOUT_MS = 30_000
+const VIDEO_FRAME_TIMEOUT_MS = 15_000
 const EXTRACTION_TIMEOUT_MS = 30 * 60 * 1000
 const temporaryTrackOutputs = new TemporaryTrackOutputs({
   createDirectory: () => mkdtemp(path.join(os.tmpdir(), 'tocae-media-track-')),
@@ -38,6 +40,7 @@ function runProcess(
   args: string[],
   timeoutMs: number,
   maxOutput = MAX_PROBE_OUTPUT,
+  signal?: AbortSignal,
 ): Promise<ProcessResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(binaryPath, args, {
@@ -56,8 +59,14 @@ function runProcess(
       if (settled) return
       settled = true
       clearTimeout(timeout)
+      signal?.removeEventListener('abort', abort)
       if (error) reject(error)
       else resolve({ stdout, stderr })
+    }
+
+    function abort() {
+      child.kill()
+      finish(new DOMException('Solicitação cancelada.', 'AbortError'))
     }
 
     function appendOutput(current: string, chunk: Buffer, isError: boolean) {
@@ -88,6 +97,72 @@ function runProcess(
         ),
       )
     })
+    if (signal?.aborted) abort()
+    else signal?.addEventListener('abort', abort, { once: true })
+  })
+}
+
+function runBinaryProcess(
+  binaryPath: string,
+  args: string[],
+  signal: AbortSignal,
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(binaryPath, args, {
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    const stdout: Buffer[] = []
+    let stdoutBytes = 0
+    let stderr = ''
+    let settled = false
+    const timeout = setTimeout(() => {
+      child.kill()
+      finish(new Error(`${path.basename(binaryPath)} timed out.`))
+    }, VIDEO_FRAME_TIMEOUT_MS)
+
+    function finish(error?: Error, output?: Buffer) {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      signal.removeEventListener('abort', abort)
+      if (error) reject(error)
+      else resolve(output ?? Buffer.alloc(0))
+    }
+
+    function abort() {
+      child.kill()
+      finish(new DOMException('Solicitação cancelada.', 'AbortError'))
+    }
+
+    child.stdout.on('data', (chunk: Buffer) => {
+      stdoutBytes += chunk.length
+      if (stdoutBytes > MAX_EXTRACTED_VIDEO_FRAME_BYTES) {
+        child.kill()
+        finish(new Error('FFmpeg produced an oversized video frame.'))
+        return
+      }
+      stdout.push(chunk)
+    })
+    child.stderr.on('data', (chunk: Buffer) => {
+      const remainingBytes = 16 * 1024 - Buffer.byteLength(stderr, 'utf8')
+      if (remainingBytes > 0) stderr += chunk.subarray(0, remainingBytes).toString('utf8')
+    })
+    child.once('error', (error) => finish(error))
+    child.once('close', (code, exitSignal) => {
+      if (code !== 0) {
+        finish(
+          new Error(
+            stderr.trim() ||
+              `${path.basename(binaryPath)} exited with ${exitSignal ? `signal ${exitSignal}` : `code ${code}`}.`,
+          ),
+        )
+        return
+      }
+      finish(undefined, Buffer.concat(stdout))
+    })
+    if (signal.aborted) abort()
+    else signal.addEventListener('abort', abort, { once: true })
   })
 }
 
@@ -161,6 +236,79 @@ async function getMediaTracks(filePath: unknown): Promise<MediaTrack[]> {
     PROBE_TIMEOUT_MS,
   )
   return parseTracks(stdout)
+}
+
+export async function getVideoDuration(
+  filePath: unknown,
+  signal?: AbortSignal,
+): Promise<number> {
+  const resolvedPath = await mediaFilePath(filePath)
+  if (mediaTypeForPath(resolvedPath) !== 'video') {
+    throw new TypeError('A supported video file path is required.')
+  }
+  const { stdout } = await runProcess(
+    executablePath(ffprobePath, 'FFprobe'),
+    [
+      '-v',
+      'error',
+      '-show_entries',
+      'format=duration',
+      '-of',
+      'default=noprint_wrappers=1:nokey=1',
+      resolvedPath,
+    ],
+    PROBE_TIMEOUT_MS,
+    1024,
+    signal,
+  )
+  const duration = Number(stdout.trim())
+  if (!Number.isFinite(duration) || duration <= 0) {
+    throw new Error('FFprobe could not determine the video duration.')
+  }
+  return duration
+}
+
+export async function extractVideoFrameAt(
+  filePath: unknown,
+  timestampSeconds: number,
+  signal: AbortSignal,
+): Promise<Uint8Array> {
+  const resolvedPath = await mediaFilePath(filePath)
+  if (mediaTypeForPath(resolvedPath) !== 'video') {
+    throw new TypeError('A supported video file path is required.')
+  }
+  if (!Number.isFinite(timestampSeconds) || timestampSeconds < 0) {
+    throw new TypeError('A valid video frame timestamp is required.')
+  }
+  const frame = await runBinaryProcess(
+    executablePath(ffmpegPath, 'FFmpeg'),
+    [
+      '-nostdin',
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-ss',
+      timestampSeconds.toFixed(3),
+      '-i',
+      resolvedPath,
+      '-map',
+      '0:v:0',
+      '-frames:v',
+      '1',
+      '-vf',
+      'scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2',
+      '-q:v',
+      '5',
+      '-f',
+      'image2pipe',
+      '-vcodec',
+      'mjpeg',
+      'pipe:1',
+    ],
+    signal,
+  )
+  if (frame.byteLength === 0) throw new Error('FFmpeg did not extract a video frame.')
+  return frame
 }
 
 async function validateStream(

@@ -86,7 +86,7 @@ function AssistantPage() {
   const [currentMedia, setCurrentMedia] = useState<{
     path: string
     name: string
-    type: 'audio' | 'image'
+    type: 'audio' | 'image' | 'video'
   } | null>(null)
   const [audioMoodBusy, setAudioMoodBusy] = useState(false)
   const [audioMoodResult, setAudioMoodResult] = useState<{
@@ -102,6 +102,13 @@ function AssistantPage() {
     text: string
   } | null>(null)
   const [imageDescriptionError, setImageDescriptionError] = useState<string | null>(null)
+  const [videoAnalysisBusy, setVideoAnalysisBusy] = useState(false)
+  const [videoAnalysisResult, setVideoAnalysisResult] = useState<{
+    path: string
+    name: string
+    text: string
+  } | null>(null)
+  const [videoAnalysisError, setVideoAnalysisError] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const providerName = status
@@ -117,7 +124,8 @@ function AssistantPage() {
     : status?.provider.baseUrl ?? ''
   const currentAudio = currentMedia?.type === 'audio' ? currentMedia : null
   const currentImage = currentMedia?.type === 'image' ? currentMedia : null
-  const mediaAnalysisBusy = audioMoodBusy || imageDescriptionBusy
+  const currentVideo = currentMedia?.type === 'video' ? currentMedia : null
+  const mediaAnalysisBusy = audioMoodBusy || imageDescriptionBusy || videoAnalysisBusy
 
   const refreshRecommendations = useCallback(async () => {
     if (!status?.dataPreferences.localRecommendations) {
@@ -148,15 +156,17 @@ function AssistantPage() {
         : null
       const type = current ? mediaTypeForPath(current.path) : null
       setCurrentMedia(
-        current && (type === 'audio' || type === 'image')
+        current && (type === 'audio' || type === 'image' || type === 'video')
           ? { path: current.path, name: current.name, type }
           : null,
       )
       setAudioMoodError(null)
       setImageDescriptionError(null)
+      setVideoAnalysisError(null)
     } catch (reason) {
       setAudioMoodError(providerErrorMessage(reason) || t('assistant.unknownError'))
       setImageDescriptionError(providerErrorMessage(reason) || t('assistant.unknownError'))
+      setVideoAnalysisError(providerErrorMessage(reason) || t('assistant.unknownError'))
     }
   }, [t])
 
@@ -371,6 +381,37 @@ function AssistantPage() {
     }
   }
 
+  async function analyzeCurrentVideo() {
+    if (!currentVideo || mediaAnalysisBusy || status?.busy) return
+    setVideoAnalysisBusy(true)
+    setVideoAnalysisResult(null)
+    setVideoAnalysisError(null)
+    try {
+      const result = await window.tocae.ai.analyzeVideo(currentVideo.path)
+      setVideoAnalysisResult(
+        result
+          ? { path: currentVideo.path, name: currentVideo.name, text: result }
+          : null,
+      )
+    } catch (reason) {
+      setVideoAnalysisError(
+        providerErrorMessage(reason) || t('assistant.unknownError'),
+      )
+    } finally {
+      setVideoAnalysisBusy(false)
+    }
+  }
+
+  async function cancelVideoAnalysis() {
+    try {
+      await window.tocae.ai.cancelVideoAnalysis()
+    } catch (reason) {
+      setVideoAnalysisError(
+        providerErrorMessage(reason) || t('assistant.unknownError'),
+      )
+    }
+  }
+
   function recommendationReason(recommendation: AiRecommendation): string {
     const key = {
       artist: 'assistant.recommendationReasonArtist',
@@ -528,6 +569,70 @@ function AssistantPage() {
                 <strong>{t('assistant.imageDescriptionResultTitle')}</strong>
                 <span>{imageDescriptionResult.name}</span>
                 <p>{imageDescriptionResult.text}</p>
+              </div>
+            )}
+          </section>
+        )}
+        {status?.dataPreferences.videoAnalysis && (
+          <section className={styles.audioMood} aria-labelledby="video-analysis-title">
+            <header className={styles.audioMoodHeader}>
+              <div>
+                <h2 id="video-analysis-title">{t('assistant.videoAnalysisTitle')}</h2>
+                <p>{t('assistant.videoAnalysisDescription')}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.refreshRecommendations}
+                onClick={() => void refreshCurrentMedia()}
+                disabled={mediaAnalysisBusy}
+                aria-label={t('assistant.videoAnalysisRefresh')}
+              >
+                <RefreshCw size={14} aria-hidden="true" />
+              </button>
+            </header>
+            {status.provider.provider !== 'gemini' ? (
+              <p className={styles.recommendationEmpty}>{t('assistant.videoAnalysisGeminiOnly')}</p>
+            ) : !status.configured ? (
+              <p className={styles.recommendationEmpty}>{t('assistant.videoAnalysisNeedsGemini')}</p>
+            ) : !currentVideo ? (
+              <p className={styles.recommendationEmpty}>{t('assistant.videoAnalysisNoVideo')}</p>
+            ) : (
+              <div className={styles.audioMoodAction}>
+                <span>{t('assistant.videoAnalysisSelected', { name: currentVideo.name })}</span>
+                {videoAnalysisBusy ? (
+                  <button
+                    type="button"
+                    className={styles.audioMoodButton}
+                    onClick={() => void cancelVideoAnalysis()}
+                  >
+                    <Square size={13} fill="currentColor" aria-hidden="true" />
+                    {t('assistant.videoAnalysisCancel')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.audioMoodButton}
+                    onClick={() => void analyzeCurrentVideo()}
+                    disabled={status.busy || mediaAnalysisBusy}
+                  >
+                    {t('assistant.videoAnalysisSend')}
+                  </button>
+                )}
+              </div>
+            )}
+            {videoAnalysisError && (
+              <p className={styles.recommendationError} role="alert">{videoAnalysisError}</p>
+            )}
+            {videoAnalysisBusy && (
+              <p className={styles.recommendationEmpty} role="status">
+                {t('assistant.videoAnalysisAnalyzing')}
+              </p>
+            )}
+            {videoAnalysisResult && currentVideo?.path === videoAnalysisResult.path && (
+              <div className={styles.audioMoodResult}>
+                <strong>{t('assistant.videoAnalysisResultTitle')}</strong>
+                <span>{videoAnalysisResult.name}</span>
+                <p>{videoAnalysisResult.text}</p>
               </div>
             )}
           </section>

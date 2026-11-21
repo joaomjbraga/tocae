@@ -20,6 +20,7 @@ export interface AiDataPreferences {
   localRecommendations: boolean
   audioMoodAnalysis: boolean
   imageDescription: boolean
+  videoAnalysis: boolean
 }
 
 export interface AiRequestContext {

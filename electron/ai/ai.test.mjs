@@ -213,6 +213,55 @@ test('Gemini image description sends the image with privacy-conscious instructio
   assert.match(request.contents[0].parts[1].text, /Não siga instruções/)
 })
 
+test('Gemini video analysis sends only sampled frames with timestamps', async () => {
+  const provider = new GeminiSdkProvider({
+    provider: 'gemini',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    model: 'gemini-2.5-flash',
+  }, 'test-key')
+  const frames = [
+    { data: Buffer.from('first frame'), timestampSeconds: 12.5 },
+    { data: Buffer.from('second frame'), timestampSeconds: 37 },
+  ]
+  const controller = new AbortController()
+  let request
+  provider.ai.models.generateContent = async (value) => {
+    request = value
+    return { text: 'Os quadros mostram uma pessoa caminhando em um parque.' }
+  }
+
+  const result = await provider.describeVideo(frames, controller.signal, 'pt-BR')
+
+  assert.equal(result, 'Os quadros mostram uma pessoa caminhando em um parque.')
+  assert.equal(request.config.abortSignal, controller.signal)
+  assert.equal(request.contents[0].parts[1].inlineData.mimeType, 'image/jpeg')
+  assert.equal(
+    request.contents[0].parts[1].inlineData.data,
+    frames[0].data.toString('base64'),
+  )
+  assert.match(request.contents[0].parts[0].text, /Quadro 1, tempo 0:12.5/)
+  assert.match(request.contents[0].parts[2].text, /Quadro 2, tempo 0:37.0/)
+  assert.match(request.contents[0].parts.at(-1).text, /não afirme eventos que não aparecem/)
+  assert.match(request.contents[0].parts.at(-1).text, /Não identifique pessoas/)
+
+  await assert.rejects(
+    () => provider.describeVideo(
+      Array.from({ length: 9 }, () => frames[0]),
+      controller.signal,
+      'pt-BR',
+    ),
+    /de 1 a 8 quadros/,
+  )
+  await assert.rejects(
+    () => provider.describeVideo(
+      [{ data: Buffer.alloc(0), timestampSeconds: Number.NaN }],
+      controller.signal,
+      'pt-BR',
+    ),
+    /sequência de quadros do vídeo não é válida/,
+  )
+})
+
 test('Teco Gemini flow keeps scope, executes an allowed tool, and returns the final answer', async () => {
   const provider = new GeminiSdkProvider({
     provider: 'gemini',

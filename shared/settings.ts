@@ -21,5 +21,6 @@ export const DEFAULT_SETTINGS: Settings = {
     localRecommendations: false,
     audioMoodAnalysis: false,
     imageDescription: false,
+    videoAnalysis: false,
   },
 }

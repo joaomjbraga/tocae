@@ -153,6 +153,10 @@ const api: TocaeApi = {
       ) as Promise<string | null>,
     cancelImageDescription: () =>
       ipcRenderer.invoke(IPC_CHANNELS.AI_IMAGE_DESCRIPTION_CANCEL),
+    analyzeVideo: (filePath: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_VIDEO_ANALYZE, filePath) as Promise<string | null>,
+    cancelVideoAnalysis: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.AI_VIDEO_CANCEL),
     onStreamChunk(callback) {
       const listener = (_event: IpcRendererEvent, chunk: string) => callback(chunk)
       ipcRenderer.on(IPC_CHANNELS.AI_STREAM_CHUNK, listener)

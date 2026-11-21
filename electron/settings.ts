@@ -72,6 +72,10 @@ export async function readSettings(): Promise<Settings> {
           typeof aiData.imageDescription === 'boolean'
             ? aiData.imageDescription
             : DEFAULT_SETTINGS.aiData.imageDescription,
+        videoAnalysis:
+          typeof aiData.videoAnalysis === 'boolean'
+            ? aiData.videoAnalysis
+            : DEFAULT_SETTINGS.aiData.videoAnalysis,
       },
     }
   } catch (error) {

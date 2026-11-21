@@ -6,7 +6,7 @@
 
 ## 1. Resumo executivo
 
-O Teco é um assistente conversacional funcional, integrado ao processo principal do Electron e aos dados de reprodução do Tocaê. A integração inclui streaming, histórico de uma conversa, provedores configuráveis, ferramentas limitadas para consultar a biblioteca, a fila, favoritos e reproduções recentes (estes dois últimos com consentimentos separados e desativados por padrão), recomendações locais explicáveis com opt-in e feedback explícito, análise sob demanda do humor do áudio e descrição de imagens da fila via Gemini após confirmação a cada envio, controles básicos do player e propostas que podem ser salvas como playlists locais nomeadas ou aplicadas à fila somente por ação explícita.
+O Teco é um assistente conversacional funcional, integrado ao processo principal do Electron e aos dados de reprodução do Tocaê. A integração inclui streaming, histórico de uma conversa, provedores configuráveis, ferramentas limitadas para consultar a biblioteca, a fila, favoritos e reproduções recentes (estes dois últimos com consentimentos separados e desativados por padrão), recomendações locais explicáveis com opt-in e feedback explícito, análise sob demanda do humor do áudio, descrição de imagens e resumo de quadros de vídeo via Gemini após confirmação a cada envio, controles básicos do player e propostas que podem ser salvas como playlists locais nomeadas ou aplicadas à fila somente por ação explícita.
 
 O Gemini usa o SDK oficial `@google/genai`, incluindo geração em streaming, descoberta de modelos, embeddings e chamadas de ferramentas. O fluxo mantém as partes originais do modelo necessárias para preservar `thoughtSignature`. O uso do SDK não significa que a Interactions API esteja integrada: a implementação atual usa `models.generateContentStream` e um ciclo manual de ferramentas, com até cinco turnos. A auditoria inicial não fez chamada real ao Gemini; um smoke test posterior limitado está registrado na seção 11.
 
@@ -15,15 +15,15 @@ O Gemini usa o SDK oficial `@google/genai`, incluindo geração em streaming, de
 | Estado | Quantidade | Definição |
 |---|---:|---|
 | Implementado | 26 (32,5%) | Fluxo funcional identificado no código; as limitações estão registradas quando relevantes. |
-| Parcial | 20 (25%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
-| Não implementado | 34 (42,5%) | Não foi encontrado fluxo integrado do Teco para o critério. |
+| Parcial | 22 (27,5%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
+| Não implementado | 32 (40%) | Não foi encontrado fluxo integrado do Teco para o critério. |
 | Apenas interface / estrutura preparada | 0 | Não foi identificado critério cujo único suporte seja uma tela ou estrutura sem fluxo funcional. |
 
 O resultado não deve ser interpretado como percentual de qualidade ou prontidão: cada critério tem peso igual, e a classificação “parcial” não mede profundidade.
 
 ### Indicadores estimados
 
-Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **45%** (36/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
+Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **46,25%** (37/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
 
 | Área | Estimativa | Base |
 |---|---:|---|
@@ -35,10 +35,11 @@ Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” 
 | Recomendações | ~42% | Sugestões locais limitadas a tags de artista, álbum e gênero, com justificativa e feedback; não há recomendação de artistas/álbuns ou análise sonora. |
 | Análise musical | ~21% | Análise qualitativa e sob demanda de humor, energia, instrumentos e ritmo aproximado em áudio enviado ao Gemini com consentimento por arquivo; não calcula BPM nem grava tags. |
 | Controle do player | ~80% dos controles básicos | Play, pause, próximo e anterior estão disponíveis; volume e navegação da aplicação não estão expostos ao agente. |
-| Organização automática e análise de vídeo | 0% | Nenhum fluxo de IA correspondente foi encontrado. |
+| Análise de vídeo | ~20% | Resumo de até 8 quadros extraídos localmente de vídeos com até 10 minutos, sob opt-in e confirmação por envio; não analisa áudio, transcreve falas nem cria capítulos. |
+| Organização automática | 0% | Nenhum fluxo de IA correspondente foi encontrado. |
 | Descrição de imagens | ~8% | Uma descrição sob demanda da imagem atual da fila, condicionada a opt-in e confirmação por envio; sem OCR, busca visual ou contexto de imagem no chat. |
 
-**Conclusão:** a base de conversa e integração é real e inclui curadoria local limitada, classificação qualitativa de áudio e uma descrição visual limitada. O Teco ainda não oferece curadoria musical abrangente, organização automática nem análise de vídeo; a análise de áudio depende do Gemini e foi smoke-tested em uma amostra autorizada. A descrição de imagem ainda não foi testada com um serviço externo. Os maiores riscos práticos são privacidade dos dados enviados ao provedor e arquivos locais de histórico/índice/avaliações sem criptografia.
+**Conclusão:** a base de conversa e integração é real e inclui curadoria local limitada, classificação qualitativa de áudio, descrição de imagem e resumo limitado de quadros de vídeo. O Teco ainda não oferece curadoria musical abrangente nem organização automática; a análise de áudio depende do Gemini e foi smoke-tested em uma amostra autorizada. Imagens e quadros de vídeo ainda não foram enviados a um serviço externo. Os maiores riscos práticos são privacidade dos dados enviados ao provedor e arquivos locais de histórico/índice/avaliações sem criptografia.
 
 ## 2. Matriz consolidada dos 80 critérios
 
@@ -53,10 +54,10 @@ Legenda: **I** = implementado; **P** = parcial; **N** = não implementado.
 | E. Histórico de reprodução e favoritos | 3 | 1 | 2 |
 | F. Recomendações | 1 | 3 | 2 |
 | G. Inteligência musical | 0 | 3 | 4 |
-| H. Análise de vídeo | 0 | 0 | 5 |
+| H. Análise de vídeo | 0 | 2 | 3 |
 | I. Análise de imagem | 0 | 1 | 5 |
 | J. Integração e ações | 6 | 2 | 3 |
-| **Total** | **26** | **20** | **34** |
+| **Total** | **26** | **22** | **32** |
 
 ## 3. Matriz detalhada
 
@@ -159,10 +160,10 @@ Cada linha registra o comportamento encontrado e a principal lacuna. “Não enc
 
 | # | Critério | Estado | Evidência e comportamento / limitação |
 |---|---|---|---|
-| H1 | Resumir o conteúdo de um vídeo | N | O Teco não recebe conteúdo/quadros de vídeo para análise. |
+| H1 | Resumir o conteúdo de um vídeo | P | Com opt-in e confirmação por envio, o Teco resume até 8 quadros extraídos localmente de um vídeo de até 10 minutos. O vídeo original não é enviado; não há análise de áudio, transcrição ou persistência, e o fluxo não foi testado com serviço externo. |
 | H2 | Gerar ou consultar transcrição/legendas | N | Não há pipeline de transcrição de vídeo integrado. |
 | H3 | Pesquisar dentro de um vídeo | N | Não há indexação temporal de cenas ou fala. |
-| H4 | Identificar cenas/objetos em vídeo | N | Não há análise visual de vídeo. |
+| H4 | Identificar cenas/objetos em vídeo | P | O resumo pode descrever cenas e objetos visíveis nos quadros amostrados; não há rastreamento contínuo nem detecção exaustiva ao longo do vídeo. |
 | H5 | Criar capítulos ou timestamps com IA | N | Não há geração de capítulos/timestamps. |
 
 ### I. Análise de imagem
@@ -352,10 +353,11 @@ As prioridades refletem risco e dependências; itens concluídos posteriormente 
 
 ### P3 — Capacidades multimodais e organização avançada
 
-1. **Análise de áudio, imagem e vídeo (parcial: análise de humor do áudio e descrição de imagem).** Os fluxos analisam a mídia atual da fila com o Gemini.
+1. **Análise de áudio, imagem e vídeo (parcial).** Os fluxos analisam a mídia atual da fila com o Gemini.
    - **Resolvido neste passo:** opt-in independente, confirmação nativa a cada envio, formatos limitados, teto de 10 MiB, cancelamento e sem persistência do áudio/resultado no Tocaê.
    - **Resolvido neste passo:** descrição opt-in de imagem atual da fila, confirmação nativa por envio, JPEG/PNG/WebP até 10 MiB e resultado não persistido.
-   - **Pendente:** análise de vídeo, smoke test real de imagem, testar formatos/modelos adicionais e revisar comportamento/retenção conforme políticas atualizadas do provedor.
+   - **Resolvido neste passo:** opt-in e confirmação por vídeo, extração local de até 8 quadros para vídeos de até 10 minutos, limite total de 8 MiB dos quadros enviados e nenhuma persistência do vídeo, quadros ou resultado.
+   - **Pendente:** smoke tests reais de imagem/vídeo, testar formatos/modelos adicionais e revisar comportamento/retenção conforme políticas atualizadas do provedor.
 2. **Organização de arquivos com pré-visualização.**
    - **Dependências:** operações de filesystem, recuperação/undo e consentimento explícito.
    - **Aceite:** nenhuma mutação ocorre sem plano legível e confirmação; erros parciais não são apresentados como sucesso.
@@ -369,6 +371,7 @@ As prioridades refletem risco e dependências; itens concluídos posteriormente 
 - [provider.ts](../../electron/ai/provider.ts) — SDK Gemini, adaptador OpenAI-compatible, streaming, embeddings e tool calls.
 - [recommendations.ts](../../electron/ai/recommendations.ts) — recomendações locais e persistência de feedback explícito.
 - [index.ts](../../electron/ai/index.ts) — configuração, credenciais, IPC e execução de ferramentas.
+- [tracks.ts](../../electron/media/tracks.ts) — FFprobe e extração local de quadros de vídeo com limites de saída e cancelamento.
 - [tools.ts](../../electron/ai/tools.ts) — catálogo e busca por nome, caminho, tags, favoritos e histórico recente.
 - [historyStore.ts](../../electron/ai/historyStore.ts) e [semanticIndex.ts](../../electron/ai/semanticIndex.ts) — persistência local de histórico e índice.
 - [AssistantPage.tsx](../../src/features/ai/AssistantPage.tsx) e [AiSection.tsx](../../src/features/settings/AiSection.tsx) — chat e configuração.
@@ -398,5 +401,7 @@ As seguintes ações P0 foram implementadas após a avaliação original:
 - **Verificação de favoritos, recomendações e áudio:** os 31 testes de IA fazem parte do conjunto focado aprovado e cobrem consentimento, limites locais, feedback, envio de áudio fixture em mock e cancelamento.
 - **Verificação da busca estruturada:** 26 testes específicos de IA passaram e o typecheck do projeto passou.
 - **Verificação local:** 58 testes passaram, junto com typecheck, lint CSS e build do Vite/Electron.
+- **Verificação da descrição de imagem:** o conjunto focado de IA passou com 32/32 testes; typecheck, lint CSS e build Vite/Electron passaram. O teste de imagem usa Gemini mockado; nenhuma imagem real foi enviada ao provedor.
+- **Verificação da análise de vídeo:** os 71 testes do projeto passaram, junto com typecheck, lint CSS e build Vite/Electron. O provider usa quadros mockados; FFmpeg/FFprobe extraíram com sucesso um quadro JPEG de um vídeo sintético local. Nenhum vídeo real foi enviado ao provedor.
 
 O aviso de privacidade da conversa informa o usuário, mas não pede confirmação a cada envio. Os consentimentos de favoritos e histórico são controles separados nas configurações. O smoke test comprova um fluxo real com a conta/modelo testado, não disponibilidade contínua, latência ou compatibilidade de todos os modelos Gemini; a chamada pode ter consumido quota.

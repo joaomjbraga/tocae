@@ -32,6 +32,7 @@ import { getLibrarySnapshot } from '../library'
 import { readPlaylist, writePlaylist } from '../playlist'
 import { AI_TOOL_DEFINITIONS, executeReadOnlyTool } from './tools'
 import { getMediaMetadata } from '../media/metadata'
+import { extractVideoFrameAt, getVideoDuration } from '../media/tracks'
 import { sendCommand } from '../commands'
 import { getAppLocale } from '../locale'
 import {
@@ -53,6 +54,10 @@ import {
   writeSemanticIndex,
   type SemanticIndexEntry,
 } from './semanticIndex'
+import {
+  MAX_VIDEO_ANALYSIS_DURATION_SECONDS,
+  sampleVideoFrameTimestamps,
+} from './videoSampling'
 
 const CREDENTIAL_FILE_NAME = 'ai-credentials.json'
 const HISTORY_FILE_NAME = 'ai-history.json'
@@ -64,6 +69,7 @@ const MAX_FAVORITE_PATHS_PER_REQUEST = 10_000
 const MAX_FAVORITE_PATH_CONTEXT_BYTES = 1024 * 1024
 const MAX_AUDIO_MOOD_INPUT_BYTES = 10 * 1024 * 1024
 const MAX_IMAGE_DESCRIPTION_INPUT_BYTES = 10 * 1024 * 1024
+const MAX_VIDEO_ANALYSIS_FRAME_BYTES = 8 * 1024 * 1024
 const MEDIA_ANALYSIS_TIMEOUT_MS = 90_000
 let historyWriteQueue: Promise<void> = Promise.resolve()
 let mediaAnalysisController: AbortController | null = null
@@ -323,6 +329,28 @@ function imageDescriptionMimeType(filePath: string): string | null {
   return mimeTypes[path.extname(filePath).toLowerCase()] ?? null
 }
 
+async function extractVideoAnalysisFrames(
+  filePath: string,
+  durationSeconds: number | undefined,
+  signal: AbortSignal,
+): Promise<PreparedMediaPart[]> {
+  if (durationSeconds === undefined || durationSeconds <= 0) {
+    throw new Error('A valid video duration is required for analysis.')
+  }
+  const frames: PreparedMediaPart[] = []
+  let totalBytes = 0
+  for (const timestampSeconds of sampleVideoFrameTimestamps(durationSeconds)) {
+    if (signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
+    const data = await extractVideoFrameAt(filePath, timestampSeconds, signal)
+    totalBytes += data.byteLength
+    if (totalBytes > MAX_VIDEO_ANALYSIS_FRAME_BYTES) {
+      throw new Error('Os quadros extraídos excederam o limite total de 8 MiB.')
+    }
+    frames.push({ data, mimeType: 'image/jpeg', timestampSeconds })
+  }
+  return frames
+}
+
 function samePath(left: string, right: string): boolean {
   const normalizedLeft = path.resolve(left)
   const normalizedRight = path.resolve(right)
@@ -332,27 +360,38 @@ function samePath(left: string, right: string): boolean {
 }
 
 interface ConfirmedMediaAnalysisOptions {
-  type: 'audio' | 'image'
+  type: 'audio' | 'image' | 'video'
   isEnabled: () => boolean
   disabledMessage: string
-  maxBytes: number
-  mimeTypeForPath: (filePath: string) => string | null
+  maxBytes: number | null
+  mimeTypeForPath?: (filePath: string) => string | null
   unsupportedFormatMessage: string
   sizeLimitMessage: string
+  durationLimitMessage?: (locale: Locale) => string
   consent: {
     title: (locale: Locale) => string
     message: (locale: Locale, name: string) => string
-    detail: (locale: Locale, sizeMiB: string) => string
+    detail: (locale: Locale, sizeMiB: string, durationSeconds?: number) => string
     confirm: (locale: Locale) => string
     cancel: (locale: Locale) => string
   }
+  prepareMedia?: (
+    filePath: string,
+    signal: AbortSignal,
+    durationSeconds?: number,
+  ) => Promise<PreparedMediaPart[]>
   analyze: (
     provider: GeminiSdkProvider,
-    media: Uint8Array,
-    mimeType: string,
+    media: readonly PreparedMediaPart[],
     signal: AbortSignal,
     locale: Locale,
   ) => Promise<string>
+}
+
+interface PreparedMediaPart {
+  data: Uint8Array
+  mimeType: string
+  timestampSeconds?: number
 }
 
 async function analyzeLibraryMediaWithConsent(
@@ -370,6 +409,7 @@ async function analyzeLibraryMediaWithConsent(
   let timeout: ReturnType<typeof setTimeout> | null = null
 
   try {
+    const locale = getAppLocale()
     if (!options.isEnabled()) throw new Error(options.disabledMessage)
     if (config.provider !== 'gemini') {
       throw new Error('A análise multimodal está disponível apenas com o provedor Gemini.')
@@ -377,13 +417,30 @@ async function analyzeLibraryMediaWithConsent(
     const analysisConfig = { ...config }
     const apiKey = credentialForProvider(credentialCache, 'gemini')
     if (!apiKey) throw new Error('Configure uma chave de API do Gemini antes da análise.')
+    const assertAnalysisSettingsUnchanged = () => {
+      if (!options.isEnabled()) {
+        throw new Error('A análise foi desativada antes do envio.')
+      }
+      if (
+        config.provider !== 'gemini' ||
+        config.model !== analysisConfig.model ||
+        credentialForProvider(credentialCache, 'gemini') !== apiKey
+      ) {
+        throw new Error('A configuração do Gemini mudou. Confirme a análise novamente.')
+      }
+    }
     if (typeof value !== 'string' || !path.isAbsolute(value)) {
       throw new TypeError('Selecione uma mídia válida da biblioteca.')
     }
 
     const resolvedPath = path.resolve(value)
-    const mimeType = options.mimeTypeForPath(resolvedPath)
-    if (!mimeType) throw new Error(options.unsupportedFormatMessage)
+    if (mediaTypeForPath(resolvedPath) !== options.type) {
+      throw new Error(options.unsupportedFormatMessage)
+    }
+    const mimeType = options.mimeTypeForPath?.(resolvedPath) ?? null
+    if (options.type !== 'video' && !mimeType) {
+      throw new Error(options.unsupportedFormatMessage)
+    }
     const library = await getLibrarySnapshot()
     if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
     if (!library.items.some(
@@ -393,13 +450,23 @@ async function analyzeLibraryMediaWithConsent(
     }
     const fileInfo = await stat(resolvedPath)
     if (!fileInfo.isFile()) throw new Error('O caminho selecionado não é um arquivo.')
-    if (fileInfo.size === 0 || fileInfo.size > options.maxBytes) {
+    if (fileInfo.size === 0 || (options.maxBytes !== null && fileInfo.size > options.maxBytes)) {
       throw new Error(options.sizeLimitMessage)
+    }
+    const durationSeconds = options.type === 'video'
+      ? await getVideoDuration(resolvedPath, controller.signal)
+      : undefined
+    if (
+      durationSeconds !== undefined &&
+      durationSeconds > MAX_VIDEO_ANALYSIS_DURATION_SECONDS
+    ) {
+      throw new Error(
+        options.durationLimitMessage?.(locale) ?? 'O vídeo excede o limite de duração da análise.',
+      )
     }
 
     const owner = BrowserWindow.fromWebContents(event.sender)
     if (!owner) throw new Error('Não foi possível confirmar a janela que solicitou a análise.')
-    const locale = getAppLocale()
     const confirmation = await dialog.showMessageBox(owner, {
       type: 'warning',
       title: options.consent.title(locale),
@@ -407,6 +474,7 @@ async function analyzeLibraryMediaWithConsent(
       detail: options.consent.detail(
         locale,
         (fileInfo.size / (1024 * 1024)).toFixed(1),
+        durationSeconds,
       ),
       buttons: [
         options.consent.confirm(locale),
@@ -418,16 +486,7 @@ async function analyzeLibraryMediaWithConsent(
     })
     if (confirmation.response !== 0) return null
     if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
-    if (!options.isEnabled()) {
-      throw new Error('A análise foi desativada antes do envio.')
-    }
-    if (
-      config.provider !== 'gemini' ||
-      config.model !== analysisConfig.model ||
-      credentialForProvider(credentialCache, 'gemini') !== apiKey
-    ) {
-      throw new Error('A configuração do Gemini mudou. Confirme a análise novamente.')
-    }
+    assertAnalysisSettingsUnchanged()
 
     const currentInfo = await stat(resolvedPath)
     if (
@@ -437,11 +496,25 @@ async function analyzeLibraryMediaWithConsent(
     ) {
       throw new Error('O arquivo mudou depois da confirmação. Selecione-o novamente para analisar.')
     }
-    const media = await readFile(resolvedPath)
-    if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
     timeout = setTimeout(() => controller.abort(), MEDIA_ANALYSIS_TIMEOUT_MS)
+    const media = options.prepareMedia
+      ? await options.prepareMedia(resolvedPath, controller.signal, durationSeconds)
+      : mimeType
+        ? [{ data: await readFile(resolvedPath), mimeType }]
+        : []
+    if (media.length === 0) throw new Error('Nenhuma mídia foi preparada para a análise.')
+    if (controller.signal.aborted) throw new DOMException('Solicitação cancelada.', 'AbortError')
+    assertAnalysisSettingsUnchanged()
+    const preparedInfo = await stat(resolvedPath)
+    if (
+      !preparedInfo.isFile() ||
+      preparedInfo.size !== fileInfo.size ||
+      preparedInfo.mtimeMs !== fileInfo.mtimeMs
+    ) {
+      throw new Error('O arquivo mudou durante a análise. Selecione-o novamente para analisar.')
+    }
     const provider = new GeminiSdkProvider(analysisConfig, apiKey)
-    return await options.analyze(provider, media, mimeType, controller.signal, locale)
+    return await options.analyze(provider, media, controller.signal, locale)
   } catch (error) {
     throw normalizeError(error)
   } finally {
@@ -586,7 +659,8 @@ function validateAiDataPreferences(value: unknown): AiDataPreferences {
     typeof value.collectPlaybackHistory !== 'boolean' ||
     typeof value.localRecommendations !== 'boolean' ||
     typeof value.audioMoodAnalysis !== 'boolean' ||
-    typeof value.imageDescription !== 'boolean'
+    typeof value.imageDescription !== 'boolean' ||
+    typeof value.videoAnalysis !== 'boolean'
   ) {
     throw new TypeError('As preferências de dados do Teco não são válidas.')
   }
@@ -596,6 +670,7 @@ function validateAiDataPreferences(value: unknown): AiDataPreferences {
     localRecommendations: value.localRecommendations,
     audioMoodAnalysis: value.audioMoodAnalysis,
     imageDescription: value.imageDescription,
+    videoAnalysis: value.videoAnalysis,
   }
 }
 
@@ -832,8 +907,11 @@ export function registerAiIpc(): void {
         confirm: (locale) => translate(locale, 'assistant.audioMoodConsentConfirm'),
         cancel: (locale) => translate(locale, 'assistant.audioMoodConsentCancel'),
       },
-      analyze: (provider, media, mimeType, signal, locale) =>
-        provider.analyzeAudioMood(media, mimeType, signal, locale),
+      analyze: (provider, media, signal, locale) => {
+        const [audio] = media
+        if (!audio) throw new Error('Nenhum áudio foi preparado para a análise.')
+        return provider.analyzeAudioMood(audio.data, audio.mimeType, signal, locale)
+      },
     }),
   )
   ipcMain.handle(IPC_CHANNELS.AI_AUDIO_MOOD_CANCEL, (event) => {
@@ -858,11 +936,53 @@ export function registerAiIpc(): void {
         confirm: (locale) => translate(locale, 'assistant.imageDescriptionConsentConfirm'),
         cancel: (locale) => translate(locale, 'assistant.imageDescriptionConsentCancel'),
       },
-      analyze: (provider, media, mimeType, signal, locale) =>
-        provider.describeImage(media, mimeType, signal, locale),
+      analyze: (provider, media, signal, locale) => {
+        const [image] = media
+        if (!image) throw new Error('Nenhuma imagem foi preparada para a análise.')
+        return provider.describeImage(image.data, image.mimeType, signal, locale)
+      },
     }),
   )
   ipcMain.handle(IPC_CHANNELS.AI_IMAGE_DESCRIPTION_CANCEL, (event) => {
+    validateSender(event)
+    mediaAnalysisController?.abort()
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_VIDEO_ANALYZE, (event, value: unknown) =>
+    analyzeLibraryMediaWithConsent(event, value, {
+      type: 'video',
+      isEnabled: () => dataPreferences.videoAnalysis,
+      disabledMessage: 'Ative a análise de vídeo nas configurações do Teco para continuar.',
+      maxBytes: null,
+      unsupportedFormatMessage: 'Selecione um formato de vídeo compatível da biblioteca.',
+      sizeLimitMessage: 'O vídeo selecionado não tem um tamanho válido.',
+      durationLimitMessage: (locale) =>
+        translate(locale, 'assistant.videoAnalysisTooLong'),
+      prepareMedia: (filePath, signal, durationSeconds) =>
+        extractVideoAnalysisFrames(filePath, durationSeconds, signal),
+      consent: {
+        title: (locale) => translate(locale, 'assistant.videoAnalysisConsentTitle'),
+        message: (locale, name) =>
+          translate(locale, 'assistant.videoAnalysisConsentMessage', { name }),
+        detail: (locale, sizeMiB, durationSeconds) =>
+          translate(locale, 'assistant.videoAnalysisConsentDetail', {
+            sizeMiB,
+            durationMinutes: ((durationSeconds ?? 0) / 60).toFixed(1),
+          }),
+        confirm: (locale) => translate(locale, 'assistant.videoAnalysisConsentConfirm'),
+        cancel: (locale) => translate(locale, 'assistant.videoAnalysisConsentCancel'),
+      },
+      analyze: (provider, media, signal, locale) => {
+        const frames = media.map((part) => {
+          if (part.timestampSeconds === undefined) {
+            throw new Error('Um quadro de vídeo não tem um horário válido.')
+          }
+          return { data: part.data, timestampSeconds: part.timestampSeconds }
+        })
+        return provider.describeVideo(frames, signal, locale)
+      },
+    }),
+  )
+  ipcMain.handle(IPC_CHANNELS.AI_VIDEO_CANCEL, (event) => {
     validateSender(event)
     mediaAnalysisController?.abort()
   })
