@@ -3,7 +3,15 @@ import test from 'node:test'
 import { lstat, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { buildOrganizationPlan } from './organizationPlan.ts'
+import {
+  applyOrganizationPlan,
+  buildOrganizationPlan,
+  undoOrganizationMoves,
+} from './organizationPlan.ts'
+import {
+  readOrganizationUndoStore,
+  writeOrganizationUndoStore,
+} from './organizationUndoStore.ts'
 
 const options = {
   unknownArtist: 'Unknown Artist',
@@ -159,6 +167,78 @@ test('limits large previews and reports omitted library items', async () => {
     assert.equal(plan.includedItems, 500)
     assert.equal(plan.omittedItems, 2)
     assert.equal(plan.readyItems, 500)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('applies only ready items and can undo the moves', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'tocae-organization-apply-'))
+  try {
+    const library = await createLibrary(root, [
+      { name: 'move.mp4', type: 'video' },
+    ])
+    const source = library.items[0].path
+
+    const result = await applyOrganizationPlan(library, async () => {
+      throw new Error('Video metadata is not needed.')
+    }, options)
+
+    assert.equal(result.appliedItems, 1)
+    assert.equal(result.failedItems, 0)
+    assert.equal(result.undoAvailable, true)
+    await assert.rejects(lstat(source), { code: 'ENOENT' })
+    await lstat(path.join(root, 'Videos', 'move.mp4'))
+
+    const undo = await undoOrganizationMoves(result.moves)
+    assert.equal(undo.appliedItems, 1)
+    await lstat(source)
+    await assert.rejects(lstat(path.join(root, 'Videos', 'move.mp4')), { code: 'ENOENT' })
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('does not overwrite an existing destination', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'tocae-organization-no-overwrite-'))
+  try {
+    const library = await createLibrary(root, [
+      { name: 'existing.jpg', type: 'image' },
+    ])
+    const source = library.items[0].path
+    const destinationFolder = path.join(root, 'Images')
+    await mkdir(destinationFolder)
+    await writeFile(path.join(destinationFolder, 'existing.jpg'), 'do not replace')
+
+    const result = await applyOrganizationPlan(library, async () => {
+      throw new Error('Image metadata is not needed.')
+    }, options)
+
+    assert.equal(result.appliedItems, 0)
+    assert.equal(result.skippedItems, 1)
+    await lstat(source)
+    assert.equal(
+      await (await lstat(path.join(destinationFolder, 'existing.jpg'))).isFile(),
+      true,
+    )
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('persists organization moves for undo after a restart', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'tocae-organization-journal-'))
+  try {
+    const journal = path.join(root, 'ai-organization-undo.json')
+    const moves = [{
+      sourcePath: path.join(root, 'Artist', 'track.mp3'),
+      destinationPath: path.join(root, 'Music', 'track.mp3'),
+    }]
+    await writeOrganizationUndoStore(journal, moves)
+    assert.deepEqual(await readOrganizationUndoStore(journal), moves)
+
+    await writeOrganizationUndoStore(journal, [])
+    assert.deepEqual(await readOrganizationUndoStore(journal), [])
   } finally {
     await rm(root, { recursive: true, force: true })
   }

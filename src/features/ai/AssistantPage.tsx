@@ -5,6 +5,7 @@ import { AI_LIMITS } from '@shared/ai'
 import { mediaTypeForPath } from '@shared/media'
 import type {
   AiMessage,
+  AiOrganizationApplyResult,
   AiOrganizationPlan,
   AiPlaylistProposal,
   AiRecommendation,
@@ -113,6 +114,9 @@ function AssistantPage() {
   const [organizationPlan, setOrganizationPlan] = useState<AiOrganizationPlan | null>(null)
   const [organizationPlanLoading, setOrganizationPlanLoading] = useState(false)
   const [organizationPlanError, setOrganizationPlanError] = useState<string | null>(null)
+  const [organizationApplying, setOrganizationApplying] = useState(false)
+  const [organizationApplyResult, setOrganizationApplyResult] =
+    useState<AiOrganizationApplyResult | null>(null)
   const endRef = useRef<HTMLDivElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const providerName = status
@@ -313,6 +317,7 @@ function AssistantPage() {
     setOrganizationPlanLoading(true)
     setOrganizationPlan(null)
     setOrganizationPlanError(null)
+    setOrganizationApplyResult(null)
     try {
       setOrganizationPlan(await window.tocae.ai.getOrganizationPlan())
     } catch (reason) {
@@ -321,6 +326,39 @@ function AssistantPage() {
       )
     } finally {
       setOrganizationPlanLoading(false)
+    }
+  }
+
+  async function applyFileOrganization() {
+    setOrganizationApplying(true)
+    setOrganizationPlanError(null)
+    try {
+      const result = await window.tocae.ai.applyOrganizationPlan()
+      if (result) {
+        setOrganizationApplyResult(result)
+        setOrganizationPlan(await window.tocae.ai.getOrganizationPlan())
+      }
+    } catch (reason) {
+      setOrganizationPlanError(
+        providerErrorMessage(reason) || t('assistant.unknownError'),
+      )
+    } finally {
+      setOrganizationApplying(false)
+    }
+  }
+
+  async function undoFileOrganization() {
+    setOrganizationApplying(true)
+    setOrganizationPlanError(null)
+    try {
+      setOrganizationApplyResult(await window.tocae.ai.undoOrganizationPlan())
+      setOrganizationPlan(await window.tocae.ai.getOrganizationPlan())
+    } catch (reason) {
+      setOrganizationPlanError(
+        providerErrorMessage(reason) || t('assistant.unknownError'),
+      )
+    } finally {
+      setOrganizationApplying(false)
     }
   }
 
@@ -666,16 +704,41 @@ function AssistantPage() {
             </header>
             <div className={styles.audioMoodAction}>
               <span>{t('assistant.organizationPreviewLocalOnly')}</span>
-              <button
-                type="button"
-                className={styles.audioMoodButton}
-                onClick={() => void previewFileOrganization()}
-                disabled={organizationPlanLoading}
-              >
-                {organizationPlanLoading
-                  ? t('assistant.organizationPreviewLoading')
-                  : t('assistant.organizationPreviewGenerate')}
-              </button>
+              <div className={styles.organizationActions}>
+                <button
+                  type="button"
+                  className={styles.audioMoodButton}
+                  onClick={() => void previewFileOrganization()}
+                  disabled={organizationPlanLoading || organizationApplying}
+                >
+                  {organizationPlanLoading
+                    ? t('assistant.organizationPreviewLoading')
+                    : t('assistant.organizationPreviewGenerate')}
+                </button>
+                {(organizationPlan?.readyItems ?? 0) > 0 && (
+                  <button
+                    type="button"
+                    className={styles.audioMoodButton}
+                    onClick={() => void applyFileOrganization()}
+                    disabled={organizationApplying || organizationPlanLoading}
+                  >
+                    {organizationApplying
+                      ? t('assistant.organizationApplying')
+                      : t('assistant.organizationApply')}
+                  </button>
+                )}
+                {(organizationApplyResult?.undoAvailable ||
+                  organizationPlan?.undoAvailable) && (
+                  <button
+                    type="button"
+                    className={styles.audioMoodButton}
+                    onClick={() => void undoFileOrganization()}
+                    disabled={organizationApplying}
+                  >
+                    {t('assistant.organizationUndo')}
+                  </button>
+                )}
+              </div>
             </div>
             {organizationPlanError && (
               <p className={styles.recommendationError} role="alert">
@@ -697,6 +760,15 @@ function AssistantPage() {
                     {t('assistant.organizationPreviewOmitted', {
                       omitted: organizationPlan.omittedItems,
                       included: organizationPlan.includedItems,
+                    })}
+                  </p>
+                )}
+                {organizationApplyResult && (
+                  <p className={styles.recommendationEmpty} role="status">
+                    {t('assistant.organizationApplyResult', {
+                      applied: organizationApplyResult.appliedItems,
+                      skipped: organizationApplyResult.skippedItems,
+                      failed: organizationApplyResult.failedItems,
                     })}
                   </p>
                 )}

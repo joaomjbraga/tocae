@@ -89,16 +89,20 @@ persistido localmente, cancelamento, timeout de 60 segundos e tratamento de
 falhas. Nesta versão ele pode consultar a biblioteca e a fila por meio de
 ferramentas somente leitura, incluindo metadados do item atual. O Teco também
 pode iniciar, pausar, alternar ou avançar a reprodução por ferramentas
-explícitas. Não altera arquivos nem executa ações fora da lista autorizada.
+explícitas.
 O Teco pode propor uma playlist a partir da biblioteca. A proposta aparece na
 conversa e só substitui a fila após o botão **Aplicar playlist** ser usado.
+Com consentimento independente, o recurso de organização pode montar uma
+prévia local de até 500 itens, agrupando áudio por artista/álbum e vídeo/imagem
+por tipo. Os itens prontos só são movidos após confirmação nativa; destinos
+existentes nunca são sobrescritos e os movimentos concluídos podem ser
+desfeitos após reiniciar a aplicação enquanto o destino continuar válido.
 
 Entre as funcionalidades planejadas estão:
 
 - **Assistente inteligente:** interaja com o Tocaê por meio de linguagem natural para encontrar e explorar conteúdos.
 - **Busca semântica:** localize músicas, vídeos e imagens a partir de descrições e características do conteúdo.
 - **Playlists inteligentes:** crie listas de reprodução considerando gêneros, estilos musicais, preferências e contexto.
-- **Organização assistida:** receba sugestões para organizar a biblioteca e identificar informações ausentes.
 - **Recomendações personalizadas:** descubra conteúdos relacionados às preferências e aos hábitos de reprodução.
 
 Essas funcionalidades ainda estão em desenvolvimento. A disponibilidade dependerá da implementação e da evolução do módulo de inteligência artificial.

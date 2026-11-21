@@ -9,6 +9,7 @@ import type { PlaylistItem, SavedPlaylist } from '@shared/playlist'
 import type {
   AiDataPreferences,
   AiModelOption,
+  AiOrganizationApplyResult,
   AiOrganizationPlan,
   AiPlayerState,
   AiPlaylistProposal,
@@ -162,6 +163,14 @@ const api: TocaeApi = {
       ipcRenderer.invoke(
         IPC_CHANNELS.AI_ORGANIZATION_PLAN_GET,
       ) as Promise<AiOrganizationPlan>,
+    applyOrganizationPlan: () =>
+      ipcRenderer.invoke(
+        IPC_CHANNELS.AI_ORGANIZATION_APPLY,
+      ) as Promise<AiOrganizationApplyResult | null>,
+    undoOrganizationPlan: () =>
+      ipcRenderer.invoke(
+        IPC_CHANNELS.AI_ORGANIZATION_UNDO,
+      ) as Promise<AiOrganizationApplyResult>,
     onStreamChunk(callback) {
       const listener = (_event: IpcRendererEvent, chunk: string) => callback(chunk)
       ipcRenderer.on(IPC_CHANNELS.AI_STREAM_CHUNK, listener)

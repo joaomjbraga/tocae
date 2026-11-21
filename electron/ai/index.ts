@@ -58,13 +58,23 @@ import {
   MAX_VIDEO_ANALYSIS_DURATION_SECONDS,
   sampleVideoFrameTimestamps,
 } from './videoSampling'
-import { buildOrganizationPlan } from './organizationPlan'
+import {
+  applyOrganizationPlan,
+  buildOrganizationPlan,
+  undoOrganizationMoves,
+  type OrganizationMove,
+} from './organizationPlan'
+import {
+  readOrganizationUndoStore,
+  writeOrganizationUndoStore,
+} from './organizationUndoStore'
 
 const CREDENTIAL_FILE_NAME = 'ai-credentials.json'
 const HISTORY_FILE_NAME = 'ai-history.json'
 const LISTENING_HISTORY_FILE_NAME = 'ai-listening-history.json'
 const RECOMMENDATION_FEEDBACK_FILE_NAME = 'ai-recommendation-feedback.json'
 const SEMANTIC_INDEX_FILE_NAME = 'ai-library-index.json'
+const ORGANIZATION_UNDO_FILE_NAME = 'ai-organization-undo.json'
 const EMBEDDING_BATCH_SIZE = 64
 const MAX_FAVORITE_PATHS_PER_REQUEST = 10_000
 const MAX_FAVORITE_PATH_CONTEXT_BYTES = 1024 * 1024
@@ -73,6 +83,7 @@ const MAX_IMAGE_DESCRIPTION_INPUT_BYTES = 10 * 1024 * 1024
 const MAX_VIDEO_ANALYSIS_FRAME_BYTES = 8 * 1024 * 1024
 const MEDIA_ANALYSIS_TIMEOUT_MS = 90_000
 let historyWriteQueue: Promise<void> = Promise.resolve()
+let organizationUndoMoves: OrganizationMove[] = []
 let mediaAnalysisController: AbortController | null = null
 const core = new AiCore(
   createConfiguredProvider,
@@ -528,6 +539,10 @@ function semanticIndexPath(): string {
   return path.join(app.getPath('userData'), SEMANTIC_INDEX_FILE_NAME)
 }
 
+function organizationUndoPath(): string {
+  return path.join(app.getPath('userData'), ORGANIZATION_UNDO_FILE_NAME)
+}
+
 let credentialCache: AiCredentials = {}
 
 function createConfiguredProvider(providerConfig: AiProviderConfig): AiProvider | null {
@@ -549,6 +564,7 @@ async function initialize(): Promise<void> {
   dataPreferences = { ...settings.aiData }
   credentialCache = await readCredentials()
   core.restoreHistory(await readAiHistoryFile(historyPath()))
+  organizationUndoMoves = await readOrganizationUndoStore(organizationUndoPath())
   initialized = true
 }
 
@@ -899,7 +915,7 @@ export function registerAiIpc(): void {
       throw new Error('Ative a prévia de organização nas configurações do Teco para continuar.')
     }
     const locale = getAppLocale()
-    return buildOrganizationPlan(
+    const plan = await buildOrganizationPlan(
       await getLibrarySnapshot(),
       getMediaMetadata,
       {
@@ -909,6 +925,70 @@ export function registerAiIpc(): void {
         imageFolder: translate(locale, 'assistant.organizationImageFolder'),
       },
     )
+    return { ...plan, undoAvailable: organizationUndoMoves.length > 0 }
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_ORGANIZATION_APPLY, async (event) => {
+    validateSender(event)
+    await initialize()
+    if (!dataPreferences.fileOrganizationPreview) {
+      throw new Error('Ative a prévia de organização nas configurações do Teco para continuar.')
+    }
+    const locale = getAppLocale()
+    const options = {
+      unknownArtist: translate(locale, 'assistant.organizationUnknownArtist'),
+      unknownAlbum: translate(locale, 'assistant.organizationUnknownAlbum'),
+      videoFolder: translate(locale, 'assistant.organizationVideoFolder'),
+      imageFolder: translate(locale, 'assistant.organizationImageFolder'),
+    }
+    const library = await getLibrarySnapshot()
+    const preview = await buildOrganizationPlan(library, getMediaMetadata, options)
+    if (preview.readyItems === 0) {
+      throw new Error('Não há itens prontos para organizar.')
+    }
+    const owner = BrowserWindow.fromWebContents(event.sender)
+    if (!owner) throw new Error('Não foi possível confirmar a janela da prévia.')
+    const confirmation = await dialog.showMessageBox(owner, {
+      type: 'warning',
+      title: translate(locale, 'assistant.organizationApplyConfirmTitle'),
+      message: translate(locale, 'assistant.organizationApplyConfirmMessage', {
+        count: preview.readyItems,
+      }),
+      detail: translate(locale, 'assistant.organizationApplyConfirmDetail'),
+      buttons: [
+        translate(locale, 'assistant.organizationApplyConfirm'),
+        translate(locale, 'assistant.organizationApplyCancel'),
+      ],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true,
+    })
+    if (confirmation.response !== 0) return null
+
+    const result = await applyOrganizationPlan(library, getMediaMetadata, options)
+    organizationUndoMoves = result.moves
+    await writeOrganizationUndoStore(organizationUndoPath(), organizationUndoMoves)
+    return {
+      appliedItems: result.appliedItems,
+      skippedItems: result.skippedItems,
+      failedItems: result.failedItems,
+      undoAvailable: result.undoAvailable,
+    }
+  })
+  ipcMain.handle(IPC_CHANNELS.AI_ORGANIZATION_UNDO, async (event) => {
+    validateSender(event)
+    await initialize()
+    if (organizationUndoMoves.length === 0) {
+      throw new Error('Não há organização aplicada que possa ser desfeita.')
+    }
+    const result = await undoOrganizationMoves(organizationUndoMoves)
+    organizationUndoMoves = result.moves
+    await writeOrganizationUndoStore(organizationUndoPath(), organizationUndoMoves)
+    return {
+      appliedItems: result.appliedItems,
+      skippedItems: result.skippedItems,
+      failedItems: result.failedItems,
+      undoAvailable: false,
+    }
   })
   ipcMain.handle(IPC_CHANNELS.AI_AUDIO_MOOD_ANALYZE, (event, value: unknown) =>
     analyzeLibraryMediaWithConsent(event, value, {

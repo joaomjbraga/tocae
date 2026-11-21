@@ -1,4 +1,4 @@
-import { lstat } from 'node:fs/promises'
+import { lstat, mkdir, rename } from 'node:fs/promises'
 import path from 'node:path'
 import type { AiOrganizationPlan, AiOrganizationPlanEntry } from '@shared/ai'
 import type { LibraryMediaItem, LibrarySnapshot } from '@shared/library'
@@ -17,6 +17,19 @@ export interface OrganizationPlanOptions {
 
 interface PlannedEntry extends AiOrganizationPlanEntry {
   destinationPath: string
+}
+
+export interface OrganizationMove {
+  sourcePath: string
+  destinationPath: string
+}
+
+export interface OrganizationApplyResult {
+  appliedItems: number
+  skippedItems: number
+  failedItems: number
+  undoAvailable: boolean
+  moves: OrganizationMove[]
 }
 
 function isMissingFile(error: unknown): boolean {
@@ -161,5 +174,104 @@ export async function buildOrganizationPlan(
       publicEntries.filter((entry) => entry.status === 'already-organized').length,
     conflictItems: publicEntries.filter((entry) => entry.status === 'target-conflict').length,
     entries: publicEntries,
+    undoAvailable: false,
+  }
+}
+
+export async function applyOrganizationPlan(
+  library: LibrarySnapshot,
+  getMediaMetadata: (filePath: string) => Promise<MediaMetadata>,
+  options: OrganizationPlanOptions,
+): Promise<OrganizationApplyResult> {
+  const plan = await buildOrganizationPlan(library, getMediaMetadata, options)
+  const folders = new Map(library.folders.map((folder) => [folder.name, folder]))
+  const moves: OrganizationMove[] = []
+  let failedItems = 0
+  let skippedItems = 0
+
+  for (const entry of plan.entries) {
+    if (entry.status !== 'ready') {
+      skippedItems += 1
+      continue
+    }
+    const folder = folders.get(entry.folderName)
+    if (!folder) {
+      failedItems += 1
+      continue
+    }
+    const sourcePath = path.resolve(folder.path, entry.sourceRelativePath)
+    const destinationPath = path.resolve(folder.path, ...entry.targetRelativePath.split('/'))
+    const relativeDestination = path.relative(folder.path, destinationPath)
+    if (
+      path.isAbsolute(relativeDestination) ||
+      relativeDestination === '..' ||
+      relativeDestination.startsWith(`..${path.sep}`)
+    ) {
+      failedItems += 1
+      continue
+    }
+    try {
+      const [sourceInfo, hasDestination] = await Promise.all([
+        lstat(sourcePath),
+        destinationExists(destinationPath),
+      ])
+      if (!sourceInfo.isFile() || hasDestination) {
+        skippedItems += 1
+        continue
+      }
+      await mkdir(path.dirname(destinationPath), { recursive: true })
+      await rename(sourcePath, destinationPath)
+      moves.push({ sourcePath, destinationPath })
+    } catch {
+      failedItems += 1
+    }
+  }
+
+  return {
+    appliedItems: moves.length,
+    skippedItems,
+    failedItems,
+    undoAvailable: moves.length > 0,
+    moves,
+  }
+}
+
+export async function undoOrganizationMoves(
+  moves: readonly OrganizationMove[],
+): Promise<OrganizationApplyResult> {
+  let restoredItems = 0
+  let skippedItems = 0
+  let failedItems = 0
+  const remainingMoves: OrganizationMove[] = []
+
+  for (const move of [...moves].reverse()) {
+    try {
+      const sourceInfo = await lstat(move.destinationPath).catch((error) => {
+        if (isMissingFile(error)) return null
+        throw error
+      })
+      if (!sourceInfo?.isFile()) {
+        skippedItems += 1
+        continue
+      }
+      if (await destinationExists(move.sourcePath)) {
+        skippedItems += 1
+        continue
+      }
+      await mkdir(path.dirname(move.sourcePath), { recursive: true })
+      await rename(move.destinationPath, move.sourcePath)
+      restoredItems += 1
+    } catch {
+      failedItems += 1
+      remainingMoves.push(move)
+    }
+  }
+
+  return {
+    appliedItems: restoredItems,
+    skippedItems,
+    failedItems,
+    undoAvailable: false,
+    moves: remainingMoves,
   }
 }

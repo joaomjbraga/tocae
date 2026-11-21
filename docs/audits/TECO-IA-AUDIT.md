@@ -1,6 +1,6 @@
 # Auditoria técnica do Teco IA
 
-**Data:** 2026-11-20
+**Data:** 2026-11-21
 **Escopo:** implementação existente no repositório, com foco na integração de IA do Tocaê.  
 **Tipo:** auditoria documental baseada em código e testes; não é teste de penetração nem validação com serviços externos.
 
@@ -14,16 +14,16 @@ O Gemini usa o SDK oficial `@google/genai`, incluindo geração em streaming, de
 
 | Estado | Quantidade | Definição |
 |---|---:|---|
-| Implementado | 26 (32,5%) | Fluxo funcional identificado no código; as limitações estão registradas quando relevantes. |
-| Parcial | 23 (28,75%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
-| Não implementado | 31 (38,75%) | Não foi encontrado fluxo integrado do Teco para o critério. |
+| Implementado | 29 (36,25%) | Fluxo funcional identificado no código; as limitações estão registradas quando relevantes. |
+| Parcial | 24 (30%) | Há uma versão limitada, mas faltam partes relevantes do comportamento esperado. |
+| Não implementado | 27 (33,75%) | Não foi encontrado fluxo integrado do Teco para o critério. |
 | Apenas interface / estrutura preparada | 0 | Não foi identificado critério cujo único suporte seja uma tela ou estrutura sem fluxo funcional. |
 
 O resultado não deve ser interpretado como percentual de qualidade ou prontidão: cada critério tem peso igual, e a classificação “parcial” não mede profundidade.
 
 ### Indicadores estimados
 
-Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **46,88%** (37,5/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
+Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” e 0 a “não implementado” resulta em **51,25%** (41/80). Os indicadores por área abaixo são estimativas de completude funcional, não métricas observadas em produção.
 
 | Área | Estimativa | Base |
 |---|---:|---|
@@ -36,10 +36,10 @@ Para a matriz geral, atribuir 1 ponto a “implementado”, 0,5 a “parcial” 
 | Análise musical | ~21% | Análise qualitativa e sob demanda de humor, energia, instrumentos e ritmo aproximado em áudio enviado ao Gemini com consentimento por arquivo; não calcula BPM nem grava tags. |
 | Controle do player | ~80% dos controles básicos | Play, pause, próximo e anterior estão disponíveis; volume e navegação da aplicação não estão expostos ao agente. |
 | Análise de vídeo | ~20% | Resumo de até 8 quadros extraídos localmente de vídeos com até 10 minutos, sob opt-in e confirmação por envio; não analisa áudio, transcreve falas nem cria capítulos. |
-| Organização automática | 0% | Não há criação de pastas, movimentação ou renomeação; existe apenas uma prévia local de destinos, sem mutação. |
+| Organização automática | ~38% | Prévia local por metadados/tipo, aplicação confirmada, proteção contra sobrescrita e desfazer; ainda não renomeia arquivos nem usa gênero/IA. |
 | Descrição de imagens | ~8% | Uma descrição sob demanda da imagem atual da fila, condicionada a opt-in e confirmação por envio; sem OCR, busca visual ou contexto de imagem no chat. |
 
-**Conclusão:** a base de conversa e integração é real e inclui curadoria local limitada, classificação qualitativa de áudio, descrição de imagem e resumo limitado de quadros de vídeo. O Teco ainda não oferece curadoria musical abrangente nem organização automática; há somente uma prévia local e não destrutiva de destinos de arquivos. A análise de áudio depende do Gemini e foi smoke-tested em uma amostra autorizada. Imagens e quadros de vídeo ainda não foram enviados a um serviço externo. Os maiores riscos práticos são privacidade dos dados enviados ao provedor e arquivos locais de histórico/índice/avaliações sem criptografia.
+**Conclusão:** a base de conversa e integração é real e inclui curadoria local limitada, classificação qualitativa de áudio, descrição de imagem, resumo limitado de quadros de vídeo e organização local confirmada. O Teco ainda não oferece curadoria musical abrangente, renomeação automática ou organização por gênero. A análise de áudio depende do Gemini e foi smoke-tested em uma amostra autorizada. Imagens e quadros de vídeo ainda não foram enviados a um serviço externo. Os maiores riscos práticos são privacidade dos dados enviados ao provedor e arquivos locais de histórico/índice/avaliações sem criptografia.
 
 ## 2. Matriz consolidada dos 80 critérios
 
@@ -50,7 +50,7 @@ Legenda: **I** = implementado; **P** = parcial; **N** = não implementado.
 | A. Conversação e interface | 8 | 5 | 0 |
 | B. Busca da biblioteca | 5 | 4 | 1 |
 | C. Playlists | 3 | 1 | 4 |
-| D. Organização de arquivos | 0 | 1 | 7 |
+| D. Organização de arquivos | 3 | 3 | 2 |
 | E. Histórico de reprodução e favoritos | 3 | 1 | 2 |
 | F. Recomendações | 1 | 3 | 2 |
 | G. Inteligência musical | 0 | 3 | 4 |
@@ -113,14 +113,14 @@ Cada linha registra o comportamento encontrado e a principal lacuna. “Não enc
 
 | # | Critério | Estado | Evidência e comportamento / limitação |
 |---|---|---|---|
-| D1 | Criar pastas automaticamente | N | Não há ferramenta de filesystem para organização ou criação de diretórios. |
-| D2 | Mover arquivos automaticamente | N | O agente não expõe operação de movimentação de arquivos. |
+| D1 | Criar pastas automaticamente | P | A aplicação cria as pastas destino necessárias para itens prontos, mas não oferece criação de estrutura arbitrária pelo agente. |
+| D2 | Mover arquivos automaticamente | P | Itens prontos são movidos após confirmação nativa; conflitos são ignorados e não há operação solicitada por linguagem natural. |
 | D3 | Renomear arquivos | N | Não há ferramenta de renomeação. |
-| D4 | Organizar por artista | N | A organização por metadados não está integrada ao agente. |
-| D5 | Organizar por álbum | N | A organização por metadados não está integrada ao agente. |
+| D4 | Organizar por artista | I | O plano local usa o artista extraído para construir a primeira pasta de áudio. |
+| D5 | Organizar por álbum | I | O plano local usa o álbum extraído para construir a segunda pasta de áudio. |
 | D6 | Organizar por gênero | N | A organização por metadados não está integrada ao agente. |
-| D7 | Detectar duplicatas e agir sobre elas | N | Não há análise de duplicatas nem fluxo de ação correspondente. |
-| D8 | Pré-visualizar e confirmar operações de organização | P | Com opt-in, o Teco monta uma prévia local de destinos por artista/álbum para áudio e por tipo para vídeo/imagem, sinaliza conflitos e limita a lista a 500 itens. Não cria pastas, move ou renomeia arquivos; não há ação para aplicar o plano. |
+| D7 | Detectar duplicatas e agir sobre elas | P | Destinos existentes e nomes duplicados são detectados e ignorados pela aplicação; não há remoção ou substituição segura de duplicatas. |
+| D8 | Pré-visualizar e confirmar operações de organização | I | O plano mostra destinos, conflitos e itens já organizados; a aplicação exige confirmação nativa, evita sobrescrita e permite desfazer nesta sessão. |
 
 ### E. Histórico de reprodução e favoritos
 
@@ -358,9 +358,10 @@ As prioridades refletem risco e dependências; itens concluídos posteriormente 
    - **Resolvido neste passo:** descrição opt-in de imagem atual da fila, confirmação nativa por envio, JPEG/PNG/WebP até 10 MiB e resultado não persistido.
    - **Resolvido neste passo:** opt-in e confirmação por vídeo, extração local de até 8 quadros para vídeos de até 10 minutos, limite total de 8 MiB dos quadros enviados e nenhuma persistência do vídeo, quadros ou resultado.
    - **Pendente:** smoke tests reais de imagem/vídeo, testar formatos/modelos adicionais e revisar comportamento/retenção conforme políticas atualizadas do provedor.
-2. **Organização de arquivos com pré-visualização (parcial; prévia somente leitura implementada).**
-   - **Resolvido neste passo:** opt-in independente, plano local limitado a 500 itens, organização de áudio por artista/álbum, pastas por tipo para vídeo/imagem, caminhos sanitizados e indicação de destinos existentes/duplicados. Nenhuma operação de filesystem é oferecida.
-   - **Pendente:** decisão de produto sobre permitir aplicar o plano; qualquer futura mutação exigirá confirmação explícita, tratamento de conflitos e recuperação/undo.
+2. **Organização de arquivos com pré-visualização e aplicação segura (parcial).**
+   - **Resolvido neste passo:** opt-in independente, plano local limitado a 500 itens, organização de áudio por artista/álbum, pastas por tipo para vídeo/imagem, caminhos sanitizados, indicação de conflitos e aplicação após confirmação nativa.
+   - **Proteções:** destinos existentes não são sobrescritos, itens já organizados/conflitantes são ignorados e os movimentos desta sessão podem ser desfeitos.
+   - **Pendente:** renomeação personalizada e organização por gênero. O histórico local permite desfazer movimentos após reiniciar, desde que os destinos continuem válidos.
 3. **Revisão e automação da documentação.**
    - **Dependências:** definição de capacidades realmente suportadas.
    - **Aceite:** README e interface distinguem suporte implementado, parcial e planejado; documentação de privacidade coincide com o comportamento real.
@@ -370,14 +371,14 @@ As prioridades refletem risco e dependências; itens concluídos posteriormente 
 - [core.ts](../../electron/ai/core.ts) — prompt, histórico em memória, timeout e fluxo de resposta.
 - [provider.ts](../../electron/ai/provider.ts) — SDK Gemini, adaptador OpenAI-compatible, streaming, embeddings e tool calls.
 - [recommendations.ts](../../electron/ai/recommendations.ts) — recomendações locais e persistência de feedback explícito.
-- [organizationPlan.ts](../../electron/ai/organizationPlan.ts) — geração local e somente leitura da prévia de organização.
+- [organizationPlan.ts](../../electron/ai/organizationPlan.ts) — geração da prévia, aplicação confirmada, proteção contra sobrescrita e desfazer.
 - [index.ts](../../electron/ai/index.ts) — configuração, credenciais, IPC e execução de ferramentas.
 - [tracks.ts](../../electron/media/tracks.ts) — FFprobe e extração local de quadros de vídeo com limites de saída e cancelamento.
 - [tools.ts](../../electron/ai/tools.ts) — catálogo e busca por nome, caminho, tags, favoritos e histórico recente.
 - [historyStore.ts](../../electron/ai/historyStore.ts) e [semanticIndex.ts](../../electron/ai/semanticIndex.ts) — persistência local de histórico e índice.
 - [AssistantPage.tsx](../../src/features/ai/AssistantPage.tsx) e [AiSection.tsx](../../src/features/settings/AiSection.tsx) — chat e configuração.
 - [ai.test.mjs](../../electron/ai/ai.test.mjs) — testes do subsistema de IA.
-- [organizationPlan.test.mjs](../../electron/ai/organizationPlan.test.mjs) — testes da prévia de destinos, conflitos, limite e ausência de mutações.
+- [organizationPlan.test.mjs](../../electron/ai/organizationPlan.test.mjs) — testes da prévia, aplicação, desfazer, conflitos e proteção contra sobrescrita.
 - [windows.ts](../../electron/windows.ts), [preload.ts](../../electron/preload.ts) e [ipc.ts](../../shared/ipc.ts) — limites entre renderer e processo principal.
 - [library.ts](../../electron/library.ts), [metadata.ts](../../electron/media/metadata.ts), [playlist.ts](../../electron/playlist.ts) e [playlistStore.ts](../../electron/playlistStore.ts) — catálogo, metadados e fila.
 - [savedPlaylistStore.ts](../../electron/savedPlaylistStore.ts) e [savedPlaylists.ts](../../electron/savedPlaylists.ts) — persistência e IPC das playlists nomeadas.
@@ -405,7 +406,8 @@ As seguintes ações P0 foram implementadas após a avaliação original:
 - **Verificação local:** 58 testes passaram, junto com typecheck, lint CSS e build do Vite/Electron.
 - **Verificação da descrição de imagem:** o conjunto focado de IA passou com 32/32 testes; typecheck, lint CSS e build Vite/Electron passaram. O teste de imagem usa Gemini mockado; nenhuma imagem real foi enviada ao provedor.
 - **Verificação da análise de vídeo:** os 71 testes do projeto passaram, junto com typecheck, lint CSS e build Vite/Electron. O provider usa quadros mockados; FFmpeg/FFprobe extraíram com sucesso um quadro JPEG de um vídeo sintético local. Nenhum vídeo real foi enviado ao provedor.
-- **Prévia de organização de arquivos:** opt-in independente e plano local somente leitura, limitado a 500 itens; testes verificam destinos por metadados/tipo, sanitização, itens já organizados, conflitos existentes/duplicados, truncamento e ausência de alterações nos arquivos.
-- **Verificação atual:** 74 testes passaram; typecheck, lint CSS e build de produção Vite/Electron passaram. O build manteve apenas o aviso de depreciação existente do `inlineDynamicImports`.
+- **Prévia de organização de arquivos:** opt-in independente e plano local limitado a 500 itens; testes verificam destinos por metadados/tipo, sanitização, itens já organizados, conflitos existentes/duplicados e truncamento.
+- **Aplicação segura da organização:** confirmações nativas movem somente itens prontos, nunca sobrescrevem destinos existentes e oferecem desfazer as movimentações concluídas, inclusive após reiniciar.
+- **Verificação atual:** 77 testes passaram; typecheck, lint CSS e build de produção Vite/Electron passaram. O build manteve apenas o aviso de depreciação existente do `inlineDynamicImports`.
 
 O aviso de privacidade da conversa informa o usuário, mas não pede confirmação a cada envio. Os consentimentos de favoritos e histórico são controles separados nas configurações. O smoke test comprova um fluxo real com a conta/modelo testado, não disponibilidade contínua, latência ou compatibilidade de todos os modelos Gemini; a chamada pode ter consumido quota.

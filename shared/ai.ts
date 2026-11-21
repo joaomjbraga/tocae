@@ -42,6 +42,14 @@ export interface AiOrganizationPlan {
   alreadyOrganizedItems: number
   conflictItems: number
   entries: AiOrganizationPlanEntry[]
+  undoAvailable: boolean
+}
+
+export interface AiOrganizationApplyResult {
+  appliedItems: number
+  skippedItems: number
+  failedItems: number
+  undoAvailable: boolean
 }
 
 export interface AiRequestContext {

@@ -141,6 +141,7 @@
   list-style:none;
 }
 .organizationPlanList li { display:grid; gap:3px; padding:8px; border:1px solid var(--border-surface); border-radius:8px; }
+.organizationActions { display:flex; flex:none; flex-wrap:wrap; justify-content:flex-end; gap:6px; }
 .organizationPlanList strong,.organizationPlanList span { overflow-wrap:anywhere; font-size:10px; line-height:1.4; }
 .organizationPlanList strong { color:var(--text-secondary); }
 .organizationPlanList span { color:var(--text-primary); }
