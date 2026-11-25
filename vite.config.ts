@@ -13,6 +13,7 @@ const electronMainExternals = [
   'exiftool-vendored',
   'exifr',
   'ffmpeg-static',
+  'heic-convert',
   'music-metadata',
   'node-id3',
 ]

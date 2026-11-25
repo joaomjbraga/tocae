@@ -34,6 +34,10 @@
     {
       "from": "licenses/GPL-3.0.txt",
       "to": "licenses/GPL-3.0.txt"
+    },
+    {
+      "from": "node_modules/libheif-js/LICENSE",
+      "to": "licenses/LGPL-3.0.txt"
     }
   ],
   "linux": {
@@ -63,7 +67,8 @@
       "image/webp",
       "image/gif",
       "image/bmp",
-      "image/avif"
+      "image/avif",
+      "image/heic"
     ],
     // O nome do .desktop instalado precisa ser o mesmo que o app registra em
     // app.setDesktopName() para o ambiente associar a janela ao lançador.

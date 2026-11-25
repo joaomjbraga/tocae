@@ -1214,7 +1214,7 @@ function VideoPlayer({
         ref={inputRef}
         className={styles.fileInput}
         type="file"
-        accept="video/*,audio/*,image/*,.oga,.opus,.weba,.apng,.avif"
+        accept="video/*,audio/*,image/*,.oga,.opus,.weba,.apng,.avif,.heic"
         multiple
         onChange={handleFileChange}
       />

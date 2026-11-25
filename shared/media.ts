@@ -32,6 +32,7 @@ export const IMAGE_EXTENSIONS = [
   'gif',
   'bmp',
   'avif',
+  'heic',
 ] as const
 
 export const MEDIA_EXTENSIONS = [

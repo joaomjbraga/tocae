@@ -1,8 +1,10 @@
 import { protocol } from 'electron'
 import { createReadStream } from 'node:fs'
-import { stat } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { Readable } from 'node:stream'
+import path from 'node:path'
 import { mimeTypeFor } from './mime'
+import { convertHeicToJpeg } from './heic'
 
 export function registerMediaSchemes(): void {
   protocol.registerSchemesAsPrivileged([
@@ -38,6 +40,23 @@ async function handleMediaRequest(request: Request): Promise<Response> {
     size = result.size
   } catch {
     return new Response('Not found', { status: 404 })
+  }
+
+  if (path.extname(filePath).toLowerCase() === '.heic') {
+    try {
+      // Chromium does not decode HEIC consistently across supported platforms.
+      const jpeg = await convertHeicToJpeg(await readFile(filePath))
+      return streamResponse(
+        Readable.from([jpeg]),
+        {
+          'Content-Type': 'image/jpeg',
+          'Content-Length': String(jpeg.length),
+        },
+      )
+    } catch (error) {
+      console.error(`Could not decode HEIC image "${filePath}"`, error)
+      return new Response('Could not decode HEIC image', { status: 422 })
+    }
   }
 
   const baseHeaders = { 'Content-Type': mimeTypeFor(filePath) }

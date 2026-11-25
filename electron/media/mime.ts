@@ -53,6 +53,8 @@ export function mimeTypeFor(filePath: string): string {
       return 'image/bmp'
     case '.avif':
       return 'image/avif'
+    case '.heic':
+      return 'image/heic'
     default:
       return 'application/octet-stream'
   }

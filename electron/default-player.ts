@@ -27,6 +27,7 @@ const MEDIA_MIME_TYPES = [
   'image/gif',
   'image/bmp',
   'image/avif',
+  'image/heic',
 ]
 
 function runXdgMime(args: string[]): Promise<string> {

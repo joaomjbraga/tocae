@@ -50,7 +50,7 @@ A integração utiliza a própria interface do YouTube Music. O Tocaê não extr
 |---|---|
 | Vídeos | MP4, WebM, MKV, AVI, MOV e OGV |
 | Áudios | MP3, M4A, AAC, WAV, FLAC, OGG e Opus |
-| Imagens | JPG, PNG, APNG, GIF, WebP, BMP e AVIF |
+| Imagens | JPG, PNG, APNG, GIF, WebP, BMP, AVIF e HEIC |
 
 As imagens são exibidas individualmente, com navegação entre os arquivos. Músicas contam com controles de reprodução e linha do tempo.
 
