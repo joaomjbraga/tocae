@@ -1,8 +1,9 @@
 import { protocol } from 'electron'
 import { createReadStream } from 'node:fs'
-import { readFile, stat } from 'node:fs/promises'
+import { stat } from 'node:fs/promises'
 import { Readable } from 'node:stream'
 import path from 'node:path'
+import { mediaTypeForPath } from '@shared/media'
 import { mimeTypeFor } from './mime'
 import { convertHeicToJpeg } from './heic'
 
@@ -15,7 +16,6 @@ export function registerMediaSchemes(): void {
         secure: true,
         supportFetchAPI: true,
         stream: true,
-        bypassCSP: true,
       },
     },
   ])
@@ -27,10 +27,16 @@ export function registerMediaProtocol(): void {
 
 async function handleMediaRequest(request: Request): Promise<Response> {
   let filePath: string
+  let modifiedAt: number
   try {
     filePath = decodeURIComponent(new URL(request.url).pathname.slice(1))
   } catch {
     return new Response('Bad request', { status: 400 })
+  }
+
+  const extension = path.extname(filePath).toLowerCase()
+  if (!mediaTypeForPath(filePath) && extension !== '.vtt') {
+    return new Response('Unsupported media file', { status: 415 })
   }
 
   let size: number
@@ -38,14 +44,15 @@ async function handleMediaRequest(request: Request): Promise<Response> {
     const result = await stat(filePath)
     if (!result.isFile()) return new Response('Not found', { status: 404 })
     size = result.size
+    modifiedAt = result.mtimeMs
   } catch {
     return new Response('Not found', { status: 404 })
   }
 
-  if (path.extname(filePath).toLowerCase() === '.heic') {
+  if (extension === '.heic') {
     try {
       // Chromium does not decode HEIC consistently across supported platforms.
-      const jpeg = await convertHeicToJpeg(await readFile(filePath))
+      const jpeg = await convertHeicToJpeg(filePath, size, modifiedAt)
       return streamResponse(
         Readable.from([jpeg]),
         {

@@ -506,6 +506,25 @@
   scrollbar-color: var(--border-strong) transparent;
 }
 
+.loadMoreButton {
+  display: block;
+  margin: 18px auto 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-control);
+  border-radius: 5px;
+  background: var(--bg-chip);
+  color: var(--text-body);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.loadMoreButton:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
 .mediaGroup + .mediaGroup {
   margin-top: 16px;
 }

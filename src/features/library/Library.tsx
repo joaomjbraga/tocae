@@ -26,6 +26,8 @@ import styles from './Library.module.css'
 
 type MediaFilter = 'all' | MediaType
 
+const LIBRARY_PAGE_SIZE = 120
+
 type LibraryProps = {
   onPlay: (filePath: string) => void
 }
@@ -378,6 +380,7 @@ function Library({ onPlay }: LibraryProps) {
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all')
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [displayLimit, setDisplayLimit] = useState(LIBRARY_PAGE_SIZE)
   const [favorites, setFavorites] = useState(readFavoritePaths)
   const [favoriteError, setFavoriteError] = useState(false)
 
@@ -521,6 +524,10 @@ function Library({ onPlay }: LibraryProps) {
     }
   }, [selectedSubfolder, subfolders])
 
+  useEffect(() => {
+    setDisplayLimit(LIBRARY_PAGE_SIZE)
+  }, [favoritesOnly, mediaFilter, search, selectedFolderId, selectedSubfolder, sortOrder])
+
   const visibleItems = useMemo(() => {
     if (!snapshot) return []
     const query = search.trim().toLocaleLowerCase()
@@ -565,6 +572,11 @@ function Library({ onPlay }: LibraryProps) {
     t,
   ])
 
+  const displayedItems = useMemo(
+    () => visibleItems.slice(0, displayLimit),
+    [displayLimit, visibleItems],
+  )
+
   const filters: { value: MediaFilter; label: MessageKey }[] = [
     { value: 'all', label: 'library.typeAll' },
     { value: 'video', label: 'library.typeVideo' },
@@ -574,7 +586,7 @@ function Library({ onPlay }: LibraryProps) {
 
   const mediaGroups = useMemo(() => {
     const groups = new Map<string, typeof visibleItems>()
-    for (const item of visibleItems) {
+    for (const item of displayedItems) {
       const letter = item.name.trim().charAt(0).toLocaleUpperCase() || '#'
       const group = groups.get(letter) ?? []
       group.push(item)
@@ -584,7 +596,7 @@ function Library({ onPlay }: LibraryProps) {
       left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' }) *
         (sortOrder === 'asc' ? 1 : -1),
     )
-  }, [sortOrder, visibleItems])
+  }, [displayedItems, sortOrder])
 
   return (
     <section className={styles.page} aria-labelledby="library-title">
@@ -814,6 +826,21 @@ function Library({ onPlay }: LibraryProps) {
               </ul>
             </section>
           ))}
+          {displayLimit < visibleItems.length && (
+            <button
+              type="button"
+              className={styles.loadMoreButton}
+              onClick={() =>
+                setDisplayLimit((current) =>
+                  Math.min(current + LIBRARY_PAGE_SIZE, visibleItems.length),
+                )
+              }
+            >
+              {t('library.showMore', {
+                count: Math.min(LIBRARY_PAGE_SIZE, visibleItems.length - displayLimit),
+              })}
+            </button>
+          )}
         </div>
       )}
     </section>

@@ -21,7 +21,7 @@ import { getMainWindow } from './windows'
 
 const STORE_FILE_NAME = 'library.json'
 const WATCH_RETRY_MS = 30_000
-const WATCH_FALLBACK_POLL_MS = 15_000
+const WATCH_FALLBACK_POLL_MS = 60_000
 const CHANGE_DEBOUNCE_MS = 450
 
 let folders: LibraryFolder[] = []
@@ -31,6 +31,9 @@ let watchers = new Map<string, FSWatcher>()
 let watcherRetryTimer: ReturnType<typeof setInterval> | null = null
 let fallbackPollTimer: ReturnType<typeof setInterval> | null = null
 let changeTimer: ReturnType<typeof setTimeout> | null = null
+let libraryRevision = 0
+let libraryChangedDuringScan = false
+let activeScan: { revision: number; promise: Promise<LibrarySnapshot> } | null = null
 
 function storeFilePath(): string {
   return path.join(app.getPath('userData'), STORE_FILE_NAME)
@@ -213,7 +216,36 @@ async function scanLibrary(): Promise<LibrarySnapshot> {
 
 async function getLibrarySnapshot(): Promise<LibrarySnapshot> {
   await initializeLibrary()
-  return scanLibrary()
+
+  while (true) {
+    const currentScan = activeScan
+    if (currentScan) {
+      const snapshot = await currentScan.promise
+      if (libraryChangedDuringScan) {
+        libraryChangedDuringScan = false
+        libraryRevision += 1
+      }
+      if (currentScan.revision === libraryRevision) {
+        if (activeScan === currentScan) activeScan = null
+        return snapshot
+      }
+      if (activeScan === currentScan) activeScan = null
+      continue
+    }
+
+    const scan = { revision: libraryRevision, promise: scanLibrary() }
+    activeScan = scan
+    try {
+      const snapshot = await scan.promise
+      if (libraryChangedDuringScan) {
+        libraryChangedDuringScan = false
+        libraryRevision += 1
+      }
+      if (scan.revision === libraryRevision) return snapshot
+    } finally {
+      if (activeScan === scan) activeScan = null
+    }
+  }
 }
 
 function isSameOrNestedPath(candidate: string, ancestor: string): boolean {
@@ -237,7 +269,7 @@ function watchRoots(): LibraryFolder[] {
 
 function enableFallbackPolling(): void {
   if (fallbackPollTimer) return
-  fallbackPollTimer = setInterval(scheduleLibraryChange, WATCH_FALLBACK_POLL_MS)
+  fallbackPollTimer = setInterval(() => scheduleLibraryChange(false), WATCH_FALLBACK_POLL_MS)
   fallbackPollTimer.unref?.()
 }
 
@@ -257,7 +289,7 @@ function refreshWatchers(): void {
     if (watchers.has(key)) continue
 
     try {
-      const watcher = watch(folder.path, { recursive: true }, scheduleLibraryChange)
+      const watcher = watch(folder.path, { recursive: true }, () => scheduleLibraryChange())
       watcher.on('error', (error) => {
         watcher.close()
         if (watchers.get(key) === watcher) watchers.delete(key)
@@ -279,7 +311,12 @@ function refreshWatchers(): void {
   if (addedWatcher) scheduleLibraryChange()
 }
 
-function scheduleLibraryChange(): void {
+function scheduleLibraryChange(invalidateScan = true): void {
+  if (invalidateScan) {
+    if (activeScan) libraryChangedDuringScan = true
+    else libraryRevision += 1
+  }
+
   if (changeTimer) clearTimeout(changeTimer)
   changeTimer = setTimeout(() => {
     changeTimer = null
@@ -305,6 +342,8 @@ function updateFolders(
     if (JSON.stringify(nextFolders) === JSON.stringify(folders)) return
     await persistFolders(nextFolders)
     folders = nextFolders
+    if (activeScan) libraryChangedDuringScan = true
+    else libraryRevision += 1
     refreshWatchers()
   })
   folderMutationQueue = operation.then(

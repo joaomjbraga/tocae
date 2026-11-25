@@ -111,6 +111,7 @@ export const ptBRMessages = {
   'library.favorites': 'Favoritos',
   'library.itemCountOne': '1 mídia',
   'library.itemCount': '{count} mídias',
+  'library.showMore': 'Carregar mais {count}',
   'library.playItem': 'Reproduzir {name}',
   'library.openFolder': 'Abrir pasta',
   'library.addFavorite': 'Adicionar aos favoritos',

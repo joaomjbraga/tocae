@@ -68,7 +68,10 @@ async function extractMetadata(
     console.warn(`Could not read ExifTool metadata for "${filePath}"`, error)
   }
 
-  if (mediaType === 'image') {
+  if (
+    mediaType === 'image' &&
+    (!result.width || !result.height || !result.capturedAt || !result.camera)
+  ) {
     try {
       const tags = await exifr.parse(filePath, {
         pick: ['ImageWidth', 'ImageHeight', 'DateTimeOriginal', 'CreateDate', 'Make', 'Model'],

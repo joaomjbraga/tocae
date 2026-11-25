@@ -105,6 +105,7 @@ export const enMessages: Messages = {
   'library.favorites': 'Favorites',
   'library.itemCountOne': '1 media item',
   'library.itemCount': '{count} media items',
+  'library.showMore': 'Load {count} more',
   'library.playItem': 'Play {name}',
   'library.openFolder': 'Open folder',
   'library.addFavorite': 'Add to favorites',
