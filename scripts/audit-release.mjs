@@ -132,7 +132,7 @@ async function main() {
     const relativePath = path.relative(releaseRoot, installer)
     const sizeLabel = formatBytes(size)
     summaryRows.push(`| \`${relativePath}\` | ${sizeLabel} |`)
-    console.log(`Installer: ${relativePath} — ${sizeLabel}`)
+    console.log(`Installer: ${relativePath} ${sizeLabel}`)
     if (size > MAX_INSTALLER_SIZE) {
       console.warn(`::warning::Installer size ${sizeLabel} exceeds the 250 MiB review threshold.`)
     }

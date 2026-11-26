@@ -100,8 +100,8 @@ O Tocaê possui suporte a Windows e Linux.
 
 O processo de build gera pacotes para distribuições baseadas em Debian e Red Hat:
 
-- `.deb` — Debian e Ubuntu.
-- `.rpm` — Fedora e distribuições compatíveis.
+- `.deb` Debian e Ubuntu.
+- `.rpm` Fedora e distribuições compatíveis.
 
 Os instaladores são disponibilizados no diretório `release/`.
 

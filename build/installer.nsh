@@ -1,5 +1,3 @@
-!pragma codepage 65001
-
 !macro registerTocaeMediaExtension EXT
   WriteRegNone HKCU "Software\Classes\.${EXT}\OpenWithProgids" "Tocae.MediaFile"
   WriteRegStr HKCU "Software\Classes\Applications\${APP_EXECUTABLE_FILENAME}\SupportedTypes" ".${EXT}" ""
