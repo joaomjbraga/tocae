@@ -95,10 +95,8 @@
         { "ext": "heic", "mimeType": "image/heic" }
       ]
     },
-    "win": {
-      "nsis": {
-        "include": "build/installer.nsh"
-      }
+    "nsis": {
+      "include": "build/installer.nsh"
     }
   },
   "allowScripts": {
