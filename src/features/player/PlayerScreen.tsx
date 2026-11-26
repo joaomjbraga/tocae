@@ -57,6 +57,7 @@ function PlayerScreen({
   const [playbackPreferences, setPlaybackPreferences] = useState(readPlaybackPreferences)
   const announcedIdRef = useRef<string | null>(null)
   const currentMediaPath = playlist.current?.path ?? null
+  const mediaType = playlist.current ? mediaTypeForPath(playlist.current.path) : null
   const [mediaMetadataState, setMediaMetadataState] = useState<{
     path: string
     metadata: MediaMetadata
@@ -71,6 +72,10 @@ function PlayerScreen({
     mediaElementMetadataState?.path === currentMediaPath
       ? mediaElementMetadataState.metadata
       : null
+  const currentMetadata =
+    mediaMetadata && mediaElementMetadata
+      ? { ...mediaMetadata, ...mediaElementMetadata }
+      : mediaMetadata
 
   useEffect(() => {
     if (!api || !currentMediaPath) return
@@ -290,11 +295,6 @@ function PlayerScreen({
   )
 
   const errorMessage = playlist.error ? t(playlist.error) : null
-  const mediaType = playlist.current ? mediaTypeForPath(playlist.current.path) : null
-  const currentMetadata =
-    mediaMetadata && mediaElementMetadata
-      ? { ...mediaMetadata, ...mediaElementMetadata }
-      : mediaMetadata
   const mediaTitle = mediaMetadata?.title || playlist.current?.name || ''
   const mediaSubtitle =
     currentMetadata && mediaType

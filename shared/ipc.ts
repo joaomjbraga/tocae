@@ -12,6 +12,7 @@ export const IPC_CHANNELS = {
   MEDIA_FOLDER_PICK: 'media-folder:pick',
   MEDIA_METADATA_GET: 'media:metadata:get',
   MEDIA_VIDEO_THUMBNAIL_GET: 'media:video-thumbnail:get',
+  MEDIA_VIDEO_FRAME_CAPTURE: 'media:video-frame:capture',
   MEDIA_SHOW_IN_FOLDER: 'media:show-in-folder',
   MEDIA_TRACKS_GET: 'media:tracks:get',
   MEDIA_TRACK_AUDIO_CREATE: 'media:track-audio:create',
@@ -129,6 +130,7 @@ export interface TocaeApi {
   onLibraryChanged(callback: () => void): () => void
   getMediaMetadata(filePath: string): Promise<MediaMetadata>
   getVideoThumbnail(filePath: string): Promise<VideoThumbnail | null>
+  captureVideoFrame(filePath: string, timestamp: number): Promise<boolean>
   getDefaultPlayerStatus(): Promise<DefaultPlayerStatus>
   setDefaultPlayer(): Promise<void>
   openReleasesPage(): Promise<void>

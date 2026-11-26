@@ -5,6 +5,7 @@ import { registerMediaSchemes, registerMediaProtocol } from './media/protocol'
 import { registerMediaMetadataIpc } from './media/metadata'
 import { registerMediaTracksIpc } from './media/tracks'
 import { registerVideoThumbnailIpc } from './media/videoThumbnails'
+import { registerVideoFrameCaptureIpc } from './media/videoFrameCapture'
 import { registerYouTubeMusicIpc } from './integrations/youtubeMusic'
 import { registerDialogIpc } from './dialogs'
 import { registerPlaylistIpc } from './playlist'
@@ -71,6 +72,7 @@ if (!gotTheLock) {
     registerMediaMetadataIpc()
     registerMediaTracksIpc()
     registerVideoThumbnailIpc()
+    registerVideoFrameCaptureIpc()
     registerYouTubeMusicIpc()
     registerDialogIpc()
     registerDefaultPlayerIpc()

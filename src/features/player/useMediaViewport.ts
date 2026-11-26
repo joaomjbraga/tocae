@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties, PointerEvent, RefObject } from 'react'
+import type { CSSProperties, PointerEvent, RefObject, WheelEvent } from 'react'
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 3
@@ -16,6 +16,25 @@ type MediaStyle = CSSProperties & {
 type ZoomableMediaElement = HTMLVideoElement | HTMLImageElement
 
 const INITIAL_PAN: PanPosition = { x: 0, y: 0 }
+
+export function calculateWheelZoom(
+  zoom: number,
+  pan: PanPosition,
+  pointer: PanPosition,
+  deltaY: number,
+): { zoom: number; pan: PanPosition } {
+  const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * Math.exp(-deltaY * 0.0015)))
+  if (nextZoom === zoom) return { zoom, pan }
+
+  const ratio = nextZoom / zoom
+  return {
+    zoom: nextZoom,
+    pan: {
+      x: pointer.x * (1 - ratio) + pan.x * ratio,
+      y: pointer.y * (1 - ratio) + pan.y * ratio,
+    },
+  }
+}
 
 export function useMediaViewport(
   areaRef: RefObject<HTMLElement | null>,
@@ -83,6 +102,27 @@ export function useMediaViewport(
     setZoom(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom)))
   }
 
+  function handleWheel(event: WheelEvent<HTMLElement>) {
+    if (event.deltaY === 0) return
+    event.preventDefault()
+
+    const bounds = areaRef.current?.getBoundingClientRect()
+    const pointer = bounds
+      ? {
+          x: event.clientX - (bounds.left + bounds.width / 2),
+          y: event.clientY - (bounds.top + bounds.height / 2),
+        }
+      : INITIAL_PAN
+    const transform = calculateWheelZoom(zoom, pan, pointer, event.deltaY)
+    if (transform.zoom === zoom) return
+    if (bounds) {
+      setPan(
+        clampPan(transform.pan, transform.zoom),
+      )
+    }
+    setZoom(transform.zoom)
+  }
+
   function handlePointerDown(event: PointerEvent<HTMLElement>) {
     if (zoom === MIN_ZOOM || event.button !== 0) return
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -136,6 +176,7 @@ export function useMediaViewport(
     zoomIn: () => updateZoom(zoom + ZOOM_STEP),
     zoomOut: () => updateZoom(zoom - ZOOM_STEP),
     resetZoom: () => updateZoom(MIN_ZOOM),
+    handleWheel,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,

@@ -19,8 +19,11 @@ O **Tocaê** é um reprodutor multimídia para Windows e Linux que reúne músic
 ### Mais controle sobre o que você assiste
 
 - **Zoom e movimentação:** amplie vídeos e imagens e explore os detalhes sem perder o controle da visualização.
+- **Zoom pelo scroll:** ajuste a ampliação usando a roda do mouse, mantendo em foco o ponto sob o cursor.
 - **Vídeos verticais:** assista a conteúdos em formato retrato sem cortes na imagem.
 - **Prévia na timeline:** visualize quadros do vídeo enquanto procura um momento específico.
+- **Marcadores:** salve posições por vídeo, dê nomes opcionais e volte a elas rapidamente.
+- **Captura de quadros:** salve como JPEG o quadro correspondente a uma posição do vídeo.
 - **Navegação precisa:** avance ou retroceda em intervalos de um segundo.
 - **Visualizador musical:** acompanhe suas músicas com animações que reagem à reprodução.
 

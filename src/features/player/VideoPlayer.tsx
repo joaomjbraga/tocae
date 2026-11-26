@@ -8,6 +8,9 @@ import type {
   SyntheticEvent,
 } from 'react'
 import {
+  Bookmark,
+  BookmarkPlus,
+  Camera,
   FastForward,
   FolderOpen,
   ListEnd,
@@ -22,11 +25,13 @@ import {
   RotateCcw,
   SkipBack,
   SkipForward,
+  Trash2,
   Volume1,
   Volume2,
   VolumeX,
   ZoomIn,
   ZoomOut,
+  X,
 } from 'lucide-react'
 import { formatTime } from '../../lib/format'
 import type { MediaMetadata, MediaType } from '@shared/media'
@@ -34,6 +39,13 @@ import type { MediaTrack } from '@shared/mediaTracks'
 import { useI18n } from '../../i18n'
 import { toMediaUrl } from '../../lib/media'
 import { getPlaybackPosition, savePlaybackPosition } from './playbackProgress'
+import {
+  addPlaybackMarker,
+  getPlaybackMarkers,
+  removePlaybackMarker,
+  updatePlaybackMarkerLabel,
+} from './playbackMarkers'
+import type { PlaybackMarker } from './playbackMarkers'
 import { useMediaViewport } from './useMediaViewport'
 import { findMediaTrack, preferredMediaTrack } from './trackSelection'
 import { releaseStaleTrackOutput } from './trackOutput'
@@ -113,6 +125,7 @@ function VideoPlayer({
   )
   const audioRef = useRef<HTMLAudioElement>(null)
   const previewVideoRef = useRef<HTMLVideoElement>(null)
+  const captureStatusTimerRef = useRef<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const failedSourceRef = useRef<string | null>(null)
   const idleTimerRef = useRef<number | null>(null)
@@ -134,6 +147,11 @@ function VideoPlayer({
   const [previewFrameReady, setPreviewFrameReady] = useState(false)
   const [previewVisible, setPreviewVisible] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [markers, setMarkers] = useState<PlaybackMarker[]>([])
+  const [markersOpen, setMarkersOpen] = useState(false)
+  const [markerSaveFailed, setMarkerSaveFailed] = useState(false)
+  const [frameCaptureStatus, setFrameCaptureStatus] = useState<'saved' | 'error' | null>(null)
+  const [frameCapturing, setFrameCapturing] = useState(false)
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
   const [trackState, setTrackState] = useState<{ filePath: string; tracks: MediaTrack[] } | null>(
@@ -167,6 +185,22 @@ function VideoPlayer({
   const [movConversionFailed, setMovConversionFailed] = useState(false)
   const activeFilePathRef = useRef(filePath)
   activeFilePathRef.current = filePath
+
+  useEffect(() => {
+    setMarkers(mediaType === 'video' && filePath ? getPlaybackMarkers(filePath) : [])
+    setMarkersOpen(false)
+    setMarkerSaveFailed(false)
+    setFrameCaptureStatus(null)
+  }, [filePath, mediaType])
+
+  useEffect(
+    () => () => {
+      if (captureStatusTimerRef.current !== null) {
+        window.clearTimeout(captureStatusTimerRef.current)
+      }
+    },
+    [],
+  )
 
   const tracks = trackState?.filePath === filePath ? trackState.tracks : []
   const movNeedsConversion = Boolean(
@@ -408,6 +442,7 @@ function VideoPlayer({
     function handleKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null
       if (target instanceof HTMLSelectElement) return
+      if (target instanceof HTMLInputElement && target.type !== 'range') return
       const isButton = target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement
       switch (event.key) {
         case 'f':
@@ -714,6 +749,84 @@ function VideoPlayer({
     if (media.paused) persistPlaybackPosition(time, true)
   }
 
+  function seekTo(time: number) {
+    const media = getMediaElement()
+    if (!media || !Number.isFinite(media.duration)) return
+    const target = Math.min(media.duration, Math.max(0, time))
+    media.currentTime = target
+    setCurrentTime(target)
+    persistPlaybackPosition(target, true)
+  }
+
+  function handleAddMarker() {
+    if (!filePath) return
+    const media = getMediaElement()
+    if (!media || !Number.isFinite(media.currentTime)) return
+    try {
+      setMarkers(addPlaybackMarker(filePath, media.currentTime))
+      setMarkerSaveFailed(false)
+      setMarkersOpen(true)
+    } catch (error) {
+      console.error(`Could not save a marker for "${filePath}"`, error)
+      setMarkerSaveFailed(true)
+    }
+  }
+
+  function handleMarkerLabelChange(markerId: string, label: string) {
+    if (!filePath) return
+    try {
+      setMarkers(updatePlaybackMarkerLabel(filePath, markerId, label))
+      setMarkerSaveFailed(false)
+    } catch (error) {
+      console.error(`Could not rename a marker for "${filePath}"`, error)
+      setMarkerSaveFailed(true)
+    }
+  }
+
+  function handleMarkerRemove(markerId: string) {
+    if (!filePath) return
+    try {
+      setMarkers(removePlaybackMarker(filePath, markerId))
+      setMarkerSaveFailed(false)
+    } catch (error) {
+      console.error(`Could not remove a marker for "${filePath}"`, error)
+      setMarkerSaveFailed(true)
+    }
+  }
+
+  function showFrameCaptureStatus(status: 'saved' | 'error') {
+    setFrameCaptureStatus(status)
+    if (captureStatusTimerRef.current !== null) {
+      window.clearTimeout(captureStatusTimerRef.current)
+    }
+    captureStatusTimerRef.current = window.setTimeout(() => {
+      captureStatusTimerRef.current = null
+      setFrameCaptureStatus(null)
+    }, 3000)
+  }
+
+  async function handleCaptureFrame() {
+    if (!filePath || mediaType !== 'video') return
+    const api = window.tocae
+    if (!api) {
+      console.error('Could not capture video frame: media API is unavailable.')
+      showFrameCaptureStatus('error')
+      return
+    }
+
+    const timestamp = getMediaElement()?.currentTime ?? currentTime
+    setFrameCapturing(true)
+    try {
+      const saved = await api.captureVideoFrame(filePath, timestamp)
+      if (saved) showFrameCaptureStatus('saved')
+    } catch (error) {
+      console.error(`Could not capture a frame from "${filePath}"`, error)
+      showFrameCaptureStatus('error')
+    } finally {
+      setFrameCapturing(false)
+    }
+  }
+
   function handleVolumeChange(event: ChangeEvent<HTMLInputElement>) {
     applyVolume(Number(event.target.value))
   }
@@ -849,7 +962,6 @@ function VideoPlayer({
       ? `${Math.min(100, Math.max(0, (previewTime / duration) * 100))}%`
       : '0%'
   const previewStyle: PreviewStyle = { '--preview-position': previewPosition }
-
   return (
     <section
       ref={areaRef}
@@ -907,6 +1019,7 @@ function VideoPlayer({
               onPointerMove={viewport.handlePointerMove}
               onPointerUp={viewport.handlePointerUp}
               onPointerCancel={viewport.handlePointerCancel}
+              onWheel={viewport.handleWheel}
               onContextMenu={(event) => event.preventDefault()}
             >
               {activeSubtitleTrack && (
@@ -990,6 +1103,7 @@ function VideoPlayer({
                 onPointerMove={viewport.handlePointerMove}
                 onPointerUp={viewport.handlePointerUp}
                 onPointerCancel={viewport.handlePointerCancel}
+                onWheel={viewport.handleWheel}
               />
               <button
                 type="button"
@@ -1142,6 +1256,88 @@ function VideoPlayer({
               {t('player.videoConversionError')}
             </div>
           )}
+          {frameCaptureStatus && (
+            <div
+              className={styles.captureStatus}
+              role={frameCaptureStatus === 'error' ? 'alert' : 'status'}
+            >
+              {t(
+                frameCaptureStatus === 'saved'
+                  ? 'player.frameCaptureSaved'
+                  : 'player.frameCaptureError',
+              )}
+            </div>
+          )}
+          {markersOpen && mediaType === 'video' && filePath && (
+            <section className={styles.markerPanel} aria-label={t('player.markers')}>
+              <header className={styles.markerHeader}>
+                <strong>{t('player.markers')}</strong>
+                <div>
+                  <button
+                    type="button"
+                    className={styles.controlButton}
+                    onClick={handleAddMarker}
+                    disabled={duration <= 0}
+                    aria-label={t('player.addMarker')}
+                    title={t('player.addMarker')}
+                  >
+                    <BookmarkPlus size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.controlButton}
+                    onClick={() => setMarkersOpen(false)}
+                    aria-label={t('player.closeMarkers')}
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              </header>
+              {markers.length === 0 ? (
+                <p className={styles.markerEmpty}>{t('player.noMarkers')}</p>
+              ) : (
+                <ul className={styles.markerList}>
+                  {markers.map((marker) => (
+                    <li className={styles.markerItem} key={marker.id}>
+                      <button
+                        type="button"
+                        className={styles.markerTime}
+                        onClick={() => seekTo(marker.time)}
+                        aria-label={t('player.goToMarker', { time: formatTime(marker.time) })}
+                      >
+                        {formatTime(marker.time)}
+                      </button>
+                      <input
+                        type="text"
+                        value={marker.label}
+                        maxLength={80}
+                        placeholder={t('player.markerLabel')}
+                        aria-label={t('player.markerLabelForTime', {
+                          time: formatTime(marker.time),
+                        })}
+                        onChange={(event) =>
+                          handleMarkerLabelChange(marker.id, event.currentTarget.value)
+                        }
+                      />
+                      <button
+                        type="button"
+                        className={styles.controlButton}
+                        onClick={() => handleMarkerRemove(marker.id)}
+                        aria-label={t('player.removeMarker', { time: formatTime(marker.time) })}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {markerSaveFailed && (
+                <p className={styles.markerError} role="alert">
+                  {t('player.markerSaveError')}
+                </p>
+              )}
+            </section>
+          )}
           {hasPlaybackControls && (
             <div className={styles.controlsBar}>
             <button
@@ -1212,6 +1408,18 @@ function VideoPlayer({
                   <span className={styles.previewTimestamp}>{formatTime(previewTime)}</span>
                 </div>
               )}
+              {mediaType === 'video' &&
+                markers.map((marker) => (
+                  <span
+                    key={marker.id}
+                    className={styles.timelineMarker}
+                    style={{
+                      left: `${duration > 0 ? Math.min(100, Math.max(0, (marker.time / duration) * 100)) : 0}%`,
+                    }}
+                    title={`${formatTime(marker.time)}${marker.label ? ` · ${marker.label}` : ''}`}
+                    aria-hidden="true"
+                  />
+                ))}
               <input
                 type="range"
                 className={styles.seek}
@@ -1259,6 +1467,34 @@ function VideoPlayer({
             >
               <FastForward size={16} />
             </button>
+            {mediaType === 'video' && filePath && (
+              <>
+                <button
+                  type="button"
+                  className={styles.controlButton}
+                  onClick={() => setMarkersOpen((open) => !open)}
+                  aria-label={t('player.markers')}
+                  aria-expanded={markersOpen}
+                  title={t('player.markers')}
+                >
+                  <Bookmark size={16} />
+                </button>
+                <button
+                  type="button"
+                  className={styles.controlButton}
+                  onClick={() => void handleCaptureFrame()}
+                  disabled={frameCapturing || movPlaybackPending || duration <= 0}
+                  aria-label={t('player.captureFrame')}
+                  title={t('player.captureFrame')}
+                >
+                  {frameCapturing ? (
+                    <Loader2 size={16} className={styles.spinner} />
+                  ) : (
+                    <Camera size={16} />
+                  )}
+                </button>
+              </>
+            )}
             <div className={styles.volume}>
               <button
                 type="button"

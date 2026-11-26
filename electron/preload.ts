@@ -83,6 +83,8 @@ const api: TocaeApi = {
       IPC_CHANNELS.MEDIA_VIDEO_THUMBNAIL_GET,
       filePath,
     ) as Promise<VideoThumbnail | null>,
+  captureVideoFrame: (filePath: string, timestamp: number) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MEDIA_VIDEO_FRAME_CAPTURE, filePath, timestamp) as Promise<boolean>,
   getLibrary: () => ipcRenderer.invoke(IPC_CHANNELS.LIBRARY_GET),
   addLibraryFolder: () => ipcRenderer.invoke(IPC_CHANNELS.LIBRARY_ADD_FOLDER),
   removeLibraryFolder: (folderId: string) =>
