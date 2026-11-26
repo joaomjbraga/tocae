@@ -44,6 +44,11 @@ const IDLE_DELAY_MS = 2500
 const SEEK_STEP_SECONDS = 1
 const PROGRESS_SAVE_INTERVAL_SECONDS = 5
 
+function canPlayHdrHevc(): boolean {
+  const video = document.createElement('video')
+  return video.canPlayType('video/mp4; codecs="hvc1.2.4.L153.B0"') !== ''
+}
+
 /** A timeline desenha o progresso com um custom property lido pelo CSS do trilho. */
 type SeekStyle = CSSProperties & { '--progress': string }
 type PreviewStyle = CSSProperties & { '--preview-position': string }
@@ -277,7 +282,7 @@ function VideoPlayer({
     })
     setMovPreparing(true)
     void api
-      .createMovPlayback(filePath, requestId)
+      .createMovPlayback(filePath, requestId, canPlayHdrHevc())
       .then((outputPath) => {
         if (!active || activeFilePathRef.current !== filePath) {
           void api.releaseMediaTrackOutput(outputPath).catch((error: unknown) => {
@@ -514,6 +519,7 @@ function VideoPlayer({
       const outputPath = await api.createAudioTrackPlayback(
         requestedFilePath,
         selectedTrack.streamIndex,
+        canPlayHdrHevc(),
       )
       const staleOutputReleased = await releaseStaleTrackOutput(
         requestedFilePath,

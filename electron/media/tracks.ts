@@ -8,7 +8,8 @@ import path from 'node:path'
 import { IPC_CHANNELS } from '@shared/ipc'
 import { mediaTypeForPath } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
-import { canRemuxMovVideo } from './movCompatibility'
+import { movVideoEncodingArgs } from './movCompatibility'
+import type { MovVideoInfo } from './movCompatibility'
 import { MovPlaybackCache } from './movPlaybackCache'
 import { registerTrackIpcHandlers } from './trackIpcHandlers'
 import { assertTrackAvailable, parseTrackIndex } from './trackSelection'
@@ -183,11 +184,7 @@ function parseTracks(serialized: string): MediaTrack[] {
   return tracks
 }
 
-function parseMovVideoInfo(serialized: string): {
-  codecName: string
-  pixelFormat: string | undefined
-  duration: number | undefined
-} {
+function parseMovVideoInfo(serialized: string): MovVideoInfo {
   const parsed: unknown = JSON.parse(serialized)
   if (!isRecord(parsed) || !Array.isArray(parsed.streams)) {
     throw new TypeError('FFprobe returned invalid MOV video information.')
@@ -208,6 +205,11 @@ function parseMovVideoInfo(serialized: string): {
     pixelFormat: typeof videoStream.pix_fmt === 'string' ? videoStream.pix_fmt : undefined,
     duration:
       Number.isFinite(parsedDuration) && parsedDuration > 0 ? parsedDuration : undefined,
+    colorTransfer:
+      typeof videoStream.color_transfer === 'string' ? videoStream.color_transfer : undefined,
+    colorPrimaries:
+      typeof videoStream.color_primaries === 'string' ? videoStream.color_primaries : undefined,
+    colorSpace: typeof videoStream.color_space === 'string' ? videoStream.color_space : undefined,
   }
 }
 
@@ -220,7 +222,7 @@ async function getMovVideoInfo(filePath: string, signal?: AbortSignal) {
       '-select_streams',
       'v:0',
       '-show_entries',
-      'stream=codec_name,pix_fmt:format=duration',
+      'stream=codec_name,pix_fmt,color_transfer,color_primaries,color_space:format=duration',
       '-of',
       'json',
       filePath,
@@ -229,21 +231,6 @@ async function getMovVideoInfo(filePath: string, signal?: AbortSignal) {
     { signal },
   )
   return parseMovVideoInfo(stdout)
-}
-
-function videoEncodingArgs(videoInfo: ReturnType<typeof parseMovVideoInfo>): string[] {
-  return canRemuxMovVideo(videoInfo.codecName, videoInfo.pixelFormat)
-    ? ['-c:v', 'copy']
-    : [
-        '-c:v',
-        'libx264',
-        '-preset',
-        'veryfast',
-        '-crf',
-        '20',
-        '-pix_fmt',
-        'yuv420p',
-      ]
 }
 
 async function mediaFilePath(value: unknown): Promise<string> {
@@ -277,10 +264,14 @@ async function getMediaTracks(filePath: unknown): Promise<MediaTrack[]> {
 async function createMovPlayback(
   filePath: unknown,
   rawRequestId: unknown,
+  rawPreserveHdr: unknown,
   onProgress: (progress: number) => void,
 ): Promise<string> {
   if (typeof rawRequestId !== 'string' || rawRequestId.length === 0 || rawRequestId.length > 128) {
     throw new TypeError('A valid MOV playback request ID is required.')
+  }
+  if (typeof rawPreserveHdr !== 'boolean') {
+    throw new TypeError('The MOV HDR playback capability must be specified.')
   }
   if (movPlaybackControllers.has(rawRequestId)) {
     throw new TypeError('The MOV playback request ID is already in use.')
@@ -297,13 +288,13 @@ async function createMovPlayback(
     const fileStats = await stat(resolvedPath)
     const normalizedPath =
       process.platform === 'win32' ? resolvedPath.toLowerCase() : resolvedPath
-    const cacheKey = `${normalizedPath}\u0000${fileStats.size}\u0000${fileStats.mtimeMs}`
+    const cacheKey = `${normalizedPath}\u0000${fileStats.size}\u0000${fileStats.mtimeMs}\u0000${rawPreserveHdr}`
 
     return await movPlaybackCache.acquire(
       cacheKey,
       async (signal) => {
         const videoInfo = await getMovVideoInfo(resolvedPath, signal)
-        const encodingArgs = videoEncodingArgs(videoInfo)
+        const encodingArgs = movVideoEncodingArgs(videoInfo, rawPreserveHdr)
 
         return temporaryTrackOutputs.create('compatible-video.mp4', async (outputPath) => {
           let lastProgress = 0
@@ -406,7 +397,11 @@ async function validateStream(
 async function createAudioTrackPlayback(
   filePath: unknown,
   rawStreamIndex: unknown,
+  rawPreserveHdr: unknown,
 ): Promise<string> {
+  if (typeof rawPreserveHdr !== 'boolean') {
+    throw new TypeError('The MOV HDR playback capability must be specified.')
+  }
   const { filePath: resolvedPath, streamIndex } = await validateStream(
     filePath,
     rawStreamIndex,
@@ -414,7 +409,7 @@ async function createAudioTrackPlayback(
   )
   const isMov = path.extname(resolvedPath).toLowerCase() === '.mov'
   const encodingArgs = isMov
-    ? videoEncodingArgs(await getMovVideoInfo(resolvedPath))
+    ? movVideoEncodingArgs(await getMovVideoInfo(resolvedPath), rawPreserveHdr)
     : ['-c', 'copy']
   return temporaryTrackOutputs.create(
     isMov ? 'selected-audio.mp4' : 'selected-audio.mkv',

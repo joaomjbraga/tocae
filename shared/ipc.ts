@@ -1,6 +1,6 @@
 import type { Locale } from './i18n'
 import type { LibrarySnapshot } from './library'
-import type { MediaMetadata } from './media'
+import type { MediaMetadata, VideoThumbnail } from './media'
 import type { MediaTrack } from './mediaTracks'
 import type { PersistedPlaylist, PlaylistItem } from './playlist'
 
@@ -11,6 +11,7 @@ export const IPC_CHANNELS = {
   MEDIA_PICK: 'media:pick',
   MEDIA_FOLDER_PICK: 'media-folder:pick',
   MEDIA_METADATA_GET: 'media:metadata:get',
+  MEDIA_VIDEO_THUMBNAIL_GET: 'media:video-thumbnail:get',
   MEDIA_SHOW_IN_FOLDER: 'media:show-in-folder',
   MEDIA_TRACKS_GET: 'media:tracks:get',
   MEDIA_TRACK_AUDIO_CREATE: 'media:track-audio:create',
@@ -100,10 +101,14 @@ export interface TocaeApi {
   openMediaFolderDialog(): Promise<void>
   showMediaInFolder(filePath: string): Promise<void>
   getMediaTracks(filePath: string): Promise<MediaTrack[]>
-  createMovPlayback(filePath: string, requestId: string): Promise<string>
   cancelMovPlayback(requestId: string): void
   onMovPlaybackProgress(callback: (progress: MovPlaybackProgress) => void): () => void
-  createAudioTrackPlayback(filePath: string, streamIndex: number): Promise<string>
+  createMovPlayback(filePath: string, requestId: string, preserveHdr: boolean): Promise<string>
+  createAudioTrackPlayback(
+    filePath: string,
+    streamIndex: number,
+    preserveHdr: boolean,
+  ): Promise<string>
   extractSubtitleTrack(filePath: string, streamIndex: number): Promise<string>
   releaseMediaTrackOutput(outputPath: string): Promise<void>
   youtubeMusic: {
@@ -123,6 +128,7 @@ export interface TocaeApi {
   removeLibraryFolder(folderId: string): Promise<LibrarySnapshot>
   onLibraryChanged(callback: () => void): () => void
   getMediaMetadata(filePath: string): Promise<MediaMetadata>
+  getVideoThumbnail(filePath: string): Promise<VideoThumbnail | null>
   getDefaultPlayerStatus(): Promise<DefaultPlayerStatus>
   setDefaultPlayer(): Promise<void>
   openReleasesPage(): Promise<void>

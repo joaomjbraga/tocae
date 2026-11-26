@@ -654,20 +654,10 @@
   transition: transform 180ms ease;
 }
 
-.artwork video {
+.videoPreviewTrigger {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  transition:
-    opacity 180ms ease,
-    transform 180ms ease;
-}
-
-.artwork video[data-preview-ready='true'] {
-  opacity: 1;
+  pointer-events: none;
 }
 
 .artworkFallback {

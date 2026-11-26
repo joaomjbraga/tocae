@@ -59,6 +59,13 @@ export interface MediaMetadata {
   coverArt?: string
 }
 
+export interface VideoThumbnail {
+  dataUrl: string
+  width: number
+  height: number
+  duration?: number
+}
+
 
 function extensionFor(source: string): string {
   const isUrl = /^[a-z][a-z\d+.-]*:\/\//i.test(source)

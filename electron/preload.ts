@@ -8,7 +8,7 @@ import type {
   YouTubeMusicStatus,
 } from '@shared/ipc'
 import type { Locale } from '@shared/i18n'
-import type { MediaMetadata } from '@shared/media'
+import type { MediaMetadata, VideoThumbnail } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
 import type { PlaylistItem } from '@shared/playlist'
 
@@ -28,8 +28,13 @@ const api: TocaeApi = {
     ipcRenderer.invoke(IPC_CHANNELS.MEDIA_SHOW_IN_FOLDER, filePath),
   getMediaTracks: (filePath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MEDIA_TRACKS_GET, filePath) as Promise<MediaTrack[]>,
-  createMovPlayback: (filePath: string, requestId: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE, filePath, requestId) as Promise<string>,
+  createMovPlayback: (filePath: string, requestId: string, preserveHdr: boolean) =>
+    ipcRenderer.invoke(
+      IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE,
+      filePath,
+      requestId,
+      preserveHdr,
+    ) as Promise<string>,
   cancelMovPlayback: (requestId: string) => {
     ipcRenderer.send(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CANCEL, requestId)
   },
@@ -38,11 +43,12 @@ const api: TocaeApi = {
     ipcRenderer.on(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_PROGRESS, listener)
     return () => ipcRenderer.off(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_PROGRESS, listener)
   },
-  createAudioTrackPlayback: (filePath: string, streamIndex: number) =>
+  createAudioTrackPlayback: (filePath: string, streamIndex: number, preserveHdr: boolean) =>
     ipcRenderer.invoke(
       IPC_CHANNELS.MEDIA_TRACK_AUDIO_CREATE,
       filePath,
       streamIndex,
+      preserveHdr,
     ) as Promise<string>,
   extractSubtitleTrack: (filePath: string, streamIndex: number) =>
     ipcRenderer.invoke(
@@ -72,6 +78,11 @@ const api: TocaeApi = {
   },
   getMediaMetadata: (filePath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MEDIA_METADATA_GET, filePath) as Promise<MediaMetadata>,
+  getVideoThumbnail: (filePath: string) =>
+    ipcRenderer.invoke(
+      IPC_CHANNELS.MEDIA_VIDEO_THUMBNAIL_GET,
+      filePath,
+    ) as Promise<VideoThumbnail | null>,
   getLibrary: () => ipcRenderer.invoke(IPC_CHANNELS.LIBRARY_GET),
   addLibraryFolder: () => ipcRenderer.invoke(IPC_CHANNELS.LIBRARY_ADD_FOLDER),
   removeLibraryFolder: (folderId: string) =>

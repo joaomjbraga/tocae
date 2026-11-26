@@ -52,6 +52,7 @@ test('registers track IPC channels and forwards arguments to their operations', 
       movEvent,
       '/media/video.mov',
       'request-1',
+      true,
     ),
     '/tmp/compatible-video.mp4',
   )
@@ -60,6 +61,7 @@ test('registers track IPC channels and forwards arguments to their operations', 
       {},
       '/media/video.mp4',
       3,
+      false,
     ),
     '/tmp/audio.mkv',
   )
@@ -75,8 +77,8 @@ test('registers track IPC channels and forwards arguments to their operations', 
 
   assert.deepEqual(calls, [
     ['getMediaTracks', '/media/video.mp4'],
-    ['createMovPlayback', '/media/video.mov', 'request-1'],
-    ['createAudioTrackPlayback', '/media/video.mp4', 3],
+    ['createMovPlayback', '/media/video.mov', 'request-1', true],
+    ['createAudioTrackPlayback', '/media/video.mp4', 3, false],
     ['extractSubtitleTrack', '/media/video.mp4', 4],
     ['releaseMediaTrackOutput', '/tmp/audio.mkv'],
   ])

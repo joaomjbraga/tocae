@@ -29,9 +29,14 @@ type TrackIpcOperations = {
   createMovPlayback: (
     filePath: unknown,
     requestId: unknown,
+    preserveHdr: unknown,
     onProgress: (progress: number) => void,
   ) => Promise<string>
-  createAudioTrackPlayback: (filePath: unknown, streamIndex: unknown) => Promise<string>
+  createAudioTrackPlayback: (
+    filePath: unknown,
+    streamIndex: unknown,
+    preserveHdr: unknown,
+  ) => Promise<string>
   extractSubtitleTrack: (filePath: unknown, streamIndex: unknown) => Promise<string>
   releaseMediaTrackOutput: (outputPath: unknown) => Promise<void>
 }
@@ -43,19 +48,19 @@ export function registerTrackIpcHandlers(
   register(IPC_CHANNELS.MEDIA_TRACKS_GET, (_event, filePath) =>
     operations.getMediaTracks(filePath),
   )
-  register(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE, (event, filePath, requestId) => {
+  register(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE, (event, filePath, requestId, preserveHdr) => {
     if (!isTrackIpcEvent(event)) {
       throw new TypeError('A valid media playback request is required.')
     }
 
-    return operations.createMovPlayback(filePath, requestId, (progress) => {
+    return operations.createMovPlayback(filePath, requestId, preserveHdr, (progress) => {
       if (!event.sender.isDestroyed()) {
         event.sender.send(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_PROGRESS, { requestId, progress })
       }
     })
   })
-  register(IPC_CHANNELS.MEDIA_TRACK_AUDIO_CREATE, (_event, filePath, streamIndex) =>
-    operations.createAudioTrackPlayback(filePath, streamIndex),
+  register(IPC_CHANNELS.MEDIA_TRACK_AUDIO_CREATE, (_event, filePath, streamIndex, preserveHdr) =>
+    operations.createAudioTrackPlayback(filePath, streamIndex, preserveHdr),
   )
   register(IPC_CHANNELS.MEDIA_TRACK_SUBTITLE_EXTRACT, (_event, filePath, streamIndex) =>
     operations.extractSubtitleTrack(filePath, streamIndex),

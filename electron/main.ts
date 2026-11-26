@@ -4,6 +4,7 @@ import { isMediaPath } from '@shared/media'
 import { registerMediaSchemes, registerMediaProtocol } from './media/protocol'
 import { registerMediaMetadataIpc } from './media/metadata'
 import { registerMediaTracksIpc } from './media/tracks'
+import { registerVideoThumbnailIpc } from './media/videoThumbnails'
 import { registerYouTubeMusicIpc } from './integrations/youtubeMusic'
 import { registerDialogIpc } from './dialogs'
 import { registerPlaylistIpc } from './playlist'
@@ -69,6 +70,7 @@ if (!gotTheLock) {
     registerLibraryIpc()
     registerMediaMetadataIpc()
     registerMediaTracksIpc()
+    registerVideoThumbnailIpc()
     registerYouTubeMusicIpc()
     registerDialogIpc()
     registerDefaultPlayerIpc()

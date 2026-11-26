@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import type { MessageKey } from '@shared/i18n'
 import type { LibraryFolder, LibraryMediaItem, LibrarySnapshot, StandardLibraryFolderId } from '@shared/library'
-import type { MediaMetadata, MediaType } from '@shared/media'
+import type { MediaMetadata, MediaType, VideoThumbnail } from '@shared/media'
 import { useI18n } from '../../i18n'
 import { toMediaUrl } from '../../lib/media'
 import { summarizeMediaMetadata } from '../../lib/mediaMetadata'
@@ -58,65 +58,74 @@ function mediaIcon(type: MediaType) {
 }
 
 function VideoPreview({
-  src,
+  filePath,
   onDimensions,
 }: {
-  src: string
+  filePath: string
   onDimensions?: (width: number, height: number, duration?: number) => void
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const previewRef = useRef<HTMLSpanElement>(null)
+  const onDimensionsRef = useRef(onDimensions)
+  const [thumbnail, setThumbnail] = useState<VideoThumbnail | null>(null)
+  onDimensionsRef.current = onDimensions
 
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
+    const preview = previewRef.current
+    if (!preview) return
+    let active = true
+    let requested = false
+    const loadThumbnail = () => {
+      if (requested) return
+      requested = true
+      const api = window.tocae
+      if (!api) {
+        console.error('Could not generate a video preview: media API is unavailable.')
+        return
+      }
+
+      void api
+        .getVideoThumbnail(filePath)
+        .then((loadedThumbnail) => {
+          if (!active || !loadedThumbnail) return
+          setThumbnail(loadedThumbnail)
+          onDimensionsRef.current?.(
+            loadedThumbnail.width,
+            loadedThumbnail.height,
+            loadedThumbnail.duration,
+          )
+        })
+        .catch((error: unknown) => {
+          console.warn(`Could not generate a preview for "${filePath}"`, error)
+        })
+    }
 
     if (typeof IntersectionObserver === 'undefined') {
-      video.src = src
-      video.load()
-      return
+      loadThumbnail()
+      return () => {
+        active = false
+      }
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (!entries[0]?.isIntersecting) return
         observer.disconnect()
-        video.src = src
-        video.load()
+        loadThumbnail()
       },
       { rootMargin: '120px' },
     )
-    observer.observe(video)
-    return () => observer.disconnect()
-  }, [src])
+    observer.observe(preview)
+    return () => {
+      active = false
+      observer.disconnect()
+    }
+  }, [filePath])
 
   return (
-    <video
-      ref={videoRef}
-      preload="metadata"
-      muted
-      playsInline
-      tabIndex={-1}
-      aria-hidden="true"
-      onLoadedMetadata={(event) => {
-        const video = event.currentTarget
-        if (video.videoWidth > 0 && video.videoHeight > 0) {
-          onDimensions?.(video.videoWidth, video.videoHeight, video.duration)
-        }
-        if (Number.isFinite(video.duration) && video.duration > 0.5) {
-          video.currentTime = Math.min(1, video.duration * 0.15)
-        }
-      }}
-      onLoadedData={(event) => {
-        const video = event.currentTarget
-        if (!video.seeking) video.dataset.previewReady = 'true'
-      }}
-      onSeeked={(event) => {
-        event.currentTarget.dataset.previewReady = 'true'
-      }}
-      onError={(event) => {
-        delete event.currentTarget.dataset.previewReady
-      }}
-    />
+    <>
+      <span ref={previewRef} className={styles.videoPreviewTrigger} aria-hidden="true" />
+      {thumbnail && <img src={thumbnail.dataUrl} alt="" loading="lazy" />}
+    </>
   )
 }
 
@@ -218,7 +227,7 @@ function LibraryMediaCard({
             )}
             {item.type === 'video' && (
               <VideoPreview
-                src={toMediaUrl(item.path)}
+                filePath={item.path}
                 onDimensions={(width, height, duration) =>
                   setPreviewDetails({ width, height, duration })
                 }
