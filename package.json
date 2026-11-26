@@ -66,7 +66,39 @@
         "repo": "tocae",
         "releaseType": "release"
       }
-    ]
+    ],
+    "linux": {
+      "fileAssociations": [
+        { "ext": "mp4", "mimeType": "video/mp4" },
+        { "ext": "m4v", "mimeType": "video/x-m4v" },
+        { "ext": "webm", "mimeType": "video/webm" },
+        { "ext": "mkv", "mimeType": "video/x-matroska" },
+        { "ext": "avi", "mimeType": "video/x-msvideo" },
+        { "ext": ["mov", "qt"], "mimeType": "video/quicktime" },
+        { "ext": "ogv", "mimeType": "video/ogg" },
+        { "ext": ["mpg", "mpeg"], "mimeType": "video/mpeg" },
+        { "ext": "mp3", "mimeType": "audio/mpeg" },
+        { "ext": "m4a", "mimeType": "audio/mp4" },
+        { "ext": "aac", "mimeType": "audio/aac" },
+        { "ext": "wav", "mimeType": "audio/wav" },
+        { "ext": "flac", "mimeType": "audio/flac" },
+        { "ext": ["ogg", "oga", "opus"], "mimeType": "audio/ogg" },
+        { "ext": "weba", "mimeType": "audio/webm" },
+        { "ext": ["jpg", "jpeg"], "mimeType": "image/jpeg" },
+        { "ext": "png", "mimeType": "image/png" },
+        { "ext": "apng", "mimeType": "image/apng" },
+        { "ext": "webp", "mimeType": "image/webp" },
+        { "ext": "gif", "mimeType": "image/gif" },
+        { "ext": "bmp", "mimeType": "image/bmp" },
+        { "ext": "avif", "mimeType": "image/avif" },
+        { "ext": "heic", "mimeType": "image/heic" }
+      ]
+    },
+    "win": {
+      "nsis": {
+        "include": "build/installer.nsh"
+      }
+    }
   },
   "allowScripts": {
     "@derhuerst/ffprobe-static@5.3.0": true,

@@ -105,9 +105,11 @@ O processo de build gera pacotes para distribuições baseadas em Debian e Red H
 
 Os instaladores são disponibilizados no diretório `release/`.
 
+Os pacotes Linux registram os formatos de mídia compatíveis para que o Tocaê apareça nas opções de abertura do sistema. Nas configurações do aplicativo, também é possível defini-lo como reprodutor padrão.
+
 ### Windows
 
-O instalador utiliza NSIS e permite escolher o diretório de instalação, além de criar atalhos no Menu Iniciar e na área de trabalho.
+O instalador utiliza NSIS e permite escolher o diretório de instalação, além de criar atalhos no Menu Iniciar e na área de trabalho. O Tocaê é registrado como opção em “Abrir com” e nas configurações de aplicativos padrão do Windows; a escolha do aplicativo padrão continua sendo controlada pelo usuário no Windows.
 
 ## Atualizações
 
