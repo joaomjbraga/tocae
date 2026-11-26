@@ -113,9 +113,7 @@ O instalador utiliza NSIS e permite escolher o diretório de instalação, além
 
 ## Atualizações
 
-O aplicativo verifica periodicamente a existência de novas versões e informa quando uma atualização está disponível.
-
-As atualizações são realizadas manualmente por meio dos instaladores publicados nas releases do GitHub.
+O aplicativo verifica periodicamente a existência de novas versões. No Windows, baixa as atualizações automaticamente e pergunta se deseja reiniciar para instalá-las; se você escolher “Depois”, a instalação ocorre ao fechar o aplicativo. No Linux, o Tocaê informa quando há uma nova versão, que deve ser instalada manualmente pelo pacote publicado na release do GitHub.
 
 O projeto utiliza GitHub Actions para executar validações e gerar os pacotes de distribuição para Windows e Linux.
 

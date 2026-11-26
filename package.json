@@ -49,6 +49,7 @@
   },
   "main": "dist-electron/main.js",
   "build": {
+    "extends": "electron-builder.json5",
     "directories": {
       "output": "release"
     },

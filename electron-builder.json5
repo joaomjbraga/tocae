@@ -2,8 +2,8 @@
 {
   "$schema": "https://json.schemastore.org/electron-builder.json",
   "appId": "io.github.joaomjbraga.tocae",
-  // O projeto não usa auto-update: sem isso o electron-builder inferiria um
-  // provedor GitHub a partir do repositório e incluiria app-update.yml no pacote.
+  // O provedor é declarado explicitamente em package.json, evitando inferência
+  // automática a partir do repositório.
   "publish": null,
   "asar": true,
   "asarUnpack": [
@@ -49,31 +49,6 @@
     "icon": "public/tocae.png",
     "category": "AudioVideo;Player;",
     "executableName": "tocae",
-    "mimeTypes": [
-      "video/mp4",
-      "video/x-m4v",
-      "video/webm",
-      "video/x-matroska",
-      "video/x-msvideo",
-      "video/quicktime",
-      "video/ogg",
-      "video/mpeg",
-      "audio/mpeg",
-      "audio/mp4",
-      "audio/aac",
-      "audio/wav",
-      "audio/flac",
-      "audio/ogg",
-      "audio/webm",
-      "image/jpeg",
-      "image/png",
-      "image/apng",
-      "image/webp",
-      "image/gif",
-      "image/bmp",
-      "image/avif",
-      "image/heic"
-    ],
     // O nome do .desktop instalado precisa ser o mesmo que o app registra em
     // app.setDesktopName() para o ambiente associar a janela ao lançador.
     "syncDesktopName": true,
