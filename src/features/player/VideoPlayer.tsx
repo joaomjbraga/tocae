@@ -158,6 +158,7 @@ function VideoPlayer({
     outputPath: string
   } | null>(null)
   const [movPreparing, setMovPreparing] = useState(false)
+  const [movProgress, setMovProgress] = useState(0)
   const [movConversionFailed, setMovConversionFailed] = useState(false)
   const activeFilePathRef = useRef(filePath)
   activeFilePathRef.current = filePath
@@ -259,6 +260,7 @@ function VideoPlayer({
     setMovPlaybackOutput(null)
     setMovConversionFailed(false)
     setMovPreparing(false)
+    setMovProgress(0)
 
     if (!movNeedsConversion || !filePath) return
 
@@ -269,9 +271,13 @@ function VideoPlayer({
       return
     }
 
+    const requestId = window.crypto.randomUUID()
+    const unsubscribeProgress = api.onMovPlaybackProgress(({ requestId: id, progress }) => {
+      if (id === requestId) setMovProgress(progress)
+    })
     setMovPreparing(true)
     void api
-      .createMovPlayback(filePath)
+      .createMovPlayback(filePath, requestId)
       .then((outputPath) => {
         if (!active || activeFilePathRef.current !== filePath) {
           void api.releaseMediaTrackOutput(outputPath).catch((error: unknown) => {
@@ -282,15 +288,20 @@ function VideoPlayer({
         setMovPlaybackOutput({ filePath, outputPath })
       })
       .catch((error: unknown) => {
-        console.error(`Could not prepare MOV playback for "${filePath}"`, error)
-        if (active) setMovConversionFailed(true)
+        if (active) {
+          console.error(`Could not prepare MOV playback for "${filePath}"`, error)
+          setMovConversionFailed(true)
+        }
       })
       .finally(() => {
+        unsubscribeProgress()
         if (active) setMovPreparing(false)
       })
 
     return () => {
       active = false
+      unsubscribeProgress()
+      api.cancelMovPlayback(requestId)
     }
   }, [filePath, movNeedsConversion])
 
@@ -1113,9 +1124,11 @@ function VideoPlayer({
           {hasPlaybackControls && (buffering || movPreparing) && (
             <div className={styles.buffer} role="status" aria-live="polite">
               <Loader2 size={28} className={styles.spinner} />
-              <span className="sr-only">
-                {movPreparing ? t('player.convertingVideo') : t('player.loadingVideo')}
-              </span>
+              {movPreparing ? (
+                <span>{t('player.convertingVideo', { percent: Math.round(movProgress * 100) })}</span>
+              ) : (
+                <span className="sr-only">{t('player.loadingVideo')}</span>
+              )}
             </div>
           )}
           {movNeedsConversion && movConversionFailed && (

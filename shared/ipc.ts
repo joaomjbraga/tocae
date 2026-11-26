@@ -15,6 +15,8 @@ export const IPC_CHANNELS = {
   MEDIA_TRACKS_GET: 'media:tracks:get',
   MEDIA_TRACK_AUDIO_CREATE: 'media:track-audio:create',
   MEDIA_MOV_PLAYBACK_CREATE: 'media:mov-playback:create',
+  MEDIA_MOV_PLAYBACK_CANCEL: 'media:mov-playback:cancel',
+  MEDIA_MOV_PLAYBACK_PROGRESS: 'media:mov-playback:progress',
   MEDIA_TRACK_SUBTITLE_EXTRACT: 'media:track-subtitle:extract',
   MEDIA_TRACK_OUTPUT_RELEASE: 'media:track-output:release',
   YOUTUBE_MUSIC_OPEN: 'youtube-music:open',
@@ -71,6 +73,11 @@ export interface DefaultPlayerStatus {
   isDefault: boolean
 }
 
+export interface MovPlaybackProgress {
+  requestId: string
+  progress: number
+}
+
 export interface YouTubeMusicBounds {
   x: number
   y: number
@@ -93,7 +100,9 @@ export interface TocaeApi {
   openMediaFolderDialog(): Promise<void>
   showMediaInFolder(filePath: string): Promise<void>
   getMediaTracks(filePath: string): Promise<MediaTrack[]>
-  createMovPlayback(filePath: string): Promise<string>
+  createMovPlayback(filePath: string, requestId: string): Promise<string>
+  cancelMovPlayback(requestId: string): void
+  onMovPlaybackProgress(callback: (progress: MovPlaybackProgress) => void): () => void
   createAudioTrackPlayback(filePath: string, streamIndex: number): Promise<string>
   extractSubtitleTrack(filePath: string, streamIndex: number): Promise<string>
   releaseMediaTrackOutput(outputPath: string): Promise<void>

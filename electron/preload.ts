@@ -1,7 +1,12 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { IpcRendererEvent } from 'electron'
 import { IPC_CHANNELS } from '@shared/ipc'
-import type { AppCommand, TocaeApi, YouTubeMusicStatus } from '@shared/ipc'
+import type {
+  AppCommand,
+  MovPlaybackProgress,
+  TocaeApi,
+  YouTubeMusicStatus,
+} from '@shared/ipc'
 import type { Locale } from '@shared/i18n'
 import type { MediaMetadata } from '@shared/media'
 import type { MediaTrack } from '@shared/mediaTracks'
@@ -23,8 +28,16 @@ const api: TocaeApi = {
     ipcRenderer.invoke(IPC_CHANNELS.MEDIA_SHOW_IN_FOLDER, filePath),
   getMediaTracks: (filePath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MEDIA_TRACKS_GET, filePath) as Promise<MediaTrack[]>,
-  createMovPlayback: (filePath: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE, filePath) as Promise<string>,
+  createMovPlayback: (filePath: string, requestId: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE, filePath, requestId) as Promise<string>,
+  cancelMovPlayback: (requestId: string) => {
+    ipcRenderer.send(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CANCEL, requestId)
+  },
+  onMovPlaybackProgress(callback) {
+    const listener = (_event: IpcRendererEvent, progress: MovPlaybackProgress) => callback(progress)
+    ipcRenderer.on(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_PROGRESS, listener)
+    return () => ipcRenderer.off(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_PROGRESS, listener)
+  },
   createAudioTrackPlayback: (filePath: string, streamIndex: number) =>
     ipcRenderer.invoke(
       IPC_CHANNELS.MEDIA_TRACK_AUDIO_CREATE,

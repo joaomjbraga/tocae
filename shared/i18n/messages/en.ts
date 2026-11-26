@@ -47,7 +47,7 @@ export const enMessages: Messages = {
   'player.previous': 'Previous media',
   'player.next': 'Next media',
   'player.loadingVideo': 'Loading media',
-  'player.convertingVideo': 'Preparing this MOV video for playback...',
+  'player.convertingVideo': 'Preparing this MOV video for playback... {percent}%',
   'player.videoConversionError': 'Could not convert this MOV video for playback.',
   'player.audioNowPlaying': 'Now playing',
   'player.audioPaused': 'Playback paused',

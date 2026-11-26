@@ -12,7 +12,9 @@ test('registers track IPC channels and forwards arguments to their operations', 
       return []
     },
     createMovPlayback: async (...args) => {
+      const onProgress = args.pop()
       calls.push(['createMovPlayback', ...args])
+      onProgress(0.5)
       return '/tmp/compatible-video.mp4'
     },
     createAudioTrackPlayback: async (...args) => {
@@ -29,6 +31,13 @@ test('registers track IPC channels and forwards arguments to their operations', 
   }
 
   registerTrackIpcHandlers((channel, handler) => handlers.set(channel, handler), operations)
+  const progressEvents = []
+  const movEvent = {
+    sender: {
+      isDestroyed: () => false,
+      send: (...args) => progressEvents.push(args),
+    },
+  }
 
   assert.deepEqual([...handlers.keys()], [
     IPC_CHANNELS.MEDIA_TRACKS_GET,
@@ -39,7 +48,11 @@ test('registers track IPC channels and forwards arguments to their operations', 
   ])
   await handlers.get(IPC_CHANNELS.MEDIA_TRACKS_GET)({}, '/media/video.mp4')
   assert.equal(
-    await handlers.get(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE)({}, '/media/video.mov'),
+    await handlers.get(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE)(
+      movEvent,
+      '/media/video.mov',
+      'request-1',
+    ),
     '/tmp/compatible-video.mp4',
   )
   assert.equal(
@@ -62,9 +75,12 @@ test('registers track IPC channels and forwards arguments to their operations', 
 
   assert.deepEqual(calls, [
     ['getMediaTracks', '/media/video.mp4'],
-    ['createMovPlayback', '/media/video.mov'],
+    ['createMovPlayback', '/media/video.mov', 'request-1'],
     ['createAudioTrackPlayback', '/media/video.mp4', 3],
     ['extractSubtitleTrack', '/media/video.mp4', 4],
     ['releaseMediaTrackOutput', '/tmp/audio.mkv'],
+  ])
+  assert.deepEqual(progressEvents, [
+    [IPC_CHANNELS.MEDIA_MOV_PLAYBACK_PROGRESS, { requestId: 'request-1', progress: 0.5 }],
   ])
 })

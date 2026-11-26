@@ -53,7 +53,7 @@ export const ptBRMessages = {
   'player.previous': 'Mídia anterior',
   'player.next': 'Próxima mídia',
   'player.loadingVideo': 'Carregando mídia',
-  'player.convertingVideo': 'Preparando este vídeo MOV para reprodução...',
+  'player.convertingVideo': 'Preparando este vídeo MOV para reprodução... {percent}%',
   'player.videoConversionError': 'Não foi possível converter este vídeo MOV para reprodução.',
   'player.audioNowPlaying': 'Reproduzindo agora',
   'player.audioPaused': 'Reprodução pausada',

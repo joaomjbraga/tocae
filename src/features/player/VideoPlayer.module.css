@@ -761,10 +761,14 @@
 .buffer {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   pointer-events: none;
   color: var(--accent);
+  font-size: var(--text-sm);
   animation: fade-in var(--duration-enter) var(--ease-standard) both;
 }
 

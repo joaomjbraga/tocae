@@ -54,7 +54,7 @@ A integração utiliza a própria interface do YouTube Music. O Tocaê não extr
 
 As imagens são exibidas individualmente, com navegação entre os arquivos. Músicas contam com controles de reprodução e linha do tempo.
 
-Para compatibilidade com diferentes codecs, vídeos `.MOV` são convertidos temporariamente para H.264/AAC antes da reprodução. O arquivo original não é alterado.
+Para compatibilidade com diferentes codecs, vídeos `.MOV` são preparados temporariamente em MP4 com H.264/AAC: vídeos H.264 compatíveis são remuxados sem recodificação e os demais são convertidos. O player mostra o progresso, cancela a preparação ao trocar de mídia e reutiliza conversões recentes em um cache limitado a 1 GiB e cinco arquivos. O original nunca é alterado.
 
 
 ## Executando o projeto
