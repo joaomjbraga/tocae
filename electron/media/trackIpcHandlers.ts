@@ -6,6 +6,7 @@ export type TrackIpcRegistrar = (channel: string, handler: TrackIpcHandler) => v
 
 type TrackIpcOperations = {
   getMediaTracks: (filePath: unknown) => Promise<MediaTrack[]>
+  createMovPlayback: (filePath: unknown) => Promise<string>
   createAudioTrackPlayback: (filePath: unknown, streamIndex: unknown) => Promise<string>
   extractSubtitleTrack: (filePath: unknown, streamIndex: unknown) => Promise<string>
   releaseMediaTrackOutput: (outputPath: unknown) => Promise<void>
@@ -17,6 +18,9 @@ export function registerTrackIpcHandlers(
 ): void {
   register(IPC_CHANNELS.MEDIA_TRACKS_GET, (_event, filePath) =>
     operations.getMediaTracks(filePath),
+  )
+  register(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE, (_event, filePath) =>
+    operations.createMovPlayback(filePath),
   )
   register(IPC_CHANNELS.MEDIA_TRACK_AUDIO_CREATE, (_event, filePath, streamIndex) =>
     operations.createAudioTrackPlayback(filePath, streamIndex),

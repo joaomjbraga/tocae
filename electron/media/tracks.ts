@@ -14,6 +14,7 @@ import { TemporaryTrackOutputs } from './temporaryTrackOutputs'
 const MAX_PROBE_OUTPUT = 4 * 1024 * 1024
 const PROBE_TIMEOUT_MS = 30_000
 const EXTRACTION_TIMEOUT_MS = 30 * 60 * 1000
+const VIDEO_CONVERSION_TIMEOUT_MS = 60 * 60 * 1000
 const temporaryTrackOutputs = new TemporaryTrackOutputs({
   createDirectory: () => mkdtemp(path.join(os.tmpdir(), 'tocae-media-track-')),
   removeDirectory: (directory) => rm(directory, { recursive: true, force: true }),
@@ -163,6 +164,53 @@ async function getMediaTracks(filePath: unknown): Promise<MediaTrack[]> {
   return parseTracks(stdout)
 }
 
+async function createMovPlayback(filePath: unknown): Promise<string> {
+  const resolvedPath = await mediaFilePath(filePath)
+  if (path.extname(resolvedPath).toLowerCase() !== '.mov') {
+    throw new TypeError('A MOV video file is required.')
+  }
+
+  return temporaryTrackOutputs.create('compatible-video.mp4', async (outputPath) => {
+    await runProcess(
+      executablePath(ffmpegPath, 'FFmpeg'),
+      [
+        '-nostdin',
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-y',
+        '-i',
+        resolvedPath,
+        '-map',
+        '0:v:0',
+        '-map',
+        '0:a?',
+        '-sn',
+        '-map_metadata',
+        '0',
+        '-c:v',
+        'libx264',
+        '-preset',
+        'veryfast',
+        '-crf',
+        '20',
+        '-pix_fmt',
+        'yuv420p',
+        '-c:a',
+        'aac',
+        '-b:a',
+        '192k',
+        '-movflags',
+        '+faststart',
+        '-f',
+        'mp4',
+        outputPath,
+      ],
+      VIDEO_CONVERSION_TIMEOUT_MS,
+    )
+  })
+}
+
 async function validateStream(
   filePath: unknown,
   rawStreamIndex: unknown,
@@ -256,6 +304,7 @@ export function registerMediaTracksIpc(): void {
     },
     {
       getMediaTracks,
+      createMovPlayback,
       createAudioTrackPlayback,
       extractSubtitleTrack,
       releaseMediaTrackOutput,

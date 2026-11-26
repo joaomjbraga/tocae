@@ -14,6 +14,7 @@ export const IPC_CHANNELS = {
   MEDIA_SHOW_IN_FOLDER: 'media:show-in-folder',
   MEDIA_TRACKS_GET: 'media:tracks:get',
   MEDIA_TRACK_AUDIO_CREATE: 'media:track-audio:create',
+  MEDIA_MOV_PLAYBACK_CREATE: 'media:mov-playback:create',
   MEDIA_TRACK_SUBTITLE_EXTRACT: 'media:track-subtitle:extract',
   MEDIA_TRACK_OUTPUT_RELEASE: 'media:track-output:release',
   YOUTUBE_MUSIC_OPEN: 'youtube-music:open',
@@ -92,6 +93,7 @@ export interface TocaeApi {
   openMediaFolderDialog(): Promise<void>
   showMediaInFolder(filePath: string): Promise<void>
   getMediaTracks(filePath: string): Promise<MediaTrack[]>
+  createMovPlayback(filePath: string): Promise<string>
   createAudioTrackPlayback(filePath: string, streamIndex: number): Promise<string>
   extractSubtitleTrack(filePath: string, streamIndex: number): Promise<string>
   releaseMediaTrackOutput(outputPath: string): Promise<void>

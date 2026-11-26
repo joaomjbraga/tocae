@@ -153,17 +153,36 @@ function VideoPlayer({
     time: number
     wasPlaying: boolean
   } | null>(null)
+  const [movPlaybackOutput, setMovPlaybackOutput] = useState<{
+    filePath: string
+    outputPath: string
+  } | null>(null)
+  const [movPreparing, setMovPreparing] = useState(false)
+  const [movConversionFailed, setMovConversionFailed] = useState(false)
   const activeFilePathRef = useRef(filePath)
   activeFilePathRef.current = filePath
 
   const tracks = trackState?.filePath === filePath ? trackState.tracks : []
+  const movNeedsConversion = Boolean(
+    mediaType === 'video' && filePath?.toLowerCase().endsWith('.mov'),
+  )
+  const activeMovPlaybackOutput =
+    movPlaybackOutput?.filePath === filePath ? movPlaybackOutput : null
+  const hasMovPlaybackOutput = activeMovPlaybackOutput !== null
+  const movPlaybackPending = movNeedsConversion && !hasMovPlaybackOutput && !movConversionFailed
   const audioTracks = tracks.filter((track) => track.kind === 'audio')
   const subtitleTracks = tracks.filter((track) => track.kind === 'subtitle')
   const defaultAudioTrack = preferredMediaTrack(tracks, 'audio')
   const playbackSource =
     audioTrackOutput?.filePath === filePath
       ? toMediaUrl(audioTrackOutput.outputPath)
-      : source
+      : movNeedsConversion
+        ? activeMovPlaybackOutput
+          ? toMediaUrl(activeMovPlaybackOutput.outputPath)
+          : movConversionFailed
+            ? source
+            : null
+        : source
   const activeSubtitleTrack =
     subtitleTrackOutput?.filePath === filePath &&
     subtitleTrackOutput.streamIndex === selectedSubtitleTrackIndex
@@ -234,6 +253,58 @@ function VideoPlayer({
       })
     }
   }, [subtitleTrackOutput])
+
+  useEffect(() => {
+    let active = true
+    setMovPlaybackOutput(null)
+    setMovConversionFailed(false)
+    setMovPreparing(false)
+
+    if (!movNeedsConversion || !filePath) return
+
+    const api = window.tocae
+    if (!api) {
+      console.error('Could not prepare MOV playback: media API is unavailable.')
+      setMovConversionFailed(true)
+      return
+    }
+
+    setMovPreparing(true)
+    void api
+      .createMovPlayback(filePath)
+      .then((outputPath) => {
+        if (!active || activeFilePathRef.current !== filePath) {
+          void api.releaseMediaTrackOutput(outputPath).catch((error: unknown) => {
+            console.error('Could not release stale MOV playback output', error)
+          })
+          return
+        }
+        setMovPlaybackOutput({ filePath, outputPath })
+      })
+      .catch((error: unknown) => {
+        console.error(`Could not prepare MOV playback for "${filePath}"`, error)
+        if (active) setMovConversionFailed(true)
+      })
+      .finally(() => {
+        if (active) setMovPreparing(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [filePath, movNeedsConversion])
+
+  useEffect(() => {
+    if (!movPlaybackOutput) return
+    const api = window.tocae
+    if (!api) return
+
+    return () => {
+      void api.releaseMediaTrackOutput(movPlaybackOutput.outputPath).catch((error: unknown) => {
+        console.error('Could not release the temporary MOV playback file', error)
+      })
+    }
+  }, [movPlaybackOutput])
 
   useEffect(() => {
     const area = areaRef.current
@@ -372,6 +443,7 @@ function VideoPlayer({
   }
 
   function togglePlay() {
+    if (movPlaybackPending) return
     const media = getMediaElement()
     if (!media) return
     if (media.paused) {
@@ -1032,15 +1104,23 @@ function VideoPlayer({
               type="button"
               className={styles.playPause}
               onClick={togglePlay}
+              disabled={movPlaybackPending}
               aria-label={t('player.play')}
             >
               <Play size={24} />
             </button>
           )}
-          {hasPlaybackControls && buffering && (
+          {hasPlaybackControls && (buffering || movPreparing) && (
             <div className={styles.buffer} role="status" aria-live="polite">
               <Loader2 size={28} className={styles.spinner} />
-              <span className="sr-only">{t('player.loadingVideo')}</span>
+              <span className="sr-only">
+                {movPreparing ? t('player.convertingVideo') : t('player.loadingVideo')}
+              </span>
+            </div>
+          )}
+          {movNeedsConversion && movConversionFailed && (
+            <div className={styles.conversionError} role="alert">
+              {t('player.videoConversionError')}
             </div>
           )}
           {hasPlaybackControls && (
@@ -1049,6 +1129,7 @@ function VideoPlayer({
               type="button"
               className={styles.controlButton}
               onClick={togglePlay}
+              disabled={movPlaybackPending}
               aria-label={paused ? t('player.play') : t('player.pause')}
             >
               {paused ? <Play size={16} /> : <Pause size={16} />}

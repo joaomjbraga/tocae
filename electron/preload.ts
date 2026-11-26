@@ -23,6 +23,8 @@ const api: TocaeApi = {
     ipcRenderer.invoke(IPC_CHANNELS.MEDIA_SHOW_IN_FOLDER, filePath),
   getMediaTracks: (filePath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.MEDIA_TRACKS_GET, filePath) as Promise<MediaTrack[]>,
+  createMovPlayback: (filePath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE, filePath) as Promise<string>,
   createAudioTrackPlayback: (filePath: string, streamIndex: number) =>
     ipcRenderer.invoke(
       IPC_CHANNELS.MEDIA_TRACK_AUDIO_CREATE,

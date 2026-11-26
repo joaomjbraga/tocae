@@ -8,3 +8,9 @@ test('recognizes HEIC files as images in every media path', () => {
   assert.equal(mediaTypeForPath('/photos/IMG_1234.HEIC'), 'image')
   assert.equal(isMediaPath('C:\\photos\\IMG_1234.HEIC'), true)
 })
+
+test('recognizes MOV files as videos in every media path', () => {
+  assert.ok(MEDIA_EXTENSIONS.includes('mov'))
+  assert.equal(mediaTypeForPath('/videos/clip.MOV'), 'video')
+  assert.equal(isMediaPath('C:\\videos\\clip.MOV'), true)
+})

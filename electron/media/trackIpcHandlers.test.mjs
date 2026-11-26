@@ -11,6 +11,10 @@ test('registers track IPC channels and forwards arguments to their operations', 
       calls.push(['getMediaTracks', ...args])
       return []
     },
+    createMovPlayback: async (...args) => {
+      calls.push(['createMovPlayback', ...args])
+      return '/tmp/compatible-video.mp4'
+    },
     createAudioTrackPlayback: async (...args) => {
       calls.push(['createAudioTrackPlayback', ...args])
       return '/tmp/audio.mkv'
@@ -28,11 +32,16 @@ test('registers track IPC channels and forwards arguments to their operations', 
 
   assert.deepEqual([...handlers.keys()], [
     IPC_CHANNELS.MEDIA_TRACKS_GET,
+    IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE,
     IPC_CHANNELS.MEDIA_TRACK_AUDIO_CREATE,
     IPC_CHANNELS.MEDIA_TRACK_SUBTITLE_EXTRACT,
     IPC_CHANNELS.MEDIA_TRACK_OUTPUT_RELEASE,
   ])
   await handlers.get(IPC_CHANNELS.MEDIA_TRACKS_GET)({}, '/media/video.mp4')
+  assert.equal(
+    await handlers.get(IPC_CHANNELS.MEDIA_MOV_PLAYBACK_CREATE)({}, '/media/video.mov'),
+    '/tmp/compatible-video.mp4',
+  )
   assert.equal(
     await handlers.get(IPC_CHANNELS.MEDIA_TRACK_AUDIO_CREATE)(
       {},
@@ -53,6 +62,7 @@ test('registers track IPC channels and forwards arguments to their operations', 
 
   assert.deepEqual(calls, [
     ['getMediaTracks', '/media/video.mp4'],
+    ['createMovPlayback', '/media/video.mov'],
     ['createAudioTrackPlayback', '/media/video.mp4', 3],
     ['extractSubtitleTrack', '/media/video.mp4', 4],
     ['releaseMediaTrackOutput', '/tmp/audio.mkv'],
