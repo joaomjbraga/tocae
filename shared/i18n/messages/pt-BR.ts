@@ -237,6 +237,11 @@ export const ptBRMessages = {
   // Atualizações
   'updates.available': 'A versão {version} do Tocaê está disponível.',
   'updates.viewRelease': 'Ver atualização',
+  'updates.downloadedTitle': 'Atualização pronta para instalar',
+  'updates.downloadedMessage':
+    'A versão {version} do Tocaê foi baixada. Reinicie o aplicativo para instalar a atualização.',
+  'updates.restartNow': 'Reiniciar agora',
+  'updates.later': 'Depois',
 
   // Diálogos nativos
   'dialog.openTitle': 'Abrir arquivo de mídia',

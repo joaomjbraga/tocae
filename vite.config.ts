@@ -14,6 +14,7 @@ const electronMainExternals = [
   'exifr',
   'ffmpeg-static',
   'heic-convert',
+  'electron-updater',
   'music-metadata'
 ]
 

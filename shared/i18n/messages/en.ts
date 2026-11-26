@@ -231,6 +231,11 @@ export const enMessages: Messages = {
   // Updates
   'updates.available': 'Tocaê version {version} is available.',
   'updates.viewRelease': 'View update',
+  'updates.downloadedTitle': 'Update ready to install',
+  'updates.downloadedMessage':
+    'Tocaê version {version} has been downloaded. Restart the app to install the update.',
+  'updates.restartNow': 'Restart now',
+  'updates.later': 'Later',
 
   // Native dialogs
   'dialog.openTitle': 'Open a media file',

@@ -1,6 +1,9 @@
-import { BrowserWindow, app, ipcMain, shell } from 'electron'
+import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import { IPC_CHANNELS } from '@shared/ipc'
+import { translate } from '@shared/i18n'
 import { sendCommand } from './commands'
+import { getAppLocale } from './locale'
 import { getMainWindow } from './windows'
 
 const REPOSITORY = 'joaomjbraga/tocae'
@@ -73,8 +76,60 @@ async function checkForUpdates(): Promise<void> {
   }
 }
 
+async function promptToInstallUpdate(version: string): Promise<void> {
+  const locale = getAppLocale()
+  const options = {
+    type: 'info' as const,
+    title: translate(locale, 'updates.downloadedTitle'),
+    message: translate(locale, 'updates.downloadedMessage', { version }),
+    buttons: [
+      translate(locale, 'updates.restartNow'),
+      translate(locale, 'updates.later'),
+    ],
+    defaultId: 1,
+    cancelId: 1,
+    noLink: true,
+  }
+  const window = getMainWindow()
+
+  try {
+    const result = window
+      ? await dialog.showMessageBox(window, options)
+      : await dialog.showMessageBox(options)
+    if (result.response === 0) autoUpdater.quitAndInstall()
+  } catch (error) {
+    console.warn('Could not prompt to install the Tocaê update', error)
+  }
+}
+
+function startWindowsUpdateChecks(): void {
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+  autoUpdater.on('update-downloaded', ({ version }) => {
+    void promptToInstallUpdate(version)
+  })
+  autoUpdater.on('error', (error) => {
+    console.warn('Could not download Tocaê update', error)
+    void checkForUpdates()
+  })
+
+  const check = () => {
+    void autoUpdater.checkForUpdates().catch((error: unknown) => {
+      console.warn('Could not check for Tocaê updates', error)
+    })
+  }
+  check()
+  const timer = setInterval(check, UPDATE_CHECK_INTERVAL_MS)
+  app.once('will-quit', () => clearInterval(timer))
+}
+
 export function startUpdateChecks(): void {
   if (!app.isPackaged) return
+
+  if (process.platform === 'win32') {
+    startWindowsUpdateChecks()
+    return
+  }
 
   void checkForUpdates()
   const timer = setInterval(() => void checkForUpdates(), UPDATE_CHECK_INTERVAL_MS)

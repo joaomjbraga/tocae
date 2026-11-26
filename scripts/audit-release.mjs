@@ -8,7 +8,10 @@ const releaseRoot = path.resolve(projectRoot, process.env.TOCAE_RELEASE_DIR ?? '
 const MAX_INSTALLER_SIZE = 250 * 1024 * 1024
 const asarCli = path.join(projectRoot, 'node_modules', '@electron', 'asar', 'bin', 'asar.js')
 
-async function findReleaseFiles(directory, found = { archives: [], installers: [] }) {
+async function findReleaseFiles(
+  directory,
+  found = { archives: [], installers: [], updateMetadata: [], blockmaps: [] },
+) {
   let entries
   try {
     entries = await readdir(directory, { withFileTypes: true })
@@ -28,7 +31,14 @@ async function findReleaseFiles(directory, found = { archives: [], installers: [
     if (!entry.isFile()) continue
 
     if (entry.name === 'app.asar') found.archives.push(filePath)
-    if (/\.(deb|rpm|exe)$/i.test(entry.name)) found.installers.push(filePath)
+    if (
+      path.dirname(filePath) === releaseRoot &&
+      /\.(deb|rpm|exe)$/i.test(entry.name)
+    ) {
+      found.installers.push(filePath)
+    }
+    if (entry.name === 'latest.yml') found.updateMetadata.push(filePath)
+    if (/\.blockmap$/i.test(entry.name)) found.blockmaps.push(filePath)
   }
   return found
 }
@@ -74,12 +84,21 @@ function formatBytes(bytes) {
 }
 
 async function main() {
-  const { archives, installers } = await findReleaseFiles(releaseRoot)
+  const { archives, installers, updateMetadata, blockmaps } =
+    await findReleaseFiles(releaseRoot)
   if (archives.length === 0) {
     throw new Error(`No app.asar found under "${releaseRoot}". Build the installer first.`)
   }
   if (installers.length === 0) {
     throw new Error(`No .deb, .rpm, or .exe installer found under "${releaseRoot}".`)
+  }
+  if (installers.some((installer) => /\.exe$/i.test(installer))) {
+    if (updateMetadata.length === 0) {
+      throw new Error('Windows installer is missing the electron-updater latest.yml metadata.')
+    }
+    if (blockmaps.length === 0) {
+      throw new Error('Windows installer is missing electron-updater blockmap files.')
+    }
   }
 
   let failureCount = 0
