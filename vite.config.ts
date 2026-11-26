@@ -14,8 +14,7 @@ const electronMainExternals = [
   'exifr',
   'ffmpeg-static',
   'heic-convert',
-  'music-metadata',
-  'node-id3',
+  'music-metadata'
 ]
 
 export default defineConfig({

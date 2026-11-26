@@ -19,9 +19,15 @@ import type { MessageKey } from '@shared/i18n'
 import type { LibraryFolder, LibraryMediaItem, LibrarySnapshot, StandardLibraryFolderId } from '@shared/library'
 import type { MediaMetadata, MediaType, VideoThumbnail } from '@shared/media'
 import { useI18n } from '../../i18n'
+import { formatTime } from '../../lib/format'
 import { toMediaUrl } from '../../lib/media'
 import { summarizeMediaMetadata } from '../../lib/mediaMetadata'
+import {
+  getSavedPlaybackPositions,
+  PLAYBACK_PROGRESS_CHANGED_EVENT,
+} from '../player/playbackProgress'
 import { readFavoritePaths, saveFavoritePaths, toggleFavoritePath } from './favorites'
+import { selectContinuePlaybackItems } from './continuePlayback'
 import styles from './Library.module.css'
 
 type MediaFilter = 'all' | MediaType
@@ -135,14 +141,19 @@ function LibraryMediaCard({
   onPlay,
   favorite,
   onToggleFavorite,
+  resumePosition,
+  resumeDuration,
 }: {
   item: LibraryMediaItem
   context: string
   onPlay: (filePath: string) => void
   favorite: boolean
   onToggleFavorite: (filePath: string) => void
+  resumePosition?: number
+  resumeDuration?: number
 }) {
   const { locale, t } = useI18n()
+  const cardRef = useRef<HTMLDivElement>(null)
   const [metadata, setMetadata] = useState<MediaMetadata | null>(null)
   const [metadataLoadFailed, setMetadataLoadFailed] = useState(false)
   const [previewDetails, setPreviewDetails] = useState<{
@@ -167,6 +178,14 @@ function LibraryMediaCard({
   const summary = completeMetadata
     ? summarizeMediaMetadata(item.type, completeMetadata, locale)
     : ''
+  const duration = [previewDetails?.duration, metadata?.duration, resumeDuration].find(
+    (candidate): candidate is number =>
+      typeof candidate === 'number' && Number.isFinite(candidate) && candidate > 0,
+  )
+  const progressPercent =
+    resumePosition !== undefined && duration && duration > 0
+      ? Math.min(100, Math.max(0, (resumePosition / duration) * 100))
+      : null
 
   const loadMetadata = useCallback((): Promise<MediaMetadata | null> => {
     if (metadata) return Promise.resolve(metadata)
@@ -193,16 +212,52 @@ function LibraryMediaCard({
     return request
   }, [item.path, metadata])
 
+  useEffect(() => {
+    if (resumePosition === undefined || duration) return
+    const card = cardRef.current
+    if (!card) return
+
+    let requested = false
+    const requestMetadata = () => {
+      if (requested) return
+      requested = true
+      void loadMetadata()
+    }
+
+    if (typeof IntersectionObserver === 'undefined') {
+      requestMetadata()
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return
+        observer.disconnect()
+        requestMetadata()
+      },
+      { rootMargin: '120px' },
+    )
+    observer.observe(card)
+    return () => observer.disconnect()
+  }, [duration, loadMetadata, resumePosition])
+
   return (
     <>
-      <div className={styles.mediaCardShell}>
+      <div className={styles.mediaCardShell} ref={cardRef}>
         <button
           type="button"
           className={styles.mediaCard}
           onClick={() => onPlay(item.path)}
           onMouseEnter={() => void loadMetadata()}
           onFocus={() => void loadMetadata()}
-          aria-label={t('library.playItem', { name: displayName })}
+          aria-label={
+            resumePosition === undefined
+              ? t('library.playItem', { name: displayName })
+              : t('library.continueItem', {
+                  name: displayName,
+                  time: formatTime(resumePosition),
+                })
+          }
           aria-description={context}
         >
           <span className={styles.artwork}>
@@ -243,12 +298,23 @@ function LibraryMediaCard({
                 }}
               />
             )}
+            {progressPercent !== null && (
+              <span className={styles.cardProgress} aria-hidden="true">
+                <span style={{ width: `${progressPercent}%` }} />
+              </span>
+            )}
             <span className={styles.cardPlay}>
               <Play size={18} fill="currentColor" aria-hidden="true" />
             </span>
           </span>
           <span className={styles.cardTitle}>{displayName}</span>
           <span className={styles.cardContext}>{context}</span>
+          {resumePosition !== undefined && (
+            <span className={styles.resumePosition}>
+              <Play size={11} fill="currentColor" aria-hidden="true" />
+              {t('library.continueFrom', { time: formatTime(resumePosition) })}
+            </span>
+          )}
           {summary && <span className={styles.cardMetadata}>{summary}</span>}
           <span className={styles.mediaType}>{t(MEDIA_TYPE_LABELS[item.type])}</span>
         </button>
@@ -392,6 +458,20 @@ function Library({ onPlay }: LibraryProps) {
   const [displayLimit, setDisplayLimit] = useState(LIBRARY_PAGE_SIZE)
   const [favorites, setFavorites] = useState(readFavoritePaths)
   const [favoriteError, setFavoriteError] = useState(false)
+  const [savedPlaybackPositions, setSavedPlaybackPositions] = useState(
+    getSavedPlaybackPositions,
+  )
+
+  useEffect(() => {
+    const refreshPlaybackPositions = () =>
+      setSavedPlaybackPositions(getSavedPlaybackPositions())
+    window.addEventListener(PLAYBACK_PROGRESS_CHANGED_EVENT, refreshPlaybackPositions)
+    window.addEventListener('storage', refreshPlaybackPositions)
+    return () => {
+      window.removeEventListener(PLAYBACK_PROGRESS_CHANGED_EVENT, refreshPlaybackPositions)
+      window.removeEventListener('storage', refreshPlaybackPositions)
+    }
+  }, [])
 
   const handleToggleFavorite = useCallback(
     (filePath: string) => {
@@ -584,6 +664,22 @@ function Library({ onPlay }: LibraryProps) {
   const displayedItems = useMemo(
     () => visibleItems.slice(0, displayLimit),
     [displayLimit, visibleItems],
+  )
+  const playbackPositionsByPath = useMemo(() => {
+    const positionsBySource = new Map(
+      savedPlaybackPositions.map((savedPosition) => [savedPosition.source, savedPosition]),
+    )
+    return new Map(
+      (snapshot?.items ?? []).flatMap((item) => {
+        if (item.type !== 'video' && item.type !== 'audio') return []
+        const savedPosition = positionsBySource.get(toMediaUrl(item.path))
+        return savedPosition ? [[item.path, savedPosition] as const] : []
+      }),
+    )
+  }, [savedPlaybackPositions, snapshot?.items])
+  const continueItems = useMemo(
+    () => selectContinuePlaybackItems(visibleItems, savedPlaybackPositions, toMediaUrl),
+    [savedPlaybackPositions, visibleItems],
   )
 
   const filters: { value: MediaFilter; label: MessageKey }[] = [
@@ -803,6 +899,36 @@ function Library({ onPlay }: LibraryProps) {
         </div>
       ) : (
         <div className={styles.mediaGroups} aria-label={t('library.mediaResults')}>
+          {continueItems.length > 0 && (
+            <section className={styles.continueSection} aria-labelledby="library-continue-title">
+              <h2 className={styles.continueTitle} id="library-continue-title">
+                {t('library.continuePlayback')}
+              </h2>
+              <ul className={styles.mediaGrid}>
+                {continueItems.map(({ item, position, duration }) => {
+                  const folder = snapshot.folders.find((entry) => entry.id === item.folderId)
+                  const parentDirectory = item.relativePath.split('/').slice(0, -1).join('/')
+                  const context = [folder ? folderName(folder, t) : '', parentDirectory]
+                    .filter(Boolean)
+                    .join(' / ')
+
+                  return (
+                    <li key={`continue-${item.path}`}>
+                      <LibraryMediaCard
+                        item={item}
+                        context={context}
+                        onPlay={onPlay}
+                        favorite={favorites.has(item.path)}
+                        onToggleFavorite={handleToggleFavorite}
+                        resumePosition={position}
+                        resumeDuration={duration}
+                      />
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          )}
           {mediaGroups.map(([letter, group]) => (
             <section
               className={styles.mediaGroup}
@@ -816,6 +942,7 @@ function Library({ onPlay }: LibraryProps) {
                 {group.map((item) => {
                   const folder = snapshot.folders.find((entry) => entry.id === item.folderId)
                   const parentDirectory = item.relativePath.split('/').slice(0, -1).join('/')
+                  const savedPosition = playbackPositionsByPath.get(item.path)
                   const context = [folder ? folderName(folder, t) : '', parentDirectory]
                     .filter(Boolean)
                     .join(' / ')
@@ -828,6 +955,8 @@ function Library({ onPlay }: LibraryProps) {
                         onPlay={onPlay}
                         favorite={favorites.has(item.path)}
                         onToggleFavorite={handleToggleFavorite}
+                        resumePosition={savedPosition?.position}
+                        resumeDuration={savedPosition?.duration}
                       />
                     </li>
                   )

@@ -506,6 +506,28 @@
   scrollbar-color: var(--border-strong) transparent;
 }
 
+.continueSection {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-control);
+}
+
+.continueTitle {
+  margin: 0 0 10px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.resumePosition {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+}
+
 .loadMoreButton {
   display: block;
   margin: 18px auto 8px;
@@ -658,6 +680,22 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+
+.cardProgress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.cardProgress > span {
+  height: 100%;
+  display: block;
+  background: var(--accent);
 }
 
 .artworkFallback {

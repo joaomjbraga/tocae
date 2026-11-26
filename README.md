@@ -14,6 +14,7 @@ O **Tocaê** é um reprodutor multimídia para Windows e Linux que reúne músic
 - **Pastas personalizadas:** utilize as pastas padrão do computador ou adicione outros locais para acompanhar suas mídias.
 - **Pesquisa rápida:** encontre arquivos pelo nome e filtre os resultados por categoria.
 - **Favoritos:** marque suas mídias preferidas e encontre-as facilmente quando quiser.
+- **Continuar assistindo/ouvindo:** retome vídeos e músicas da posição salva pela biblioteca e acompanhe o progresso nos cards.
 - **Informações detalhadas:** consulte capas, artistas, duração, formatos, dimensões, tamanho e outras informações dos arquivos.
 
 ### Mais controle sobre o que você assiste

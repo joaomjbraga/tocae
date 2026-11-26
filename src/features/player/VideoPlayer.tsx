@@ -399,7 +399,7 @@ function VideoPlayer({
     function saveCurrentPosition() {
       const media = getMediaElement()
       if (!source || !media || media.ended) return
-      savePlaybackPosition(source, media.currentTime)
+      savePlaybackPosition(source, media.currentTime, media.duration)
       lastSavedPositionRef.current = Math.floor(media.currentTime)
     }
 
@@ -682,7 +682,7 @@ function VideoPlayer({
     ) {
       return
     }
-    savePlaybackPosition(source, roundedPosition)
+    savePlaybackPosition(source, roundedPosition, getMediaElement()?.duration)
     lastSavedPositionRef.current = roundedPosition
   }
 
